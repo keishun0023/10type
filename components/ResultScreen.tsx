@@ -1,8 +1,9 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { Axis, AXES, AXIS_LABELS } from '@/data/questions';
-import { TypeData } from '@/data/types';
+import { Axis, AXIS_LABELS, ROOT_AXES } from '@/data/questions';
+import { RootType, SYMPTOM_DESC, SYMPTOM_LABEL, SymptomAxis } from '@/data/types';
+import { getTopSymptoms } from '@/lib/scoring';
 
 const RadarChartComponent = dynamic(() => import('@/components/RadarChartComponent'), {
   ssr: false,
@@ -14,8 +15,8 @@ const RadarChartComponent = dynamic(() => import('@/components/RadarChartCompone
 });
 
 interface Props {
-  firstType: TypeData;
-  secondType: TypeData;
+  firstType: RootType;
+  secondType: RootType;
   axisScores: Record<Axis, number>;
   distressTotal: number;
   onRestart: () => void;
@@ -32,32 +33,33 @@ export default function ResultScreen({
 }: Props) {
   const isPositiveMode = distressTotal < 10;
 
-  const sortedAxes = AXES.slice()
-    .sort((a, b) => axisScores[b] - axisScores[a])
-    .slice(0, 3);
+  // 根っこ4軸のうち最も高い軸
+  const topRootAxis = ROOT_AXES.slice()
+    .sort((a, b) => axisScores[b] - axisScores[a])[0];
+
+  // 症状上位2軸
+  const topSymptoms = getTopSymptoms(axisScores, 2);
 
   return (
     <div className="min-h-screen bg-stone-50">
       {/* Hero */}
       <div className="bg-gradient-to-br from-indigo-600 to-violet-600 px-5 pt-12 pb-10 text-white">
-        <div className="max-w-sm mx-auto space-y-4">
+        <div className="max-w-sm mx-auto space-y-3">
           {isPositiveMode && (
             <div className="text-xs font-medium bg-white/20 px-3 py-1.5 rounded-full inline-block">
               あなたはこの傾向を持ちつつ、うまく付き合えています
             </div>
           )}
-          <div className="text-sm font-medium opacity-80">あなたの生きづらさのかたちは</div>
-          <h1 className="text-2xl font-bold leading-tight">
-            {firstType.name}<span className="opacity-60 mx-1">×</span>{secondType.name}
-          </h1>
+          <div className="text-sm font-medium opacity-80">あなたの生きづらさの核は</div>
+          <h1 className="text-3xl font-bold leading-tight">{firstType.name}</h1>
           <p className="text-sm opacity-90 leading-relaxed">{firstType.catch}</p>
-          <p className="text-sm opacity-80 leading-relaxed">{secondType.catch}</p>
-          <div className="flex flex-wrap gap-2 pt-1">
-            {sortedAxes.map(axis => (
-              <span key={axis} className="text-xs bg-white/20 px-2.5 py-1 rounded-full">
-                {AXIS_LABELS[axis]}：{Math.round(axisScores[axis])}
-              </span>
-            ))}
+          <div className="text-xs opacity-70">
+            次いで <span className="font-semibold opacity-90">{secondType.name}</span> の傾向も
+          </div>
+          <div className="pt-1">
+            <span className="text-xs bg-white/20 px-2.5 py-1 rounded-full">
+              {AXIS_LABELS[topRootAxis]}：{Math.round(axisScores[topRootAxis])}
+            </span>
           </div>
         </div>
       </div>
@@ -69,48 +71,37 @@ export default function ResultScreen({
           <RadarChartComponent axisScores={axisScores} />
         </div>
 
-        {/* Aruaru - 両タイプ */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm space-y-5">
-          <h2 className="text-sm font-semibold text-stone-700">こんなこと、ありませんか？</h2>
-
-          <div className="space-y-3">
-            <div className="text-xs font-semibold text-indigo-500">{firstType.name}</div>
-            <ul className="space-y-3">
-              {firstType.aruaru.map((item, i) => (
-                <li key={i} className="flex gap-3 text-sm text-stone-700 leading-relaxed">
-                  <span className="text-indigo-400 font-bold mt-0.5 shrink-0">✓</span>
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="border-t border-stone-100 pt-4 space-y-3">
-            <div className="text-xs font-semibold text-violet-500">{secondType.name}</div>
-            <ul className="space-y-3">
-              {secondType.aruaru.map((item, i) => (
-                <li key={i} className="flex gap-3 text-sm text-stone-700 leading-relaxed">
-                  <span className="text-violet-400 font-bold mt-0.5 shrink-0">✓</span>
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-
-        {/* Bad cycle - 両タイプ */}
-        <div className="bg-amber-50 rounded-2xl p-5 shadow-sm space-y-4">
-          <h2 className="text-sm font-semibold text-amber-800">ハマりがちな悪循環</h2>
-
+        {/* Symptoms — 因果の「その結果」 */}
+        <div className="bg-white rounded-2xl p-5 shadow-sm space-y-4">
           <div className="space-y-1">
-            <div className="text-xs font-semibold text-amber-700">{firstType.name}</div>
-            <p className="text-sm text-amber-900 leading-relaxed">{firstType.badCycle}</p>
+            <h2 className="text-sm font-semibold text-stone-700">
+              その結果、あなたの場合はこう出ています
+            </h2>
+            <p className="text-xs text-stone-400">
+              核の傾向が、以下の形で現れやすくなっています。
+            </p>
           </div>
-
-          <div className="border-t border-amber-200 pt-4 space-y-1">
-            <div className="text-xs font-semibold text-amber-700">{secondType.name}</div>
-            <p className="text-sm text-amber-900 leading-relaxed">{secondType.badCycle}</p>
-          </div>
+          <ul className="space-y-4">
+            {topSymptoms.map(({ axis, score }) => (
+              <li key={axis} className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-stone-700">
+                    {SYMPTOM_LABEL[axis as SymptomAxis]}
+                  </span>
+                  <span className="text-xs text-stone-400">{Math.round(score)}</span>
+                </div>
+                <div className="w-full h-1.5 bg-stone-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-violet-400 rounded-full"
+                    style={{ width: `${score}%` }}
+                  />
+                </div>
+                <p className="text-xs text-stone-500 leading-relaxed">
+                  {SYMPTOM_DESC[axis as SymptomAxis]}
+                </p>
+              </li>
+            ))}
+          </ul>
         </div>
 
         {/* Feedback CTA */}
@@ -135,7 +126,8 @@ export default function ResultScreen({
         </button>
 
         <p className="text-xs text-stone-400 text-center pb-4 leading-relaxed">
-          ビッグファイブ／CBTの考え方をベースにしています。医療診断ではありません。
+          ビッグファイブ／CBTの考え方をベースにしています。医療診断ではありません。<br />
+          核→症状の因果方向は仮説であり、検証中です。
         </p>
       </div>
     </div>

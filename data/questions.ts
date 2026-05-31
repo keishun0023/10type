@@ -10,6 +10,11 @@ export type Question = {
 
 export const AXES: Axis[] = ['Anx', 'Ang', 'Dep', 'SC', 'Imp', 'Vul', 'Sac', 'Perf'];
 
+// 根っこ層（タイプ判定に使う）
+export const ROOT_AXES: Axis[] = ['Sac', 'SC', 'Perf', 'Anx'];
+// 症状層（結果の因果説明に使う。判定には使わない）
+export const SYMPTOM_AXES: Axis[] = ['Ang', 'Imp', 'Vul', 'Dep'];
+
 export const AXIS_LABELS: Record<Axis, string> = {
   Anx: '不安',
   Ang: '怒り抑圧',

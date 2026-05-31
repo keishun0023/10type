@@ -1,5 +1,5 @@
-import { AXES, Axis, Question } from '@/data/questions';
-import { TYPES, TypeData } from '@/data/types';
+import { AXES, Axis, Question, ROOT_AXES, SYMPTOM_AXES } from '@/data/questions';
+import { ROOT_TYPES, RootType, SymptomAxis } from '@/data/types';
 
 export function calculateAxisScores(
   answers: Record<string, number>,
@@ -29,77 +29,46 @@ export function calculateDistressTotal(
     .reduce((sum, q) => sum + (answers[q.id] ?? 0), 0);
 }
 
-function euclidean(userVec: number[], profile: number[]): number {
-  return Math.sqrt(profile.reduce((sum, val, i) => sum + Math.pow(userVec[i] - val, 2), 0));
+function euclidean(a: number[], b: number[]): number {
+  return Math.sqrt(a.reduce((sum, v, i) => sum + Math.pow(v - b[i], 2), 0));
 }
 
-// プロファイルでH(75)の軸インデックス一覧
-function mainAxisIndices(profile: number[]): number[] {
-  return profile.map((v, i) => (v === 75 ? i : -1)).filter(i => i >= 0);
-}
-
+// 根っこ4軸のみでユークリッド距離を計算してタイプ判定
 export function findTypes(axisScores: Record<Axis, number>): {
-  first: TypeData;
-  second: TypeData;
-  matchMode: 'exact' | 'partial' | 'distance';
+  first: RootType;
+  second: RootType;
 } {
-  const userVec = AXES.map(a => axisScores[a]);
+  const rootVector = ROOT_AXES.map(a => axisScores[a]);
 
-  // ユーザーの上位2軸インデックス（スコア降順）
-  const top2Indices = AXES
-    .map((_, i) => ({ i, score: userVec[i] }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 2)
-    .map(x => x.i)
-    .sort((a, b) => a - b);
-
-  const withDist = TYPES.map(type => ({
+  const ranked = ROOT_TYPES.map(type => ({
     type,
-    dist: euclidean(userVec, type.profile),
-    mainIdx: mainAxisIndices(type.profile),
-  }));
+    dist: euclidean(rootVector, type.profile),
+  })).sort((a, b) => a.dist - b.dist);
 
-  // ① 主役軸がちょうど2つ かつ ユーザー上位2軸と完全一致
-  const exactMatch = withDist.find(({ mainIdx }) => {
-    if (mainIdx.length !== 2) return false;
-    const sorted = [...mainIdx].sort((a, b) => a - b);
-    return sorted[0] === top2Indices[0] && sorted[1] === top2Indices[1];
-  });
-
-  if (exactMatch) {
-    const rest = withDist.filter(x => x.type.id !== exactMatch.type.id);
-    const second = rest.sort((a, b) => a.dist - b.dist)[0].type;
-    return { first: exactMatch.type, second, matchMode: 'exact' };
-  }
-
-  // ② 上位2軸のうち少なくとも1つを主役に含む候補から距離最小
-  const candidates = withDist.filter(({ mainIdx }) =>
-    top2Indices.some(ti => mainIdx.includes(ti))
-  );
-
-  if (candidates.length > 0) {
-    const first = candidates.sort((a, b) => a.dist - b.dist)[0].type;
-    const rest = withDist.filter(x => x.type.id !== first.id);
-    const second = rest.sort((a, b) => a.dist - b.dist)[0].type;
-    return { first, second, matchMode: 'partial' };
-  }
-
-  // ③ 候補ゼロ → 純粋距離最小（複合・バランス型）
-  const sorted = withDist.sort((a, b) => a.dist - b.dist);
-  console.warn('[10type] matchMode=distance: no candidate matched top2 axes', top2Indices);
-  return { first: sorted[0].type, second: sorted[1].type, matchMode: 'distance' };
+  return { first: ranked[0].type, second: ranked[1].type };
 }
 
-// 選び直し用：第1タイプを除いた残りから距離近い順に上位3タイプを返す
+// 選び直し候補：指定タイプを除いた残りを距離近い順に上位3つ
 export function getRetypeCandidates(
   axisScores: Record<Axis, number>,
-  excludeTypeId: number
-): TypeData[] {
-  const userVec = AXES.map(a => axisScores[a]);
-  return TYPES
+  excludeTypeId: string
+): RootType[] {
+  const rootVector = ROOT_AXES.map(a => axisScores[a]);
+  return ROOT_TYPES
     .filter(t => t.id !== excludeTypeId)
-    .map(t => ({ type: t, dist: euclidean(userVec, t.profile) }))
+    .map(t => ({ type: t, dist: euclidean(rootVector, t.profile) }))
     .sort((a, b) => a.dist - b.dist)
     .slice(0, 3)
     .map(x => x.type);
+}
+
+// 症状4軸をスコア降順で返す（結果画面の「その結果」表示用）
+export function getTopSymptoms(
+  axisScores: Record<Axis, number>,
+  topN = 2
+): { axis: SymptomAxis; score: number }[] {
+  return (SYMPTOM_AXES as SymptomAxis[])
+    .map(axis => ({ axis, score: axisScores[axis] }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, topN);
 }

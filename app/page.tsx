@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { STRENGTH_QUESTIONS, DISTRESS_QUESTIONS, Question, Axis } from '@/data/questions';
 import { calculateAxisScores, calculateDistressTotal, findTypes, getRetypeCandidates } from '@/lib/scoring';
-import { TypeData } from '@/data/types';
+import { RootType } from '@/data/types';
 import { saveResult, saveFeedbackRating, saveRetypeSelection } from '@/lib/analytics';
 import IntroScreen from '@/components/IntroScreen';
 import QuestionScreen from '@/components/QuestionScreen';
@@ -16,11 +16,10 @@ import ThankYouScreen from '@/components/ThankYouScreen';
 type Screen = 'intro' | 'strength' | 'distress-intro' | 'distress' | 'result' | 'feedback' | 'retype' | 'thankyou';
 
 interface ResultData {
-  firstType: TypeData;
-  secondType: TypeData;
+  firstType: RootType;
+  secondType: RootType;
   axisScores: Record<Axis, number>;
   distressTotal: number;
-  matchMode: string;
 }
 
 function shuffle<T>(arr: T[]): T[] {
@@ -30,10 +29,6 @@ function shuffle<T>(arr: T[]): T[] {
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
-}
-
-function generateSessionId(): string {
-  return crypto.randomUUID();
 }
 
 export default function Home() {
@@ -48,7 +43,7 @@ export default function Home() {
   const allQuestions: Question[] = [...STRENGTH_QUESTIONS, ...DISTRESS_QUESTIONS];
 
   function handleStart() {
-    setSessionId(generateSessionId());
+    setSessionId(crypto.randomUUID());
     setStrengthOrder(shuffle(STRENGTH_QUESTIONS.map(q => q.id)));
     setStrengthIndex(0);
     setDistressIndex(0);
@@ -85,10 +80,9 @@ export default function Home() {
     } else {
       const axisScores = calculateAxisScores(newAnswers, allQuestions);
       const distressTotal = calculateDistressTotal(newAnswers, allQuestions);
-      const { first, second, matchMode } = findTypes(axisScores);
-      const data: ResultData = { firstType: first, secondType: second, axisScores, distressTotal, matchMode };
+      const { first, second } = findTypes(axisScores);
+      const data: ResultData = { firstType: first, secondType: second, axisScores, distressTotal };
       setResultData(data);
-      // Supabaseに保存（fire-and-forget）
       saveResult({ sessionId, ...data });
       setScreen('result');
     }
@@ -111,7 +105,7 @@ export default function Home() {
     }
   }
 
-  function handleRetypeSubmit(selectedTypeId: number | null) {
+  function handleRetypeSubmit(selectedTypeId: string | null) {
     saveRetypeSelection(sessionId, selectedTypeId);
     setScreen('thankyou');
   }
