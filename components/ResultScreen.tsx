@@ -47,8 +47,11 @@ export default function ResultScreen({
             </div>
           )}
           <div className="text-sm font-medium opacity-80">あなたの生きづらさのかたちは</div>
-          <h1 className="text-3xl font-bold leading-tight">{firstType.name}</h1>
+          <h1 className="text-2xl font-bold leading-tight">
+            {firstType.name}<span className="opacity-60 mx-1">×</span>{secondType.name}
+          </h1>
           <p className="text-sm opacity-90 leading-relaxed">{firstType.catch}</p>
+          <p className="text-sm opacity-80 leading-relaxed">{secondType.catch}</p>
           <div className="flex flex-wrap gap-2 pt-1">
             {sortedAxes.map(axis => (
               <span key={axis} className="text-xs bg-white/20 px-2.5 py-1 rounded-full">
@@ -60,34 +63,54 @@ export default function ResultScreen({
       </div>
 
       <div className="max-w-sm mx-auto px-5 py-6 space-y-6">
-        {/* Radar chart + 2nd type */}
+        {/* Radar chart */}
         <div className="bg-white rounded-2xl p-4 shadow-sm">
           <h2 className="text-sm font-semibold text-stone-700 mb-2">あなたの8軸ベクトル</h2>
           <RadarChartComponent axisScores={axisScores} />
-          <div className="mt-3 pt-3 border-t border-stone-100 flex items-center gap-2 text-xs text-stone-500">
-            <span className="shrink-0">次いで</span>
-            <span className="font-semibold text-stone-700">{secondType.name}</span>
-            <span>の傾向も</span>
+        </div>
+
+        {/* Aruaru - 両タイプ */}
+        <div className="bg-white rounded-2xl p-5 shadow-sm space-y-5">
+          <h2 className="text-sm font-semibold text-stone-700">こんなこと、ありませんか？</h2>
+
+          <div className="space-y-3">
+            <div className="text-xs font-semibold text-indigo-500">{firstType.name}</div>
+            <ul className="space-y-3">
+              {firstType.aruaru.map((item, i) => (
+                <li key={i} className="flex gap-3 text-sm text-stone-700 leading-relaxed">
+                  <span className="text-indigo-400 font-bold mt-0.5 shrink-0">✓</span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="border-t border-stone-100 pt-4 space-y-3">
+            <div className="text-xs font-semibold text-violet-500">{secondType.name}</div>
+            <ul className="space-y-3">
+              {secondType.aruaru.map((item, i) => (
+                <li key={i} className="flex gap-3 text-sm text-stone-700 leading-relaxed">
+                  <span className="text-violet-400 font-bold mt-0.5 shrink-0">✓</span>
+                  {item}
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
 
-        {/* Aruaru */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm space-y-4">
-          <h2 className="text-sm font-semibold text-stone-700">こんなこと、ありませんか？</h2>
-          <ul className="space-y-3">
-            {firstType.aruaru.map((item, i) => (
-              <li key={i} className="flex gap-3 text-sm text-stone-700 leading-relaxed">
-                <span className="text-indigo-400 font-bold mt-0.5 shrink-0">✓</span>
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Bad cycle */}
-        <div className="bg-amber-50 rounded-2xl p-5 shadow-sm space-y-2">
+        {/* Bad cycle - 両タイプ */}
+        <div className="bg-amber-50 rounded-2xl p-5 shadow-sm space-y-4">
           <h2 className="text-sm font-semibold text-amber-800">ハマりがちな悪循環</h2>
-          <p className="text-sm text-amber-900 leading-relaxed">{firstType.badCycle}</p>
+
+          <div className="space-y-1">
+            <div className="text-xs font-semibold text-amber-700">{firstType.name}</div>
+            <p className="text-sm text-amber-900 leading-relaxed">{firstType.badCycle}</p>
+          </div>
+
+          <div className="border-t border-amber-200 pt-4 space-y-1">
+            <div className="text-xs font-semibold text-amber-700">{secondType.name}</div>
+            <p className="text-sm text-amber-900 leading-relaxed">{secondType.badCycle}</p>
+          </div>
         </div>
 
         {/* Feedback CTA */}
