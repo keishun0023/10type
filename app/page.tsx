@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { STRENGTH_QUESTIONS, DISTRESS_QUESTIONS, Question, Axis } from '@/data/questions';
 import { calculateAxisScores, calculateDistressTotal, findTypes, getRetypeCandidates } from '@/lib/scoring';
 import { RootType } from '@/data/types';
-import { saveResult, saveFeedbackRating, saveRetypeSelection } from '@/lib/analytics';
+import { saveDiagnostic } from '@/lib/analytics';
 import IntroScreen from '@/components/IntroScreen';
 import QuestionScreen from '@/components/QuestionScreen';
 import DistressIntroScreen from '@/components/DistressIntroScreen';
@@ -31,7 +31,6 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-// localStorage にデバイスIDを永続化（同じ端末なら毎回同じID）
 function getOrCreateDeviceId(): string {
   const KEY = '10type_device_id';
   let id = localStorage.getItem(KEY);
@@ -51,6 +50,9 @@ export default function Home() {
   const [distressIndex, setDistressIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [resultData, setResultData] = useState<ResultData | null>(null);
+  // フィードバックデータは state に蓄積し、最後に一括 INSERT
+  const [feedbackRating, setFeedbackRating] = useState<number | null>(null);
+  const [retypeSelectedName, setRetypeSelectedName] = useState<string | null | undefined>(undefined);
 
   const allQuestions: Question[] = [...STRENGTH_QUESTIONS, ...DISTRESS_QUESTIONS];
 
@@ -62,6 +64,8 @@ export default function Home() {
     setDistressIndex(0);
     setAnswers({});
     setResultData(null);
+    setFeedbackRating(null);
+    setRetypeSelectedName(undefined);
     setScreen('strength');
   }
 
@@ -94,9 +98,7 @@ export default function Home() {
       const axisScores = calculateAxisScores(newAnswers, allQuestions);
       const distressTotal = calculateDistressTotal(newAnswers, allQuestions);
       const { first, second } = findTypes(axisScores);
-      const data: ResultData = { firstType: first, secondType: second, axisScores, distressTotal };
-      setResultData(data);
-      saveResult({ sessionId, deviceId, answers: newAnswers, ...data });
+      setResultData({ firstType: first, secondType: second, axisScores, distressTotal });
       setScreen('result');
     }
   }
@@ -110,16 +112,31 @@ export default function Home() {
   }
 
   function handleFeedbackRate(rating: number) {
-    saveFeedbackRating(sessionId, rating);
+    setFeedbackRating(rating);
     if (rating >= 4) {
-      setScreen('thankyou');
+      goToThankYou(rating, undefined);
     } else {
       setScreen('retype');
     }
   }
 
   function handleRetypeSubmit(selectedTypeId: string | null) {
-    saveRetypeSelection(sessionId, selectedTypeId);
+    setRetypeSelectedName(selectedTypeId);
+    goToThankYou(feedbackRating, selectedTypeId);
+  }
+
+  function goToThankYou(rating: number | null, retype: string | null | undefined) {
+    if (resultData) {
+      saveDiagnostic({
+        sessionId,
+        deviceId,
+        answers,
+        ...resultData,
+        feedbackRating: rating,
+        retypeSelectedName: retype ?? null,
+        retypeSelectedNone: retype === null,
+      });
+    }
     setScreen('thankyou');
   }
 

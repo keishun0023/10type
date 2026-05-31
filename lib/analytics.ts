@@ -2,7 +2,7 @@ import { getSupabase } from '@/lib/supabase';
 import { Axis } from '@/data/questions';
 import { RootType } from '@/data/types';
 
-export type SavedResult = {
+export type DiagnosticRecord = {
   sessionId: string;
   deviceId: string;
   firstType: RootType;
@@ -10,49 +10,25 @@ export type SavedResult = {
   axisScores: Record<Axis, number>;
   distressTotal: number;
   answers: Record<string, number>;
+  feedbackRating: number | null;
+  retypeSelectedName: string | null; // null = どれにも当てはまらない, undefined = スキップ
+  retypeSelectedNone: boolean;
 };
 
-export async function saveResult(data: SavedResult): Promise<void> {
+export async function saveDiagnostic(record: DiagnosticRecord): Promise<void> {
   const sb = getSupabase();
   if (!sb) return;
   const { error } = await sb.from('diagnostics').insert({
-    session_id: data.sessionId,
-    device_id: data.deviceId,
-    first_type_name: data.firstType.name,
-    second_type_name: data.secondType.name,
-    axis_scores: data.axisScores,
-    distress_total: data.distressTotal,
-    answers: data.answers,
+    session_id: record.sessionId,
+    device_id: record.deviceId,
+    first_type_name: record.firstType.name,
+    second_type_name: record.secondType.name,
+    axis_scores: record.axisScores,
+    distress_total: record.distressTotal,
+    answers: record.answers,
+    feedback_rating: record.feedbackRating,
+    retype_selected_name: record.retypeSelectedName,
+    retype_selected_none: record.retypeSelectedNone,
   });
-  if (error) console.warn('[analytics] saveResult failed:', error.message);
-}
-
-export async function saveFeedbackRating(sessionId: string, rating: number): Promise<void> {
-  const sb = getSupabase();
-  if (!sb) return;
-  const { data, error } = await sb
-    .from('diagnostics')
-    .update({ feedback_rating: rating })
-    .eq('session_id', sessionId)
-    .select('id');
-  if (error) console.warn('[analytics] saveFeedbackRating failed:', error.message);
-  else if (!data?.length) console.warn('[analytics] saveFeedbackRating: 0 rows updated — RLS with check missing?');
-}
-
-export async function saveRetypeSelection(
-  sessionId: string,
-  selectedTypeId: string | null
-): Promise<void> {
-  const sb = getSupabase();
-  if (!sb) return;
-  const { data, error } = await sb
-    .from('diagnostics')
-    .update({
-      retype_selected_name: selectedTypeId,
-      retype_selected_none: selectedTypeId === null,
-    })
-    .eq('session_id', sessionId)
-    .select('id');
-  if (error) console.warn('[analytics] saveRetypeSelection failed:', error.message);
-  else if (!data?.length) console.warn('[analytics] saveRetypeSelection: 0 rows updated — RLS with check missing?');
+  if (error) console.warn('[analytics] saveDiagnostic failed:', error.message);
 }
