@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase';
 import { Axis } from '@/data/questions';
 import { TypeData } from '@/data/types';
 
@@ -11,9 +11,10 @@ export type SavedResult = {
   matchMode: string;
 };
 
-// 結果が出たタイミングで INSERT
 export async function saveResult(data: SavedResult): Promise<void> {
-  const { error } = await supabase.from('diagnostics').insert({
+  const sb = getSupabase();
+  if (!sb) return;
+  const { error } = await sb.from('diagnostics').insert({
     session_id: data.sessionId,
     first_type_id: data.firstType.id,
     first_type_name: data.firstType.name,
@@ -26,21 +27,23 @@ export async function saveResult(data: SavedResult): Promise<void> {
   if (error) console.warn('[analytics] saveResult failed:', error.message);
 }
 
-// フィードバック評価を UPDATE
 export async function saveFeedbackRating(sessionId: string, rating: number): Promise<void> {
-  const { error } = await supabase
+  const sb = getSupabase();
+  if (!sb) return;
+  const { error } = await sb
     .from('diagnostics')
     .update({ feedback_rating: rating })
     .eq('session_id', sessionId);
   if (error) console.warn('[analytics] saveFeedbackRating failed:', error.message);
 }
 
-// 選び直し結果を UPDATE
 export async function saveRetypeSelection(
   sessionId: string,
   selectedTypeId: number | null
 ): Promise<void> {
-  const { error } = await supabase
+  const sb = getSupabase();
+  if (!sb) return;
+  const { error } = await sb
     .from('diagnostics')
     .update({
       retype_selected_id: selectedTypeId,
