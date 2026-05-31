@@ -2,13 +2,25 @@
 
 import { useState } from 'react';
 import { STRENGTH_QUESTIONS, DISTRESS_QUESTIONS, Question } from '@/data/questions';
-import { calculateAxisScores, calculateDistressTotal, findTypes } from '@/lib/scoring';
+import { calculateAxisScores, calculateDistressTotal, findTypes, getRetypeCandidates } from '@/lib/scoring';
+import { TypeData } from '@/data/types';
+import { Axis } from '@/data/questions';
 import IntroScreen from '@/components/IntroScreen';
 import QuestionScreen from '@/components/QuestionScreen';
 import DistressIntroScreen from '@/components/DistressIntroScreen';
 import ResultScreen from '@/components/ResultScreen';
+import FeedbackScreen from '@/components/FeedbackScreen';
+import RetypeScreen from '@/components/RetypeScreen';
+import ThankYouScreen from '@/components/ThankYouScreen';
 
-type Screen = 'intro' | 'strength' | 'distress-intro' | 'distress' | 'result';
+type Screen = 'intro' | 'strength' | 'distress-intro' | 'distress' | 'result' | 'feedback' | 'retype' | 'thankyou';
+
+interface ResultData {
+  firstType: TypeData;
+  secondType: TypeData;
+  axisScores: Record<Axis, number>;
+  distressTotal: number;
+}
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -25,6 +37,7 @@ export default function Home() {
   const [strengthIndex, setStrengthIndex] = useState(0);
   const [distressIndex, setDistressIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [resultData, setResultData] = useState<ResultData | null>(null);
 
   const allQuestions: Question[] = [...STRENGTH_QUESTIONS, ...DISTRESS_QUESTIONS];
 
@@ -33,6 +46,7 @@ export default function Home() {
     setStrengthIndex(0);
     setDistressIndex(0);
     setAnswers({});
+    setResultData(null);
     setScreen('strength');
   }
 
@@ -62,6 +76,11 @@ export default function Home() {
     if (distressIndex < DISTRESS_QUESTIONS.length - 1) {
       setDistressIndex(distressIndex + 1);
     } else {
+      // 採点して結果を保存
+      const axisScores = calculateAxisScores(newAnswers, allQuestions);
+      const distressTotal = calculateDistressTotal(newAnswers, allQuestions);
+      const { first, second } = findTypes(axisScores);
+      setResultData({ firstType: first, secondType: second, axisScores, distressTotal });
       setScreen('result');
     }
   }
@@ -71,6 +90,14 @@ export default function Home() {
       setDistressIndex(distressIndex - 1);
     } else {
       setScreen('distress-intro');
+    }
+  }
+
+  function handleFeedbackRate(rating: number) {
+    if (rating >= 4) {
+      setScreen('thankyou');
+    } else {
+      setScreen('retype');
     }
   }
 
@@ -119,18 +146,41 @@ export default function Home() {
     );
   }
 
-  // result
-  const axisScores = calculateAxisScores(answers, allQuestions);
-  const distressTotal = calculateDistressTotal(answers, allQuestions);
-  const { first, second } = findTypes(axisScores);
+  if (screen === 'result' && resultData) {
+    return (
+      <ResultScreen
+        firstType={resultData.firstType}
+        secondType={resultData.secondType}
+        axisScores={resultData.axisScores}
+        distressTotal={resultData.distressTotal}
+        onRestart={() => setScreen('intro')}
+        onNextFeedback={() => setScreen('feedback')}
+      />
+    );
+  }
 
-  return (
-    <ResultScreen
-      firstType={first}
-      secondType={second}
-      axisScores={axisScores}
-      distressTotal={distressTotal}
-      onRestart={() => setScreen('intro')}
-    />
-  );
+  if (screen === 'feedback' && resultData) {
+    return (
+      <FeedbackScreen
+        typeName={resultData.firstType.name}
+        onRate={handleFeedbackRate}
+      />
+    );
+  }
+
+  if (screen === 'retype' && resultData) {
+    const candidates = getRetypeCandidates(resultData.axisScores, resultData.firstType.id);
+    return (
+      <RetypeScreen
+        candidates={candidates}
+        onSubmit={() => setScreen('thankyou')}
+      />
+    );
+  }
+
+  if (screen === 'thankyou') {
+    return <ThankYouScreen onRestart={() => setScreen('intro')} />;
+  }
+
+  return null;
 }

@@ -16,6 +16,7 @@ interface Props {
   axisScores: Record<Axis, number>;
   distressTotal: number;
   onRestart: () => void;
+  onNextFeedback: () => void;
 }
 
 export default function ResultScreen({
@@ -24,6 +25,7 @@ export default function ResultScreen({
   axisScores,
   distressTotal,
   onRestart,
+  onNextFeedback,
 }: Props) {
   const [showModal, setShowModal] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
@@ -161,7 +163,20 @@ export default function ResultScreen({
           {shareSuccess ? '✓ コピーしました' : 'この結果をシェアする'}
         </button>
 
-        {/* Restart */}
+        {/* Feedback CTA */}
+        <div className="bg-stone-50 rounded-2xl p-5 space-y-3">
+          <p className="text-sm font-semibold text-stone-700 text-center">
+            この結果、どれくらい当てはまりましたか？
+          </p>
+          <p className="text-xs text-stone-400 text-center">感想を教えてもらえると、診断がよくなります。</p>
+          <button
+            onClick={onNextFeedback}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-semibold py-3.5 rounded-xl text-sm transition-colors shadow-md shadow-indigo-200"
+          >
+            フィードバックを答える（30秒）
+          </button>
+        </div>
+
         <button
           onClick={onRestart}
           className="w-full py-3 text-sm text-stone-400 hover:text-stone-600 transition-colors"

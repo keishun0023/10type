@@ -89,3 +89,17 @@ export function findTypes(axisScores: Record<Axis, number>): {
   console.warn('[10type] matchMode=distance: no candidate matched top2 axes', top2Indices);
   return { first: sorted[0].type, second: sorted[1].type, matchMode: 'distance' };
 }
+
+// 選び直し用：第1タイプを除いた残りから距離近い順に上位3タイプを返す
+export function getRetypeCandidates(
+  axisScores: Record<Axis, number>,
+  excludeTypeId: number
+): TypeData[] {
+  const userVec = AXES.map(a => axisScores[a]);
+  return TYPES
+    .filter(t => t.id !== excludeTypeId)
+    .map(t => ({ type: t, dist: euclidean(userVec, t.profile) }))
+    .sort((a, b) => a.dist - b.dist)
+    .slice(0, 3)
+    .map(x => x.type);
+}
