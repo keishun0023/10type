@@ -31,9 +31,21 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
+// localStorage にデバイスIDを永続化（同じ端末なら毎回同じID）
+function getOrCreateDeviceId(): string {
+  const KEY = '10type_device_id';
+  let id = localStorage.getItem(KEY);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(KEY, id);
+  }
+  return id;
+}
+
 export default function Home() {
   const [screen, setScreen] = useState<Screen>('intro');
   const [sessionId, setSessionId] = useState<string>('');
+  const [deviceId, setDeviceId] = useState<string>('');
   const [strengthOrder, setStrengthOrder] = useState<string[]>([]);
   const [strengthIndex, setStrengthIndex] = useState(0);
   const [distressIndex, setDistressIndex] = useState(0);
@@ -44,6 +56,7 @@ export default function Home() {
 
   function handleStart() {
     setSessionId(crypto.randomUUID());
+    setDeviceId(getOrCreateDeviceId());
     setStrengthOrder(shuffle(STRENGTH_QUESTIONS.map(q => q.id)));
     setStrengthIndex(0);
     setDistressIndex(0);
@@ -83,7 +96,7 @@ export default function Home() {
       const { first, second } = findTypes(axisScores);
       const data: ResultData = { firstType: first, secondType: second, axisScores, distressTotal };
       setResultData(data);
-      saveResult({ sessionId, ...data });
+      saveResult({ sessionId, deviceId, answers: newAnswers, ...data });
       setScreen('result');
     }
   }
