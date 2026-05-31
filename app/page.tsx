@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { STRENGTH_QUESTIONS, DISTRESS_QUESTIONS, Question } from '@/data/questions';
+import { STRENGTH_QUESTIONS, DISTRESS_QUESTIONS, Question, Axis } from '@/data/questions';
 import { calculateAxisScores, calculateDistressTotal, findTypes, getRetypeCandidates } from '@/lib/scoring';
 import { TypeData } from '@/data/types';
-import { Axis } from '@/data/questions';
+import { saveResult, saveFeedbackRating, saveRetypeSelection } from '@/lib/analytics';
 import IntroScreen from '@/components/IntroScreen';
 import QuestionScreen from '@/components/QuestionScreen';
 import DistressIntroScreen from '@/components/DistressIntroScreen';
@@ -20,6 +20,7 @@ interface ResultData {
   secondType: TypeData;
   axisScores: Record<Axis, number>;
   distressTotal: number;
+  matchMode: string;
 }
 
 function shuffle<T>(arr: T[]): T[] {
@@ -31,8 +32,13 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
+function generateSessionId(): string {
+  return crypto.randomUUID();
+}
+
 export default function Home() {
   const [screen, setScreen] = useState<Screen>('intro');
+  const [sessionId, setSessionId] = useState<string>('');
   const [strengthOrder, setStrengthOrder] = useState<string[]>([]);
   const [strengthIndex, setStrengthIndex] = useState(0);
   const [distressIndex, setDistressIndex] = useState(0);
@@ -42,6 +48,7 @@ export default function Home() {
   const allQuestions: Question[] = [...STRENGTH_QUESTIONS, ...DISTRESS_QUESTIONS];
 
   function handleStart() {
+    setSessionId(generateSessionId());
     setStrengthOrder(shuffle(STRENGTH_QUESTIONS.map(q => q.id)));
     setStrengthIndex(0);
     setDistressIndex(0);
@@ -76,11 +83,13 @@ export default function Home() {
     if (distressIndex < DISTRESS_QUESTIONS.length - 1) {
       setDistressIndex(distressIndex + 1);
     } else {
-      // 採点して結果を保存
       const axisScores = calculateAxisScores(newAnswers, allQuestions);
       const distressTotal = calculateDistressTotal(newAnswers, allQuestions);
-      const { first, second } = findTypes(axisScores);
-      setResultData({ firstType: first, secondType: second, axisScores, distressTotal });
+      const { first, second, matchMode } = findTypes(axisScores);
+      const data: ResultData = { firstType: first, secondType: second, axisScores, distressTotal, matchMode };
+      setResultData(data);
+      // Supabaseに保存（fire-and-forget）
+      saveResult({ sessionId, ...data });
       setScreen('result');
     }
   }
@@ -94,11 +103,17 @@ export default function Home() {
   }
 
   function handleFeedbackRate(rating: number) {
+    saveFeedbackRating(sessionId, rating);
     if (rating >= 4) {
       setScreen('thankyou');
     } else {
       setScreen('retype');
     }
+  }
+
+  function handleRetypeSubmit(selectedTypeId: number | null) {
+    saveRetypeSelection(sessionId, selectedTypeId);
+    setScreen('thankyou');
   }
 
   if (screen === 'intro') {
@@ -173,7 +188,7 @@ export default function Home() {
     return (
       <RetypeScreen
         candidates={candidates}
-        onSubmit={() => setScreen('thankyou')}
+        onSubmit={handleRetypeSubmit}
       />
     );
   }
