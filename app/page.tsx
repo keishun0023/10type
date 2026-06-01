@@ -209,9 +209,11 @@ export default function Home() {
 
   if (screen === 'retype' && resultData) {
     const candidates = getRetypeCandidates(resultData.axisScores, resultData.firstType.id);
+    const retypeMode: 'partial' | 'miss' = (feedbackRating ?? 0) >= 3 ? 'partial' : 'miss';
     return (
       <RetypeScreen
         candidates={candidates}
+        mode={retypeMode}
         onSubmit={handleRetypeSubmit}
       />
     );

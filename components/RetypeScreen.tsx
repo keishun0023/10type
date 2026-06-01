@@ -5,10 +5,11 @@ import { RootType } from '@/data/types';
 
 interface Props {
   candidates: RootType[];
+  mode: 'partial' | 'miss';
   onSubmit: (selectedTypeId: string | null) => void; // null = どれにも当てはまらない
 }
 
-export default function RetypeScreen({ candidates, onSubmit }: Props) {
+export default function RetypeScreen({ candidates, mode, onSubmit }: Props) {
   const [selected, setSelected] = useState<string | 'none' | null>(null);
 
   const handleSubmit = () => {
@@ -22,7 +23,9 @@ export default function RetypeScreen({ candidates, onSubmit }: Props) {
         <div className="space-y-2">
           <div className="text-xs text-stone-400 font-medium">選び直し</div>
           <h2 className="text-xl font-bold text-stone-900 leading-snug">
-            では、どれが一番<br />近そうでしたか？
+            {mode === 'partial'
+              ? <>他にどれが<br />当てはまりそうですか？</>
+              : <>これなら当てはまる、<br />というものを選んでください</>}
           </h2>
           <p className="text-xs text-stone-500">
             タイプ名だけでなく説明文も読んで選んでください。

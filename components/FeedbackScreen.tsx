@@ -6,11 +6,10 @@ interface Props {
 }
 
 const RATING_LABELS: Record<number, string> = {
-  1: 'ぜんぜん',
-  2: 'あまり',
-  3: 'まあまあ',
-  4: 'けっこう',
-  5: 'すごく',
+  4: 'すごく当てはまっている',
+  3: 'まあまあ当てはまっている',
+  2: 'あまり当てはまっていない',
+  1: '全然当てはまっていない',
 };
 
 export default function FeedbackScreen({ typeName, onRate }: Props) {
@@ -31,14 +30,14 @@ export default function FeedbackScreen({ typeName, onRate }: Props) {
 
         {/* Rating buttons */}
         <div className="space-y-3">
-          {[5, 4, 3, 2, 1].map(rating => (
+          {[4, 3, 2, 1].map(rating => (
             <button
               key={rating}
               onClick={() => onRate(rating)}
               className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl border-2 border-stone-100 bg-white hover:border-indigo-300 hover:bg-indigo-50 active:scale-[0.98] transition-all text-left"
             >
               <span className="text-xl font-bold text-indigo-500 w-6 shrink-0">{rating}</span>
-              <span className="text-sm font-medium text-stone-700">{RATING_LABELS[rating]}当てはまる</span>
+              <span className="text-sm font-medium text-stone-700">{RATING_LABELS[rating]}</span>
             </button>
           ))}
         </div>
