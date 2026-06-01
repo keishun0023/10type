@@ -15,6 +15,13 @@ interface Props {
   onNextFeedback: () => void;
 }
 
+function renderBold(text: string) {
+  const parts = text.split(/\*\*(.*?)\*\*/g);
+  return parts.map((part, i) =>
+    i % 2 === 1 ? <strong key={i} className="font-semibold text-stone-800">{part}</strong> : part
+  );
+}
+
 export default function ResultScreen({
   firstType,
   secondType,
@@ -29,37 +36,39 @@ export default function ResultScreen({
   if (!content) return null;
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-white">
       {/* ① ヒーローセクション */}
-      <div className="bg-gradient-to-br from-indigo-600 to-violet-600 px-5 pt-12 pb-10 text-white">
+      <div className="bg-stone-50 px-5 pt-12 pb-8">
         <div className="max-w-sm mx-auto space-y-3">
           {isPositiveMode && (
-            <div className="text-xs font-medium bg-white/20 px-3 py-1.5 rounded-full inline-block">
+            <div className="text-xs font-medium bg-indigo-100 text-indigo-600 px-3 py-1.5 rounded-full inline-block">
               あなたはこの傾向を持ちつつ、うまく付き合えています
             </div>
           )}
-          <h1 className="text-2xl font-bold leading-tight">{content.hero}</h1>
-          <p className="text-sm opacity-80 leading-relaxed">{content.subtitle}</p>
-          <div className="text-xs opacity-70">
-            次いで <span className="font-semibold opacity-90">{secondType.name}</span> の傾向も
+          <p className="text-xs text-stone-400 font-medium">あなたの生きづらさの核は</p>
+          <h1 className="text-3xl font-bold text-stone-900 leading-tight">{content.hero}</h1>
+          <p className="text-sm text-stone-500 leading-relaxed">{content.subtitle}</p>
+          <div className="text-xs text-stone-400">
+            次いで <span className="font-medium text-stone-500">{secondType.name}</span> の傾向も
           </div>
-          <div className="h-32 bg-white/10 rounded-2xl flex items-center justify-center text-white/40 text-sm mt-4">
+          {/* イラストプレースホルダー */}
+          <div className="h-48 bg-stone-100 rounded-2xl flex items-center justify-center text-stone-300 text-sm mt-2">
             イラスト（準備中）
           </div>
         </div>
       </div>
 
-      <div className="max-w-sm mx-auto px-5 py-6 space-y-6">
+      <div className="max-w-sm mx-auto px-5 py-8 space-y-10">
         {/* ② あるある共感セクション */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm space-y-3">
-          <h2 className="text-sm font-semibold text-stone-700">こんなこと、ありませんか?</h2>
-          <ul className="space-y-2">
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold text-stone-900">こんなこと、ありませんか?</h2>
+          <ul className="space-y-3">
             {content.relatable.map((text, i) => {
               const isLast = i === content.relatable.length - 1;
               return (
-                <li key={i} className="flex gap-2 text-sm leading-relaxed">
-                  <span className="text-indigo-400 mt-0.5">・</span>
-                  <span className={isLast ? 'font-semibold text-stone-800' : 'text-stone-600'}>
+                <li key={i} className="flex gap-3 leading-relaxed">
+                  <span className="text-indigo-300 mt-0.5 shrink-0">・</span>
+                  <span className={isLast ? 'font-semibold text-stone-800 text-base' : 'text-stone-600 text-sm'}>
                     {text}
                   </span>
                 </li>
@@ -69,29 +78,18 @@ export default function ResultScreen({
         </div>
 
         {/* ③ なぜそうなるセクション */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm space-y-3">
-          <h2 className="text-sm font-semibold text-stone-700">どうして、こうなるんだろう?</h2>
-          <div className="text-sm text-stone-600 leading-relaxed">
-            {content.why.map((para, i) => {
-              if (i === 1) {
-                return (
-                  <p key={i} className="bg-indigo-50 rounded-xl px-4 py-3 mb-3">
-                    {para}
-                  </p>
-                );
-              }
-              return (
-                <p key={i} className="mb-3">
-                  {para}
-                </p>
-              );
-            })}
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold text-stone-900">どうして、こうなるんだろう?</h2>
+          <div className="space-y-4 text-sm text-stone-600 leading-relaxed">
+            {content.why.map((para, i) => (
+              <p key={i}>{renderBold(para)}</p>
+            ))}
           </div>
         </div>
 
         {/* ④ CTAセクション */}
         <div className="bg-stone-50 rounded-2xl p-5 space-y-4 border border-stone-100">
-          <h2 className="text-sm font-semibold text-stone-800">
+          <h2 className="text-base font-bold text-stone-900">
             理由がわかったら、次は「軽くする」番です。
           </h2>
           <p className="text-sm text-stone-600 leading-relaxed">
@@ -99,25 +97,24 @@ export default function ResultScreen({
           </p>
           <ul className="space-y-2 text-sm text-stone-600">
             <li className="flex gap-2">
-              <span className="text-indigo-400 mt-0.5">・</span>
+              <span className="text-indigo-400 shrink-0">・</span>
               <span>あなたの「生きづらさの4つの恐れ」と「防衛スタイル」を数値で可視化</span>
             </li>
             <li className="flex gap-2">
-              <span className="text-indigo-400 mt-0.5">・</span>
+              <span className="text-indigo-400 shrink-0">・</span>
               <span>{firstType.name}が、いつ・どんな場面で消耗しやすいかのパターン分析</span>
             </li>
             <li className="flex gap-2">
-              <span className="text-indigo-400 mt-0.5">・</span>
+              <span className="text-indigo-400 shrink-0">・</span>
               <span>今日から試せる、あなた向けの小さな練習プログラム</span>
             </li>
           </ul>
 
-          {/* ぼかしプレースホルダー */}
-          <div className="space-y-2 mt-2">
-            <div className="blur-sm select-none bg-stone-100 rounded-lg px-4 py-3 text-sm text-stone-500">
+          <div className="space-y-2">
+            <div className="blur-sm select-none bg-white rounded-lg px-4 py-3 text-sm text-stone-400 border border-stone-100">
               ██████████ █████ ██████ ████ ███████
             </div>
-            <div className="blur-sm select-none bg-stone-100 rounded-lg px-4 py-3 text-sm text-stone-500">
+            <div className="blur-sm select-none bg-white rounded-lg px-4 py-3 text-sm text-stone-400 border border-stone-100">
               ████████ ██████████ █████ ████
             </div>
           </div>
@@ -126,11 +123,11 @@ export default function ResultScreen({
         </div>
 
         {/* ⑤ FBセクション */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm space-y-3">
-          <p className="text-sm font-semibold text-stone-700 text-center">
+        <div className="space-y-3 text-center">
+          <p className="text-sm font-semibold text-stone-700">
             この結果、どれくらい当てはまりましたか?
           </p>
-          <p className="text-xs text-stone-400 text-center">感想を教えてもらえると、診断がよくなります。</p>
+          <p className="text-xs text-stone-400">感想を教えてもらえると、診断がよくなります。</p>
           <button
             onClick={onNextFeedback}
             className="w-full bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-semibold py-3.5 rounded-xl text-sm transition-colors shadow-md shadow-indigo-200"
