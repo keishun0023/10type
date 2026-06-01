@@ -87,8 +87,8 @@ export default function ResultScreen({
         </div>
 
         {/* ③ なぜそうなるセクション */}
-        <div className="rounded-3xl overflow-hidden bg-stone-50 border border-stone-100 relative">
-          <img src="/section-why-bg.png" alt="" className="absolute bottom-0 left-0 w-40 h-40 object-contain opacity-10 pointer-events-none" />
+        <div className="rounded-3xl bg-stone-50 border border-stone-100 relative">
+          <img src="/section-why-bg.png" alt="" className="absolute bottom-6 left-2 w-40 h-40 object-contain opacity-15 pointer-events-none" />
           <div className="px-5 py-6 space-y-5 relative z-10">
             <h2 className="text-lg font-bold text-stone-900 flex items-center gap-2">
               <img src="/section-why-title.png" alt="" className="w-8 h-8 object-contain" />
