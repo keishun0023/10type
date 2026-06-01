@@ -1,17 +1,8 @@
 'use client';
 
-import dynamic from 'next/dynamic';
-import { FearAxis, DefenseAxis, FEAR_AXES, DEFENSE_AXES, AXIS_LABELS } from '@/data/questions';
-import { DiagType, ARARUA } from '@/data/types';
-
-const RadarChartComponent = dynamic(() => import('@/components/RadarChartComponent'), {
-  ssr: false,
-  loading: () => (
-    <div className="h-[280px] flex items-center justify-center text-stone-400 text-sm">
-      チャート読み込み中…
-    </div>
-  ),
-});
+import { FearAxis, DefenseAxis } from '@/data/questions';
+import { DiagType, TYPE_CONTENT } from '@/data/types';
+import EmailCTA from '@/components/EmailCTA';
 
 interface Props {
   firstType: DiagType;
@@ -19,31 +10,27 @@ interface Props {
   fearScores: Record<FearAxis, number>;
   defenseScores: Record<DefenseAxis, number>;
   distressTotal: number;
+  sessionId: string;
   onRestart: () => void;
   onNextFeedback: () => void;
 }
 
-const DEFENSE_LABELS: Record<DefenseAxis, { neg: string; pos: string }> = {
-  D_APP: { neg: '回避', pos: '接近' },
-  D_ACT: { neg: '受動', pos: '能動' },
-  D_EXP: { neg: '抑制', pos: '表出' },
-};
-
 export default function ResultScreen({
   firstType,
   secondType,
-  fearScores,
-  defenseScores,
   distressTotal,
+  sessionId,
   onRestart,
   onNextFeedback,
 }: Props) {
   const isPositiveMode = distressTotal < 5;
-  const ararua = ARARUA[firstType.id] ?? [];
+  const content = TYPE_CONTENT[firstType.id];
+
+  if (!content) return null;
 
   return (
     <div className="min-h-screen bg-stone-50">
-      {/* Hero */}
+      {/* ① ヒーローセクション */}
       <div className="bg-gradient-to-br from-indigo-600 to-violet-600 px-5 pt-12 pb-10 text-white">
         <div className="max-w-sm mx-auto space-y-3">
           {isPositiveMode && (
@@ -51,88 +38,97 @@ export default function ResultScreen({
               あなたはこの傾向を持ちつつ、うまく付き合えています
             </div>
           )}
-          <div className="text-sm font-medium opacity-80">あなたの生きづらさの核は</div>
-          <h1 className="text-3xl font-bold leading-tight">{firstType.name}</h1>
-          <p className="text-sm opacity-90 leading-relaxed">{firstType.catch}</p>
+          <h1 className="text-2xl font-bold leading-tight">{content.hero}</h1>
+          <p className="text-sm opacity-80 leading-relaxed">{content.subtitle}</p>
           <div className="text-xs opacity-70">
             次いで <span className="font-semibold opacity-90">{secondType.name}</span> の傾向も
           </div>
-          <div className="pt-1">
-            <span className="text-xs bg-white/20 px-2.5 py-1 rounded-full">
-              主な恐れ: {firstType.fear}
-            </span>
+          <div className="h-32 bg-white/10 rounded-2xl flex items-center justify-center text-white/40 text-sm mt-4">
+            イラスト（準備中）
           </div>
         </div>
       </div>
 
       <div className="max-w-sm mx-auto px-5 py-6 space-y-6">
-        {/* Radar chart — 恐れ4軸 */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <h2 className="text-sm font-semibold text-stone-700 mb-2">恐れの4軸プロファイル</h2>
-          <RadarChartComponent fearScores={fearScores} />
-        </div>
-
-        {/* Defense 3軸バー表示 */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm space-y-4">
-          <h2 className="text-sm font-semibold text-stone-700">防衛スタイル（3軸）</h2>
-          {DEFENSE_AXES.map(axis => {
-            const score = defenseScores[axis];
-            const pct = Math.round(score);
-            const posWidth = score > 0 ? Math.min(score, 100) : 0;
-            const negWidth = score < 0 ? Math.min(-score, 100) : 0;
-            const { neg, pos } = DEFENSE_LABELS[axis];
-            return (
-              <div key={axis} className="space-y-1">
-                <div className="flex items-center justify-between text-xs text-stone-500">
-                  <span>{AXIS_LABELS[axis]}</span>
-                  <span>{pct > 0 ? '+' : ''}{pct}</span>
-                </div>
-                <div className="flex w-full h-3 rounded-full overflow-hidden bg-stone-100">
-                  {/* neg side */}
-                  <div className="flex-1 flex justify-end">
-                    <div
-                      className="h-full bg-rose-400 rounded-l-full"
-                      style={{ width: `${negWidth}%` }}
-                    />
-                  </div>
-                  {/* center divider */}
-                  <div className="w-px bg-stone-300" />
-                  {/* pos side */}
-                  <div className="flex-1">
-                    <div
-                      className="h-full bg-indigo-400 rounded-r-full"
-                      style={{ width: `${posWidth}%` }}
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-between text-xs text-stone-400">
-                  <span>{neg}</span>
-                  <span>{pos}</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* あるある共感文 */}
-        {ararua.length > 0 && (
-          <div className="bg-white rounded-2xl p-5 shadow-sm space-y-3">
-            <h2 className="text-sm font-semibold text-stone-700">こんなこと、ありませんか？</h2>
-            <ul className="space-y-2">
-              {ararua.map((text, i) => (
-                <li key={i} className="flex gap-2 text-sm text-stone-600 leading-relaxed">
-                  <span className="text-indigo-400 mt-0.5">•</span>
-                  <span>{text}</span>
+        {/* ② あるある共感セクション */}
+        <div className="bg-white rounded-2xl p-5 shadow-sm space-y-3">
+          <h2 className="text-sm font-semibold text-stone-700">こんなこと、ありませんか?</h2>
+          <ul className="space-y-2">
+            {content.relatable.map((text, i) => {
+              const isLast = i === content.relatable.length - 1;
+              return (
+                <li key={i} className="flex gap-2 text-sm leading-relaxed">
+                  <span className="text-indigo-400 mt-0.5">・</span>
+                  <span className={isLast ? 'font-semibold text-stone-800' : 'text-stone-600'}>
+                    {text}
+                  </span>
                 </li>
-              ))}
-            </ul>
-          </div>
-        )}
+              );
+            })}
+          </ul>
+        </div>
 
-        {/* Feedback CTA */}
-        <div className="bg-stone-50 rounded-2xl p-5 space-y-3">
+        {/* ③ なぜそうなるセクション */}
+        <div className="bg-white rounded-2xl p-5 shadow-sm space-y-3">
+          <h2 className="text-sm font-semibold text-stone-700">どうして、こうなるんだろう?</h2>
+          <div className="text-sm text-stone-600 leading-relaxed">
+            {content.why.map((para, i) => {
+              if (i === 1) {
+                return (
+                  <p key={i} className="bg-indigo-50 rounded-xl px-4 py-3 mb-3">
+                    {para}
+                  </p>
+                );
+              }
+              return (
+                <p key={i} className="mb-3">
+                  {para}
+                </p>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ④ CTAセクション */}
+        <div className="bg-stone-50 rounded-2xl p-5 space-y-4 border border-stone-100">
+          <h2 className="text-sm font-semibold text-stone-800">
+            理由がわかったら、次は「軽くする」番です。
+          </h2>
+          <p className="text-sm text-stone-600 leading-relaxed">
+            あなたが少しずつ、{content.ctaPain}に振り回されずに済むように。
+          </p>
+          <ul className="space-y-2 text-sm text-stone-600">
+            <li className="flex gap-2">
+              <span className="text-indigo-400 mt-0.5">・</span>
+              <span>あなたの「生きづらさの4つの恐れ」と「防衛スタイル」を数値で可視化</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-indigo-400 mt-0.5">・</span>
+              <span>{firstType.name}が、いつ・どんな場面で消耗しやすいかのパターン分析</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-indigo-400 mt-0.5">・</span>
+              <span>今日から試せる、あなた向けの小さな練習プログラム</span>
+            </li>
+          </ul>
+
+          {/* ぼかしプレースホルダー */}
+          <div className="space-y-2 mt-2">
+            <div className="blur-sm select-none bg-stone-100 rounded-lg px-4 py-3 text-sm text-stone-500">
+              ██████████ █████ ██████ ████ ███████
+            </div>
+            <div className="blur-sm select-none bg-stone-100 rounded-lg px-4 py-3 text-sm text-stone-500">
+              ████████ ██████████ █████ ████
+            </div>
+          </div>
+
+          <EmailCTA sessionId={sessionId} firstTypeName={firstType.name} />
+        </div>
+
+        {/* ⑤ FBセクション */}
+        <div className="bg-white rounded-2xl p-5 shadow-sm space-y-3">
           <p className="text-sm font-semibold text-stone-700 text-center">
-            この結果、どれくらい当てはまりましたか？
+            この結果、どれくらい当てはまりましたか?
           </p>
           <p className="text-xs text-stone-400 text-center">感想を教えてもらえると、診断がよくなります。</p>
           <button

@@ -202,6 +202,7 @@ export default function Home() {
         fearScores={resultData.fearScores}
         defenseScores={resultData.defenseScores}
         distressTotal={resultData.distressTotal}
+        sessionId={sessionId}
         onRestart={() => setScreen('intro')}
         onNextFeedback={() => setScreen('feedback')}
       />
