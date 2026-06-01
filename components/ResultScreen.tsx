@@ -17,91 +17,106 @@ interface Props {
 function renderBold(text: string) {
   const parts = text.split(/\*\*(.*?)\*\*/g);
   return parts.map((part, i) =>
-    i % 2 === 1 ? <strong key={i} className="font-bold text-stone-900">{part}</strong> : part
+    i % 2 === 1 ? (
+      <strong key={i} className="font-bold text-stone-900 underline decoration-indigo-200 decoration-4 underline-offset-2">
+        {part}
+      </strong>
+    ) : part
   );
 }
 
 export default function ResultScreen({
   firstType,
-  distressTotal,
   onShowEmailInput,
 }: Props) {
-  const isPositiveMode = distressTotal < 5;
   const content = TYPE_CONTENT[firstType.id];
 
   if (!content) return null;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-stone-50 pb-20">
       {/* ① ヒーローセクション */}
-      <div className="px-5 pt-10 pb-6">
-        <div className="max-w-sm mx-auto text-center space-y-3">
-          <div className="inline-block border border-stone-300 text-stone-500 text-xs px-3 py-1 rounded-full">
-            {isPositiveMode ? 'うまく付き合えています' : '診断タイプ'}
-          </div>
-          <h1 className="text-2xl font-bold text-stone-900 leading-snug">{content.hero}</h1>
-          <p className="text-sm text-stone-500 leading-relaxed">{content.subtitle}</p>
-          <div className="flex justify-center pt-2">
+      <div className="px-6 pt-10 pb-8 bg-stone-50">
+        <div className="max-w-sm mx-auto text-center space-y-4">
+          <span className="inline-block px-4 py-1 rounded-full bg-teal-100 text-teal-700 text-xs font-medium tracking-wide">
+            診断タイプ
+          </span>
+          <h1 className="text-2xl font-bold text-stone-900 leading-snug">
+            あなたは「<span className="text-indigo-600 underline decoration-indigo-200 decoration-4 underline-offset-4">{firstType.name}</span>」です
+          </h1>
+          <div className="relative py-4">
+            <div className="absolute inset-0 bg-indigo-100/40 rounded-full blur-3xl -z-10 scale-90" />
             <img
               src={`/illustrations/${firstType.id}.png`}
               alt={firstType.name}
-              className="w-64 h-64 object-contain"
+              className="w-72 h-72 object-contain mx-auto"
             />
           </div>
+          <p className="text-sm text-stone-500 leading-relaxed">{content.subtitle}</p>
         </div>
       </div>
 
-      <div className="max-w-sm mx-auto px-5 pb-10 space-y-10">
+      <div className="max-w-sm mx-auto px-5 space-y-8 pb-10">
         {/* ② あるある共感セクション */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-bold text-stone-900 flex items-center gap-2">
-            <span className="text-xl">😊</span> こんなこと、ありませんか？
-          </h2>
-          <ul className="space-y-3">
-            {content.relatable.map((text, i) => {
-              const isLast = i === content.relatable.length - 1;
-              if (isLast) {
+        <div className="rounded-3xl overflow-hidden" style={{ backgroundColor: '#FFFBEB' }}>
+          <div className="px-5 py-6 space-y-5">
+            <h2 className="text-lg font-bold text-stone-900">
+              <span className="relative inline-block">
+                <span className="relative z-10">こんなこと、ありませんか？</span>
+                <span className="absolute bottom-0 left-0 w-full h-2.5 bg-yellow-200/70 -z-0 rounded-full" />
+              </span>
+            </h2>
+            <ul className="space-y-4">
+              {content.relatable.map((text, i) => {
+                const isLast = i === content.relatable.length - 1;
+                if (isLast) {
+                  return (
+                    <li key={i} className="flex items-start gap-3 p-4 bg-white/70 rounded-2xl border-l-4 border-indigo-500">
+                      <span className="w-2 h-2 rounded-full bg-indigo-500 mt-2 shrink-0" />
+                      <p className="text-sm font-bold text-stone-900 leading-relaxed">{text}</p>
+                    </li>
+                  );
+                }
                 return (
-                  <li key={i} className="border-l-4 border-indigo-400 pl-4 py-1 text-sm font-semibold text-stone-800 leading-relaxed bg-indigo-50 rounded-r-xl pr-3">
-                    {text}
+                  <li key={i} className="flex items-start gap-3">
+                    <span className="w-2 h-2 rounded-full bg-indigo-500 mt-2 shrink-0" />
+                    <p className="text-sm text-stone-700 leading-relaxed">{text}</p>
                   </li>
                 );
-              }
-              return (
-                <li key={i} className="flex gap-3 text-sm text-stone-600 leading-relaxed">
-                  <span className="w-1.5 h-1.5 rounded-full bg-stone-400 mt-2 shrink-0" />
-                  {text}
-                </li>
-              );
-            })}
-          </ul>
+              })}
+            </ul>
+          </div>
         </div>
 
         {/* ③ なぜそうなるセクション */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-bold text-stone-900 flex items-center gap-2">
-            <span className="w-6 h-6 rounded-full bg-stone-200 text-stone-600 text-xs flex items-center justify-center font-bold shrink-0">?</span>
-            どうして、こうなるんだろう？
-          </h2>
-          <div className="space-y-4 text-sm text-stone-600 leading-relaxed">
-            {content.why.map((para, i) => {
-              if (i === 1) {
-                return (
-                  <blockquote key={i} className="border-l-2 border-stone-300 pl-4 text-stone-500 italic leading-relaxed">
-                    {renderBold(para)}
-                  </blockquote>
-                );
-              }
-              return <p key={i}>{renderBold(para)}</p>;
-            })}
+        <div className="rounded-3xl overflow-hidden" style={{ backgroundColor: '#FFFBEB' }}>
+          <div className="px-5 py-6 space-y-5">
+            <h2 className="text-lg font-bold text-stone-900">
+              <span className="relative inline-block">
+                <span className="relative z-10">どうして、こうなるんだろう？</span>
+                <span className="absolute bottom-0 left-0 w-full h-2.5 bg-yellow-200/70 -z-0 rounded-full" />
+              </span>
+            </h2>
+            <div className="space-y-4 text-sm text-stone-700 leading-relaxed">
+              {content.why.map((para, i) => {
+                if (i === 1) {
+                  return (
+                    <div key={i} className="bg-white rounded-2xl border border-stone-200 px-5 py-4 italic text-stone-600 leading-relaxed">
+                      {renderBold(para)}
+                    </div>
+                  );
+                }
+                return <p key={i}>{renderBold(para)}</p>;
+              })}
+            </div>
           </div>
         </div>
 
         {/* ④ CTAセクション */}
-        <div className="space-y-5">
-          <div className="text-center space-y-2">
-            <h2 className="text-xl font-bold text-stone-900">
-              理由はわかったら、<br />次は「軽くする」番です。
+        <div className="space-y-6">
+          <div className="text-center space-y-3">
+            <h2 className="text-xl font-bold text-stone-900 leading-snug">
+              理由がわかったら、<br />次は「軽くする」番です。
             </h2>
             <p className="text-sm text-stone-500 leading-relaxed">
               あなたが少しずつ、{content.ctaPain}に<br />振り回されずに済むように。
@@ -114,23 +129,33 @@ export default function ResultScreen({
               { icon: '📋', label: '消耗しやすい\nシーンの分析' },
               { icon: '✏️', label: '今日から試せる\n練習プログラム' },
             ].map((item, i) => (
-              <div key={i} className="bg-teal-50 rounded-2xl px-5 py-4 flex items-center gap-4">
-                <span className="text-2xl">{item.icon}</span>
-                <span className="text-sm font-medium text-stone-700 whitespace-pre-line">{item.label}</span>
+              <div key={i} className="bg-teal-100/50 rounded-3xl px-6 py-6 flex flex-col items-center text-center gap-3">
+                <span className="text-3xl">{item.icon}</span>
+                <span className="text-sm font-bold text-stone-700 whitespace-pre-line leading-snug">{item.label}</span>
               </div>
             ))}
           </div>
 
-          <div className="space-y-2 pt-1">
+          <div className="space-y-2 pt-2">
             <button
               onClick={onShowEmailInput}
-              className="w-full py-4 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition-colors shadow-lg shadow-indigo-200 flex items-center justify-between px-6"
+              className="w-full h-16 rounded-full bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white font-bold text-sm transition-all shadow-xl shadow-indigo-200 flex items-center justify-center gap-3"
             >
-              <span className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center text-xs">▶</span>
+              <span className="text-base">▶</span>
               <span>詳細レポートとプログラムを受け取る</span>
-              <span className="text-white/60">›</span>
+              <span className="text-lg opacity-70">›</span>
             </button>
             <p className="text-xs text-stone-400 text-center">所要時間：約3分 / 完全無料</p>
+          </div>
+        </div>
+
+        {/* フッター */}
+        <div className="pt-4 border-t border-stone-200">
+          <div className="bg-stone-100 rounded-2xl p-4 text-center">
+            <p className="text-xs text-stone-400 leading-relaxed">
+              ※本結果は医療診断ではありません。<br />
+              ビッグファイブ／CBT（認知行動療法）の考え方をベースにした自己分析ツールです。
+            </p>
           </div>
         </div>
       </div>
