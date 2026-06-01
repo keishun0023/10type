@@ -44,13 +44,14 @@ export async function updateDiagnosticFeedback(
 ): Promise<void> {
   const sb = getSupabase();
   if (!sb) return;
-  const { error } = await sb
+  const { error, count } = await sb
     .from('diagnostics')
     .update({
       feedback_rating: feedbackRating,
       retype_selected_name: retypeSelectedName,
       retype_selected_none: retypeSelectedNone,
-    })
+    }, { count: 'exact' })
     .eq('session_id', sessionId);
   if (error) console.warn('[analytics] updateDiagnosticFeedback failed:', error.message);
+  else console.log('[analytics] updateDiagnosticFeedback updated rows:', count, 'session_id:', sessionId);
 }
