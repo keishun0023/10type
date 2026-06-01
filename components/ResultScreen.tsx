@@ -45,20 +45,16 @@ export default function ResultScreen({
               あなたはこの傾向を持ちつつ、うまく付き合えています
             </div>
           )}
-          <p className="text-xs text-stone-400 font-medium">あなたの生きづらさの核は</p>
           <h1 className="text-3xl font-bold text-stone-900 leading-tight">{content.hero}</h1>
-          <p className="text-sm text-stone-500 leading-relaxed">{content.subtitle}</p>
-          <div className="text-xs text-stone-400">
-            次いで <span className="font-medium text-stone-500">{secondType.name}</span> の傾向も
-          </div>
           {/* イラスト */}
-          <div className="flex justify-center mt-4">
+          <div className="flex justify-center">
             <img
               src={`/illustrations/${firstType.id}.png`}
               alt={firstType.name}
               className="w-64 h-64 object-contain"
             />
           </div>
+          <p className="text-sm text-stone-500 leading-relaxed">{content.subtitle}</p>
         </div>
       </div>
 
