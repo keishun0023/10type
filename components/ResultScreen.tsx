@@ -51,9 +51,13 @@ export default function ResultScreen({
           <div className="text-xs text-stone-400">
             次いで <span className="font-medium text-stone-500">{secondType.name}</span> の傾向も
           </div>
-          {/* イラストプレースホルダー */}
-          <div className="h-48 bg-stone-100 rounded-2xl flex items-center justify-center text-stone-300 text-sm mt-2">
-            イラスト（準備中）
+          {/* イラスト */}
+          <div className="flex justify-center mt-4">
+            <img
+              src={`/illustrations/${firstType.id}.png`}
+              alt={firstType.name}
+              className="w-64 h-64 object-contain"
+            />
           </div>
         </div>
       </div>
