@@ -2,7 +2,6 @@
 
 import { FearAxis, DefenseAxis } from '@/data/questions';
 import { DiagType, TYPE_CONTENT } from '@/data/types';
-import EmailCTA from '@/components/EmailCTA';
 
 interface Props {
   firstType: DiagType;
@@ -12,7 +11,7 @@ interface Props {
   distressTotal: number;
   sessionId: string;
   onRestart: () => void;
-  onNextFeedback: () => void;
+  onShowEmailInput: () => void;
 }
 
 function renderBold(text: string) {
@@ -27,8 +26,7 @@ export default function ResultScreen({
   secondType,
   distressTotal,
   sessionId,
-  onRestart,
-  onNextFeedback,
+  onShowEmailInput,
 }: Props) {
   const isPositiveMode = distressTotal < 5;
   const content = TYPE_CONTENT[firstType.id];
@@ -60,7 +58,7 @@ export default function ResultScreen({
 
       <div className="max-w-sm mx-auto px-5 py-8 space-y-10">
         {/* ② あるある共感セクション */}
-        <div className="space-y-4">
+        <div className="bg-amber-50 rounded-2xl p-5 space-y-4">
           <h2 className="text-xl font-bold text-stone-900">こんなこと、ありませんか?</h2>
           <ul className="space-y-3">
             {content.relatable.map((text, i) => {
@@ -78,7 +76,7 @@ export default function ResultScreen({
         </div>
 
         {/* ③ なぜそうなるセクション */}
-        <div className="space-y-4">
+        <div className="bg-amber-50 rounded-2xl p-5 space-y-4">
           <h2 className="text-xl font-bold text-stone-900">どうして、こうなるんだろう?</h2>
           <div className="space-y-4 text-sm text-stone-600 leading-relaxed">
             {content.why.map((para, i) => (
@@ -88,64 +86,33 @@ export default function ResultScreen({
         </div>
 
         {/* ④ CTAセクション */}
-        <div className="bg-stone-50 rounded-2xl p-5 space-y-4 border border-stone-100">
-          <h2 className="text-base font-bold text-stone-900">
+        <div className="space-y-4 pt-2">
+          <h2 className="text-xl font-bold text-stone-900">
             理由がわかったら、次は「軽くする」番です。
           </h2>
-          <p className="text-sm text-stone-600 leading-relaxed">
+          <p className="text-base text-stone-700 leading-relaxed">
             あなたが少しずつ、{content.ctaPain}に振り回されずに済むように。
           </p>
           <ul className="space-y-2 text-sm text-stone-600">
-            <li className="flex gap-2">
-              <span className="text-indigo-400 shrink-0">・</span>
-              <span>あなたの「生きづらさの4つの恐れ」と「防衛スタイル」を数値で可視化</span>
-            </li>
-            <li className="flex gap-2">
-              <span className="text-indigo-400 shrink-0">・</span>
-              <span>{firstType.name}が、いつ・どんな場面で消耗しやすいかのパターン分析</span>
-            </li>
-            <li className="flex gap-2">
-              <span className="text-indigo-400 shrink-0">・</span>
-              <span>今日から試せる、あなた向けの小さな練習プログラム</span>
-            </li>
+            <li>・あなたの「生きづらさの4つの恐れ」と「防衛スタイル」を数値で可視化</li>
+            <li>・{firstType.name}が、いつ・どんな場面で消耗しやすいかのパターン分析</li>
+            <li>・今日から試せる、あなた向けの小さな練習プログラム</li>
           </ul>
-
           <div className="space-y-2">
-            <div className="blur-sm select-none bg-white rounded-lg px-4 py-3 text-sm text-stone-400 border border-stone-100">
+            <div className="blur-sm select-none bg-stone-100 rounded-lg px-4 py-3 text-sm text-stone-400">
               ██████████ █████ ██████ ████ ███████
             </div>
-            <div className="blur-sm select-none bg-white rounded-lg px-4 py-3 text-sm text-stone-400 border border-stone-100">
+            <div className="blur-sm select-none bg-stone-100 rounded-lg px-4 py-3 text-sm text-stone-400">
               ████████ ██████████ █████ ████
             </div>
           </div>
-
-          <EmailCTA sessionId={sessionId} firstTypeName={firstType.name} />
-        </div>
-
-        {/* ⑤ FBセクション */}
-        <div className="space-y-3 text-center">
-          <p className="text-sm font-semibold text-stone-700">
-            この結果、どれくらい当てはまりましたか?
-          </p>
-          <p className="text-xs text-stone-400">感想を教えてもらえると、診断がよくなります。</p>
           <button
-            onClick={onNextFeedback}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-semibold py-3.5 rounded-xl text-sm transition-colors shadow-md shadow-indigo-200"
+            onClick={onShowEmailInput}
+            className="w-full py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition-colors shadow-md shadow-indigo-200"
           >
-            フィードバックを答える（30秒）
+            ▶ 詳細レポートとプログラムを受け取る
           </button>
         </div>
-
-        <button
-          onClick={onRestart}
-          className="w-full py-3 text-sm text-stone-400 hover:text-stone-600 transition-colors"
-        >
-          もう一度診断する
-        </button>
-
-        <p className="text-xs text-stone-400 text-center pb-4 leading-relaxed">
-          ビッグファイブ／CBTの考え方をベースにしています。医療診断ではありません。
-        </p>
       </div>
     </div>
   );

@@ -35,3 +35,22 @@ export async function saveDiagnostic(record: DiagnosticRecord): Promise<void> {
   });
   if (error) console.warn('[analytics] saveDiagnostic failed:', error.message);
 }
+
+export async function updateDiagnosticFeedback(
+  sessionId: string,
+  feedbackRating: number | null,
+  retypeSelectedName: string | null,
+  retypeSelectedNone: boolean
+): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) return;
+  const { error } = await sb
+    .from('diagnostics')
+    .update({
+      feedback_rating: feedbackRating,
+      retype_selected_name: retypeSelectedName,
+      retype_selected_none: retypeSelectedNone,
+    })
+    .eq('session_id', sessionId);
+  if (error) console.warn('[analytics] updateDiagnosticFeedback failed:', error.message);
+}

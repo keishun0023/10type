@@ -4,16 +4,18 @@ import { useState } from 'react';
 import { FEAR_QUESTIONS, DEFENSE_QUESTIONS, DISTRESS_QUESTIONS, Question, FearAxis, DefenseAxis } from '@/data/questions';
 import { calculateFearScores, calculateDefenseScores, calculateDistressTotal, findTypes, getRetypeCandidates } from '@/lib/scoring';
 import { DiagType } from '@/data/types';
-import { saveDiagnostic } from '@/lib/analytics';
+import { saveDiagnostic, updateDiagnosticFeedback } from '@/lib/analytics';
 import IntroScreen from '@/components/IntroScreen';
 import QuestionScreen from '@/components/QuestionScreen';
 import DistressIntroScreen from '@/components/DistressIntroScreen';
 import ResultScreen from '@/components/ResultScreen';
+import EmailInputScreen from '@/components/EmailInputScreen';
+import EmailThanksScreen from '@/components/EmailThanksScreen';
 import FeedbackScreen from '@/components/FeedbackScreen';
 import RetypeScreen from '@/components/RetypeScreen';
 import ThankYouScreen from '@/components/ThankYouScreen';
 
-type Screen = 'intro' | 'strength' | 'distress-intro' | 'distress' | 'result' | 'feedback' | 'retype' | 'thankyou';
+type Screen = 'intro' | 'strength' | 'distress-intro' | 'distress' | 'result' | 'email-input' | 'email-thanks' | 'feedback' | 'retype' | 'thankyou';
 
 interface ResultData {
   firstType: DiagType;
@@ -103,7 +105,22 @@ export default function Home() {
       const defenseScores = calculateDefenseScores(newAnswers, allQuestions);
       const distressTotal = calculateDistressTotal(newAnswers, allQuestions);
       const { first, second } = findTypes(fearScores, defenseScores);
-      setResultData({ firstType: first, secondType: second, fearScores, defenseScores, distressTotal });
+      const rd = { firstType: first, secondType: second, fearScores, defenseScores, distressTotal };
+      setResultData(rd);
+      // 結果確定時点で即時保存
+      saveDiagnostic({
+        sessionId,
+        deviceId,
+        answers: newAnswers,
+        firstType: first,
+        secondType: second,
+        fearScores,
+        defenseScores,
+        distressTotal,
+        feedbackRating: null,
+        retypeSelectedName: null,
+        retypeSelectedNone: false,
+      });
       setScreen('result');
     }
   }
@@ -131,21 +148,12 @@ export default function Home() {
   }
 
   function goToThankYou(rating: number | null, retype: string | null | undefined) {
-    if (resultData) {
-      saveDiagnostic({
-        sessionId,
-        deviceId,
-        answers,
-        firstType: resultData.firstType,
-        secondType: resultData.secondType,
-        fearScores: resultData.fearScores,
-        defenseScores: resultData.defenseScores,
-        distressTotal: resultData.distressTotal,
-        feedbackRating: rating,
-        retypeSelectedName: retype ?? null,
-        retypeSelectedNone: retype === null,
-      });
-    }
+    updateDiagnosticFeedback(
+      sessionId,
+      rating,
+      retype ?? null,
+      retype === null,
+    );
     setScreen('thankyou');
   }
 
@@ -204,7 +212,26 @@ export default function Home() {
         distressTotal={resultData.distressTotal}
         sessionId={sessionId}
         onRestart={() => setScreen('intro')}
+        onShowEmailInput={() => setScreen('email-input')}
+      />
+    );
+  }
+
+  if (screen === 'email-input' && resultData) {
+    return (
+      <EmailInputScreen
+        sessionId={sessionId}
+        firstTypeName={resultData.firstType.name}
+        onSuccess={() => setScreen('email-thanks')}
+      />
+    );
+  }
+
+  if (screen === 'email-thanks') {
+    return (
+      <EmailThanksScreen
         onNextFeedback={() => setScreen('feedback')}
+        onRestart={() => setScreen('intro')}
       />
     );
   }
