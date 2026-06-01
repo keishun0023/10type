@@ -22,6 +22,7 @@ export async function saveDiagnostic(record: DiagnosticRecord): Promise<void> {
   const { error } = await sb.from('diagnostics').insert({
     session_id: record.sessionId,
     device_id: record.deviceId,
+    created_at: new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Tokyo' }).replace(' ', 'T') + '+09:00',
     first_type_name: record.firstType.name,
     second_type_name: record.secondType.name,
     fear_scores: record.fearScores,

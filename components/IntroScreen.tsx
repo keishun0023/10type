@@ -16,14 +16,8 @@ export default function IntroScreen({ onStart }: Props) {
         {/* Headline */}
         <div className="text-center space-y-3">
           <h1 className="text-2xl font-bold text-stone-900 leading-tight">
-            あなたの<br />
-            <span className="text-indigo-600">"生きづらさのかたち"</span>を、<br />
-            8つの軸で見てみませんか
+            あなたの「生きづらさ」の<br />理由がわかる
           </h1>
-          <p className="text-sm text-stone-500 leading-relaxed">
-            毒親育ち、HSP、完璧主義——<br />
-            そのラベルの奥にある、あなただけのベクトル。
-          </p>
         </div>
 
         {/* Feature list */}
