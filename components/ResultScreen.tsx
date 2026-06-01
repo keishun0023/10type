@@ -58,13 +58,11 @@ export default function ResultScreen({
 
       <div className="max-w-sm mx-auto px-5 space-y-8 pb-10">
         {/* ② あるある共感セクション */}
-        <div className="rounded-3xl overflow-hidden" style={{ backgroundColor: '#FFFBEB' }}>
+        <div className="rounded-3xl overflow-hidden bg-stone-50 border border-stone-100">
           <div className="px-5 py-6 space-y-5">
-            <h2 className="text-lg font-bold text-stone-900">
-              <span className="relative inline-block">
-                <span className="relative z-10">こんなこと、ありませんか？</span>
-                <span className="absolute bottom-0 left-0 w-full h-2.5 bg-yellow-200/70 -z-0 rounded-full" />
-              </span>
+            <h2 className="text-lg font-bold text-stone-900 flex items-center gap-2">
+              <img src="/section-relatable-title.png" alt="" className="w-8 h-8 object-contain" />
+              こんなこと、ありませんか？
             </h2>
             <ul className="space-y-4">
               {content.relatable.map((text, i) => {
@@ -89,13 +87,12 @@ export default function ResultScreen({
         </div>
 
         {/* ③ なぜそうなるセクション */}
-        <div className="rounded-3xl overflow-hidden" style={{ backgroundColor: '#FFFBEB' }}>
-          <div className="px-5 py-6 space-y-5">
-            <h2 className="text-lg font-bold text-stone-900">
-              <span className="relative inline-block">
-                <span className="relative z-10">どうして、こうなるんだろう？</span>
-                <span className="absolute bottom-0 left-0 w-full h-2.5 bg-yellow-200/70 -z-0 rounded-full" />
-              </span>
+        <div className="rounded-3xl overflow-hidden bg-stone-50 border border-stone-100 relative">
+          <img src="/section-why-bg.png" alt="" className="absolute top-4 right-4 w-20 h-20 object-contain opacity-10 pointer-events-none" />
+          <div className="px-5 py-6 space-y-5 relative z-10">
+            <h2 className="text-lg font-bold text-stone-900 flex items-center gap-2">
+              <img src="/section-why-title.png" alt="" className="w-8 h-8 object-contain" />
+              どうして、こうなるんだろう？
             </h2>
             <div className="space-y-4 text-sm text-stone-700 leading-relaxed">
               {content.why.map((para, i) => {
