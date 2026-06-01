@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { STRENGTH_QUESTIONS, DISTRESS_QUESTIONS, Question, Axis } from '@/data/questions';
-import { calculateAxisScores, calculateDistressTotal, findTypes, getRetypeCandidates } from '@/lib/scoring';
-import { RootType } from '@/data/types';
+import { FEAR_QUESTIONS, DEFENSE_QUESTIONS, DISTRESS_QUESTIONS, Question, FearAxis, DefenseAxis } from '@/data/questions';
+import { calculateFearScores, calculateDefenseScores, calculateDistressTotal, findTypes, getRetypeCandidates } from '@/lib/scoring';
+import { DiagType } from '@/data/types';
 import { saveDiagnostic } from '@/lib/analytics';
 import IntroScreen from '@/components/IntroScreen';
 import QuestionScreen from '@/components/QuestionScreen';
@@ -16,9 +16,10 @@ import ThankYouScreen from '@/components/ThankYouScreen';
 type Screen = 'intro' | 'strength' | 'distress-intro' | 'distress' | 'result' | 'feedback' | 'retype' | 'thankyou';
 
 interface ResultData {
-  firstType: RootType;
-  secondType: RootType;
-  axisScores: Record<Axis, number>;
+  firstType: DiagType;
+  secondType: DiagType;
+  fearScores: Record<FearAxis, number>;
+  defenseScores: Record<DefenseAxis, number>;
   distressTotal: number;
 }
 
@@ -41,6 +42,8 @@ function getOrCreateDeviceId(): string {
   return id;
 }
 
+const TOTAL_QUESTIONS = 36; // 20 fear + 12 defense + 4 distress
+
 export default function Home() {
   const [screen, setScreen] = useState<Screen>('intro');
   const [sessionId, setSessionId] = useState<string>('');
@@ -50,10 +53,11 @@ export default function Home() {
   const [distressIndex, setDistressIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [resultData, setResultData] = useState<ResultData | null>(null);
-  // フィードバックデータは state に蓄積し、最後に一括 INSERT
   const [feedbackRating, setFeedbackRating] = useState<number | null>(null);
   const [retypeSelectedName, setRetypeSelectedName] = useState<string | null | undefined>(undefined);
 
+  // Combined ordered question list for shuffled strength phase (fear + defense)
+  const STRENGTH_QUESTIONS: Question[] = [...FEAR_QUESTIONS, ...DEFENSE_QUESTIONS];
   const allQuestions: Question[] = [...STRENGTH_QUESTIONS, ...DISTRESS_QUESTIONS];
 
   function handleStart() {
@@ -95,10 +99,11 @@ export default function Home() {
     if (distressIndex < DISTRESS_QUESTIONS.length - 1) {
       setDistressIndex(distressIndex + 1);
     } else {
-      const axisScores = calculateAxisScores(newAnswers, allQuestions);
+      const fearScores = calculateFearScores(newAnswers, allQuestions);
+      const defenseScores = calculateDefenseScores(newAnswers, allQuestions);
       const distressTotal = calculateDistressTotal(newAnswers, allQuestions);
-      const { first, second } = findTypes(axisScores);
-      setResultData({ firstType: first, secondType: second, axisScores, distressTotal });
+      const { first, second } = findTypes(fearScores, defenseScores);
+      setResultData({ firstType: first, secondType: second, fearScores, defenseScores, distressTotal });
       setScreen('result');
     }
   }
@@ -131,7 +136,11 @@ export default function Home() {
         sessionId,
         deviceId,
         answers,
-        ...resultData,
+        firstType: resultData.firstType,
+        secondType: resultData.secondType,
+        fearScores: resultData.fearScores,
+        defenseScores: resultData.defenseScores,
+        distressTotal: resultData.distressTotal,
         feedbackRating: rating,
         retypeSelectedName: retype ?? null,
         retypeSelectedNone: retype === null,
@@ -152,7 +161,7 @@ export default function Home() {
       <QuestionScreen
         question={question}
         questionNumber={strengthIndex + 1}
-        totalQuestions={40}
+        totalQuestions={TOTAL_QUESTIONS}
         currentAnswer={answers[question.id]}
         onAnswer={handleStrengthAnswer}
         onBack={handleStrengthBack}
@@ -175,8 +184,8 @@ export default function Home() {
     return (
       <QuestionScreen
         question={question}
-        questionNumber={32 + distressIndex + 1}
-        totalQuestions={40}
+        questionNumber={STRENGTH_QUESTIONS.length + distressIndex + 1}
+        totalQuestions={TOTAL_QUESTIONS}
         currentAnswer={answers[question.id]}
         onAnswer={handleDistressAnswer}
         onBack={handleDistressBack}
@@ -190,7 +199,8 @@ export default function Home() {
       <ResultScreen
         firstType={resultData.firstType}
         secondType={resultData.secondType}
-        axisScores={resultData.axisScores}
+        fearScores={resultData.fearScores}
+        defenseScores={resultData.defenseScores}
         distressTotal={resultData.distressTotal}
         onRestart={() => setScreen('intro')}
         onNextFeedback={() => setScreen('feedback')}
@@ -208,7 +218,7 @@ export default function Home() {
   }
 
   if (screen === 'retype' && resultData) {
-    const candidates = getRetypeCandidates(resultData.axisScores, resultData.firstType.id);
+    const candidates = getRetypeCandidates(resultData.fearScores, resultData.defenseScores, resultData.firstType.id);
     const retypeMode: 'partial' | 'miss' = (feedbackRating ?? 0) >= 3 ? 'partial' : 'miss';
     return (
       <RetypeScreen

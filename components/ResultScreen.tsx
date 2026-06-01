@@ -1,9 +1,8 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { Axis, AXIS_LABELS, ROOT_AXES } from '@/data/questions';
-import { RootType, SYMPTOM_DESC, SYMPTOM_LABEL, SymptomAxis } from '@/data/types';
-import { getTopSymptoms } from '@/lib/scoring';
+import { FearAxis, DefenseAxis, FEAR_AXES, DEFENSE_AXES, AXIS_LABELS } from '@/data/questions';
+import { DiagType, ARARUA } from '@/data/types';
 
 const RadarChartComponent = dynamic(() => import('@/components/RadarChartComponent'), {
   ssr: false,
@@ -15,30 +14,32 @@ const RadarChartComponent = dynamic(() => import('@/components/RadarChartCompone
 });
 
 interface Props {
-  firstType: RootType;
-  secondType: RootType;
-  axisScores: Record<Axis, number>;
+  firstType: DiagType;
+  secondType: DiagType;
+  fearScores: Record<FearAxis, number>;
+  defenseScores: Record<DefenseAxis, number>;
   distressTotal: number;
   onRestart: () => void;
   onNextFeedback: () => void;
 }
 
+const DEFENSE_LABELS: Record<DefenseAxis, { neg: string; pos: string }> = {
+  D_APP: { neg: '回避', pos: '接近' },
+  D_ACT: { neg: '受動', pos: '能動' },
+  D_EXP: { neg: '抑制', pos: '表出' },
+};
+
 export default function ResultScreen({
   firstType,
   secondType,
-  axisScores,
+  fearScores,
+  defenseScores,
   distressTotal,
   onRestart,
   onNextFeedback,
 }: Props) {
-  const isPositiveMode = distressTotal < 10;
-
-  // 根っこ4軸のうち最も高い軸
-  const topRootAxis = ROOT_AXES.slice()
-    .sort((a, b) => axisScores[b] - axisScores[a])[0];
-
-  // 症状上位2軸
-  const topSymptoms = getTopSymptoms(axisScores, 2);
+  const isPositiveMode = distressTotal < 5;
+  const ararua = ARARUA[firstType.id] ?? [];
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -58,51 +59,75 @@ export default function ResultScreen({
           </div>
           <div className="pt-1">
             <span className="text-xs bg-white/20 px-2.5 py-1 rounded-full">
-              {AXIS_LABELS[topRootAxis]}：{Math.round(axisScores[topRootAxis])}
+              主な恐れ: {firstType.fear}
             </span>
           </div>
         </div>
       </div>
 
       <div className="max-w-sm mx-auto px-5 py-6 space-y-6">
-        {/* Radar chart */}
+        {/* Radar chart — 恐れ4軸 */}
         <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <h2 className="text-sm font-semibold text-stone-700 mb-2">あなたの8軸ベクトル</h2>
-          <RadarChartComponent axisScores={axisScores} />
+          <h2 className="text-sm font-semibold text-stone-700 mb-2">恐れの4軸プロファイル</h2>
+          <RadarChartComponent fearScores={fearScores} />
         </div>
 
-        {/* Symptoms — 因果の「その結果」 */}
+        {/* Defense 3軸バー表示 */}
         <div className="bg-white rounded-2xl p-5 shadow-sm space-y-4">
-          <div className="space-y-1">
-            <h2 className="text-sm font-semibold text-stone-700">
-              その結果、あなたの場合はこう出ています
-            </h2>
-            <p className="text-xs text-stone-400">
-              核の傾向が、以下の形で現れやすくなっています。
-            </p>
-          </div>
-          <ul className="space-y-4">
-            {topSymptoms.map(({ axis, score }) => (
-              <li key={axis} className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-stone-700">
-                    {SYMPTOM_LABEL[axis as SymptomAxis]}
-                  </span>
-                  <span className="text-xs text-stone-400">{Math.round(score)}</span>
+          <h2 className="text-sm font-semibold text-stone-700">防衛スタイル（3軸）</h2>
+          {DEFENSE_AXES.map(axis => {
+            const score = defenseScores[axis];
+            const pct = Math.round(score);
+            const posWidth = score > 0 ? Math.min(score, 100) : 0;
+            const negWidth = score < 0 ? Math.min(-score, 100) : 0;
+            const { neg, pos } = DEFENSE_LABELS[axis];
+            return (
+              <div key={axis} className="space-y-1">
+                <div className="flex items-center justify-between text-xs text-stone-500">
+                  <span>{AXIS_LABELS[axis]}</span>
+                  <span>{pct > 0 ? '+' : ''}{pct}</span>
                 </div>
-                <div className="w-full h-1.5 bg-stone-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-violet-400 rounded-full"
-                    style={{ width: `${score}%` }}
-                  />
+                <div className="flex w-full h-3 rounded-full overflow-hidden bg-stone-100">
+                  {/* neg side */}
+                  <div className="flex-1 flex justify-end">
+                    <div
+                      className="h-full bg-rose-400 rounded-l-full"
+                      style={{ width: `${negWidth}%` }}
+                    />
+                  </div>
+                  {/* center divider */}
+                  <div className="w-px bg-stone-300" />
+                  {/* pos side */}
+                  <div className="flex-1">
+                    <div
+                      className="h-full bg-indigo-400 rounded-r-full"
+                      style={{ width: `${posWidth}%` }}
+                    />
+                  </div>
                 </div>
-                <p className="text-xs text-stone-500 leading-relaxed">
-                  {SYMPTOM_DESC[axis as SymptomAxis]}
-                </p>
-              </li>
-            ))}
-          </ul>
+                <div className="flex justify-between text-xs text-stone-400">
+                  <span>{neg}</span>
+                  <span>{pos}</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
+
+        {/* あるある共感文 */}
+        {ararua.length > 0 && (
+          <div className="bg-white rounded-2xl p-5 shadow-sm space-y-3">
+            <h2 className="text-sm font-semibold text-stone-700">こんなこと、ありませんか？</h2>
+            <ul className="space-y-2">
+              {ararua.map((text, i) => (
+                <li key={i} className="flex gap-2 text-sm text-stone-600 leading-relaxed">
+                  <span className="text-indigo-400 mt-0.5">•</span>
+                  <span>{text}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* Feedback CTA */}
         <div className="bg-stone-50 rounded-2xl p-5 space-y-3">
@@ -126,8 +151,7 @@ export default function ResultScreen({
         </button>
 
         <p className="text-xs text-stone-400 text-center pb-4 leading-relaxed">
-          ビッグファイブ／CBTの考え方をベースにしています。医療診断ではありません。<br />
-          核→症状の因果方向は仮説であり、検証中です。
+          ビッグファイブ／CBTの考え方をベースにしています。医療診断ではありません。
         </p>
       </div>
     </div>

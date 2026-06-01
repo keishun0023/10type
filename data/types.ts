@@ -1,61 +1,109 @@
-export type RootType = {
+export type DiagType = {
   id: string;
   name: string;
-  profile: number[]; // [Sac, SC, Perf, Anx]
+  profile: number[]; // [F_REL, F_EVAL, F_IMP, F_CTRL, D_APP, D_ACT, D_EXP]
   fear: string;
   catch: string;
 };
 
-export const ROOT_TYPES: RootType[] = [
+export const TYPES: DiagType[] = [
   {
     id: 'good_child',
     name: 'いい子・承認型',
-    profile: [75, 50, 50, 25],
-    fear: '期待に応えられないこと',
-    catch: '「ちゃんとしなきゃ」で動き続けるあなたへ。',
+    profile: [50, 75, 50, 25, 30, 30, 30],
+    fear: '評価(成果)',
+    catch: '役割を全うして存在を保つ。期待に応え続けて燃え尽きる',
+  },
+  {
+    id: 'people_pleaser',
+    name: '顔色うかがい型',
+    profile: [75, 50, 25, 50, 30, 30, -30],
+    fear: '関係・場',
+    catch: '相手を喜ばせる方向に自分を最適化。浮きたくない',
+  },
+  {
+    id: 'over_considerate',
+    name: '気を遣いすぎ型',
+    profile: [50, 50, 25, 25, 0, -30, -60],
+    fear: '評価/加害',
+    catch: '迷惑をかけたくなくて自分を引っ込める。我慢を溜める',
   },
   {
     id: 'perfectionist',
     name: '完璧主義型',
-    profile: [25, 50, 75, 50],
-    fear: '不完全であること',
-    catch: '自分の理想に、自分が一番届かない。',
-  },
-  {
-    id: 'people_pleaser',
-    name: '顔色うかがい・過敏型',
-    profile: [50, 75, 25, 50],
-    fear: '嫌われている・変に見られること',
-    catch: 'いつも「どう見られてる？」が頭にある。',
-  },
-  {
-    id: 'abandonment',
-    name: '見捨てられ不安型',
-    profile: [75, 50, 25, 75],
-    fear: '特定の関係が切れること',
-    catch: '返信が遅いだけで、世界が揺らぐ。',
+    profile: [25, 50, 75, 50, 0, 30, 0],
+    fear: '不完全性',
+    catch: '他人でなく自分の理想に追い詰められる',
   },
   {
     id: 'over_carrier',
     name: '抱え込み型',
-    profile: [75, 25, 75, 50],
-    fear: '自分がやらないと回らないこと',
-    catch: '全部背負って、全部自分で潰れてしまう前に。',
+    profile: [50, 75, 75, 50, -30, 30, -30],
+    fear: '評価＋不完全',
+    catch: '全部背負って一人で潰れる。頼れない',
+  },
+  {
+    id: 'abandonment',
+    name: '見捨てられ不安型',
+    profile: [75, 50, 25, 50, 30, 0, 60],
+    fear: '関係喪失',
+    catch: '特定の関係が切れる恐怖に振り回される',
+  },
+  {
+    id: 'distancer',
+    name: '距離を置きたい型',
+    profile: [60, 50, 25, 50, -60, -30, -30],
+    fear: '（回避突出）',
+    catch: '関係を求めながら、怖くて先に扉を閉じる',
+  },
+  {
+    id: 'worrier',
+    name: '心配性・先回り型',
+    profile: [50, 25, 50, 75, 0, 30, 0],
+    fear: '制御不能',
+    catch: '起きてもいない最悪を先に生きる',
   },
 ];
 
-export type SymptomAxis = 'Ang' | 'Imp' | 'Vul' | 'Dep';
-
-export const SYMPTOM_LABEL: Record<SymptomAxis, string> = {
-  Ang: '怒りを飲み込みやすい',
-  Imp: '衝動的になりやすい',
-  Vul: '傷つきやすい・消耗しやすい',
-  Dep: '気分が落ち込みやすい',
-};
-
-export const SYMPTOM_DESC: Record<SymptomAxis, string> = {
-  Ang: '本当は嫌でも、その場では受け入れて飲み込んでしまう',
-  Imp: '我慢の反動で、つい食べすぎ・買いすぎてしまう',
-  Vul: '些細なことで消耗し、回復に時間がかかる',
-  Dep: '「どうせ」と落ち込み、自分の価値を感じにくくなる',
+export const ARARUA: Record<string, string[]> = {
+  good_child: [
+    '「期待に応えなきゃ」が口癖みたいになっている',
+    '頑張りすぎてから、急にガス欠になる',
+    '褒められると安心するけど、次の瞬間また不安になる',
+  ],
+  people_pleaser: [
+    '相手の表情が曇ると、すぐ自分のせいかと思う',
+    '本音より「場に合う答え」を先に探してしまう',
+    '断るとき、何日も前から気に病んでいる',
+  ],
+  over_considerate: [
+    '「迷惑じゃないかな」が頭から離れない',
+    'SOSを出すタイミングを逃し続けて、一人で抱える',
+    '我慢したことを後から思い出して、じわっとしんどくなる',
+  ],
+  perfectionist: [
+    '70点の出来でも「もっとできたはず」と思う',
+    '始める前に完成図が見えないと動けない',
+    '自分に一番厳しいのは、実は自分だとわかっている',
+  ],
+  over_carrier: [
+    '「自分がやらないと」で引き受けてしまう',
+    '全部こなしてから、一人でドッと疲れる',
+    '人に頼むと申し訳ない気がして、結局自分でやる',
+  ],
+  abandonment: [
+    '既読スルーが続くと、頭の中でシナリオが走り出す',
+    '「仲良くしたい」と「怖い」が同時にある',
+    '関係が続いていても、いつか終わる気がしてそわそわする',
+  ],
+  distancer: [
+    '仲良くなりかけると、ふっと引いてしまう',
+    '一人が好きなのか、怖いから距離を取るのか、自分でもわからない',
+    '深く関わると疲れる、でも孤独も寂しい',
+  ],
+  worrier: [
+    '「最悪の場合」から逆算して今を心配している',
+    '準備が十分でも、「もし」が止まらない',
+    '先のことを考えすぎて、今ここにいられない',
+  ],
 };

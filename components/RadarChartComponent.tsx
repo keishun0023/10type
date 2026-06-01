@@ -7,16 +7,16 @@ import {
   PolarAngleAxis,
   ResponsiveContainer,
 } from 'recharts';
-import { Axis, AXES, AXIS_LABELS } from '@/data/questions';
+import { FearAxis, FEAR_AXES, AXIS_LABELS } from '@/data/questions';
 
 interface Props {
-  axisScores: Record<Axis, number>;
+  fearScores: Record<FearAxis, number>;
 }
 
-export default function RadarChartComponent({ axisScores }: Props) {
-  const data = AXES.map(axis => ({
+export default function RadarChartComponent({ fearScores }: Props) {
+  const data = FEAR_AXES.map(axis => ({
     axis: AXIS_LABELS[axis],
-    value: Math.round(axisScores[axis]),
+    value: Math.round(fearScores[axis]),
     fullMark: 100,
   }));
 

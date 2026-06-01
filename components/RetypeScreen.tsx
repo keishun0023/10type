@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { RootType } from '@/data/types';
+import { DiagType } from '@/data/types';
 
 interface Props {
-  candidates: RootType[];
+  candidates: DiagType[];
   mode: 'partial' | 'miss';
   onSubmit: (selectedTypeId: string | null) => void; // null = どれにも当てはまらない
 }

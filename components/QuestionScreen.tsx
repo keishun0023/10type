@@ -2,7 +2,7 @@
 
 import { Question } from '@/data/questions';
 
-const STRENGTH_LABELS = ['全く当てはまらない', '', '', '', '', 'とても当てはまる'];
+const STRENGTH_LABELS = ['全く当てはまらない', 'ほとんど当てはまらない', 'あまり当てはまらない', '少し当てはまる', 'かなり当てはまる', 'とても当てはまる'];
 const DISTRESS_LABELS = ['全く困っていない', '', '', '', '', 'とても困っている'];
 
 interface Props {

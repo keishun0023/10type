@@ -1,23 +1,41 @@
-import { AXES, Axis, Question, ROOT_AXES, SYMPTOM_AXES } from '@/data/questions';
-import { ROOT_TYPES, RootType, SymptomAxis } from '@/data/types';
+import { FearAxis, DefenseAxis, FEAR_AXES, DEFENSE_AXES, Question } from '@/data/questions';
+import { TYPES, DiagType } from '@/data/types';
 
-export function calculateAxisScores(
+export function calculateFearScores(
   answers: Record<string, number>,
   questions: Question[]
-): Record<Axis, number> {
-  const scores: Partial<Record<Axis, number>> = {};
-
-  for (const axis of AXES) {
-    const axisQs = questions.filter(q => q.axis === axis && q.kind === 'strength');
+): Record<FearAxis, number> {
+  const scores: Partial<Record<FearAxis, number>> = {};
+  for (const axis of FEAR_AXES) {
+    const axisQs = questions.filter(q => q.kind === 'fear' && q.axis === axis);
     let total = 0;
     for (const q of axisQs) {
       const raw = answers[q.id] ?? 0;
       total += q.reverse ? 5 - raw : raw;
     }
-    scores[axis] = (total / 20) * 100;
+    scores[axis] = (total / 25) * 100;
   }
+  return scores as Record<FearAxis, number>;
+}
 
-  return scores as Record<Axis, number>;
+export function calculateDefenseScores(
+  answers: Record<string, number>,
+  questions: Question[]
+): Record<DefenseAxis, number> {
+  const scores: Partial<Record<DefenseAxis, number>> = {};
+  for (const axis of DEFENSE_AXES) {
+    const axisQs = questions.filter(q => q.kind === 'defense' && q.axis === axis);
+    const posQs = axisQs.filter(q => q.pole === 'pos');
+    const negQs = axisQs.filter(q => q.pole === 'neg');
+    const posAvg = posQs.length > 0
+      ? posQs.reduce((sum, q) => sum + (answers[q.id] ?? 0), 0) / posQs.length
+      : 0;
+    const negAvg = negQs.length > 0
+      ? negQs.reduce((sum, q) => sum + (answers[q.id] ?? 0), 0) / negQs.length
+      : 0;
+    scores[axis] = (posAvg / 5) * 100 - (negAvg / 5) * 100;
+  }
+  return scores as Record<DefenseAxis, number>;
 }
 
 export function calculateDistressTotal(
@@ -33,42 +51,39 @@ function euclidean(a: number[], b: number[]): number {
   return Math.sqrt(a.reduce((sum, v, i) => sum + Math.pow(v - b[i], 2), 0));
 }
 
-// 根っこ4軸のみでユークリッド距離を計算してタイプ判定
-export function findTypes(axisScores: Record<Axis, number>): {
-  first: RootType;
-  second: RootType;
-} {
-  const rootVector = ROOT_AXES.map(a => axisScores[a]);
+const FEAR_AXES_ORDER: FearAxis[] = ['F_REL', 'F_EVAL', 'F_IMP', 'F_CTRL'];
+const DEFENSE_AXES_ORDER: DefenseAxis[] = ['D_APP', 'D_ACT', 'D_EXP'];
 
-  const ranked = ROOT_TYPES.map(type => ({
+export function findTypes(
+  fearScores: Record<FearAxis, number>,
+  defenseScores: Record<DefenseAxis, number>
+): { first: DiagType; second: DiagType } {
+  const userVector = [
+    ...FEAR_AXES_ORDER.map(a => fearScores[a]),
+    ...DEFENSE_AXES_ORDER.map(a => defenseScores[a]),
+  ];
+
+  const ranked = TYPES.map(type => ({
     type,
-    dist: euclidean(rootVector, type.profile),
+    dist: euclidean(userVector, type.profile),
   })).sort((a, b) => a.dist - b.dist);
 
   return { first: ranked[0].type, second: ranked[1].type };
 }
 
-// 選び直し候補：指定タイプを除いた残りを距離近い順に上位3つ
 export function getRetypeCandidates(
-  axisScores: Record<Axis, number>,
-  excludeTypeId: string
-): RootType[] {
-  const rootVector = ROOT_AXES.map(a => axisScores[a]);
-  return ROOT_TYPES
-    .filter(t => t.id !== excludeTypeId)
-    .map(t => ({ type: t, dist: euclidean(rootVector, t.profile) }))
+  fearScores: Record<FearAxis, number>,
+  defenseScores: Record<DefenseAxis, number>,
+  excludeId: string
+): DiagType[] {
+  const userVector = [
+    ...FEAR_AXES_ORDER.map(a => fearScores[a]),
+    ...DEFENSE_AXES_ORDER.map(a => defenseScores[a]),
+  ];
+  return TYPES
+    .filter(t => t.id !== excludeId)
+    .map(t => ({ type: t, dist: euclidean(userVector, t.profile) }))
     .sort((a, b) => a.dist - b.dist)
     .slice(0, 3)
     .map(x => x.type);
-}
-
-// 症状4軸をスコア降順で返す（結果画面の「その結果」表示用）
-export function getTopSymptoms(
-  axisScores: Record<Axis, number>,
-  topN = 2
-): { axis: SymptomAxis; score: number }[] {
-  return (SYMPTOM_AXES as SymptomAxis[])
-    .map(axis => ({ axis, score: axisScores[axis] }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, topN);
 }
