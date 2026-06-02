@@ -1,4 +1,4 @@
-export const PIXEL_ID = '537934028825464';
+export const PIXEL_ID = '1304764505193953';
 
 declare global {
   interface Window {
