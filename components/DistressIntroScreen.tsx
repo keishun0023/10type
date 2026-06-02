@@ -42,7 +42,7 @@ export default function DistressIntroScreen({ onContinue, onBack }: Props) {
           onClick={onContinue}
           className="w-full bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-semibold py-4 rounded-2xl text-base transition-colors shadow-md shadow-indigo-200"
         >
-          続ける（残り8問）
+          続ける（残り4問）
         </button>
 
         <button
