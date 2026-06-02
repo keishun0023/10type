@@ -10,13 +10,13 @@ export default function IntroScreen({ onStart }: Props) {
       <div className="flex flex-col items-center w-full max-w-sm gap-0">
 
         {/* サービスアイコン */}
-        <img src="/intro-service-icon.png" alt="" className="w-12 h-12 object-contain mb-1" />
+        <img src="/intro-service-icon.png" alt="" className="w-12 h-12 object-contain -mb-2" />
 
         {/* ロゴ */}
-        <img src="/intro-logo.png" alt="ここリフト" className="h-16 object-contain mb-2" />
+        <img src="/intro-logo.png" alt="ここリフト" className="h-16 object-contain -mb-3" />
 
         {/* 区切り線 */}
-        <img src="/intro-divider.png" alt="" className="w-16 object-contain mb-4" />
+        <img src="/intro-divider.png" alt="" className="w-16 object-contain -mb-2" />
 
         {/* キャッチコピー */}
         <div className="text-center mb-2">
