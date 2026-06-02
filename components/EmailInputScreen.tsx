@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { getSupabase } from '@/lib/supabase';
+import { fbqEvent } from '@/lib/pixel';
 
 interface Props {
   sessionId: string;
@@ -25,6 +26,7 @@ export default function EmailInputScreen({ sessionId, firstTypeName, onSuccess }
       created_at: new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Tokyo' }).replace(' ', 'T') + '+09:00',
     });
     if (error) { setStatus('error'); return; }
+    fbqEvent('Lead', { content_name: firstTypeName });
     onSuccess();
   }
 
