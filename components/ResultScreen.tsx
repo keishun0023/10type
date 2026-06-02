@@ -1,7 +1,9 @@
 'use client';
 
+import { useEffect } from 'react';
 import { FearAxis, DefenseAxis } from '@/data/questions';
 import { DiagType, TYPE_CONTENT } from '@/data/types';
+import { fbqEvent } from '@/lib/pixel';
 
 interface Props {
   firstType: DiagType;
@@ -30,6 +32,10 @@ export default function ResultScreen({
   onShowEmailInput,
 }: Props) {
   const content = TYPE_CONTENT[firstType.id];
+
+  useEffect(() => {
+    fbqEvent('ViewContent', { content_name: firstType.name });
+  }, [firstType.name]);
 
   if (!content) return null;
 

@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { getSupabase } from '@/lib/supabase';
 import { fbqEvent } from '@/lib/pixel';
 
@@ -12,6 +12,10 @@ interface Props {
 export default function EmailInputScreen({ sessionId, firstTypeName, onSuccess }: Props) {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
+
+  useEffect(() => {
+    fbqEvent('InitiateCheckout', { content_name: firstTypeName });
+  }, [firstTypeName]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
