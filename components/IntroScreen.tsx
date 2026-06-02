@@ -6,7 +6,7 @@ interface Props {
 
 export default function IntroScreen({ onStart }: Props) {
   return (
-    <div className="min-h-screen flex flex-col items-center bg-white px-5 pt-10 pb-8" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
+    <div className="min-h-screen flex flex-col items-center bg-white px-5 pt-6 pb-8" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
       <div className="flex flex-col items-center w-full max-w-sm gap-0">
 
         {/* サービスアイコン */}
@@ -19,7 +19,7 @@ export default function IntroScreen({ onStart }: Props) {
         <img src="/intro-divider.png" alt="" className="w-12 object-contain mb-3" />
 
         {/* キャッチコピー */}
-        <div className="text-center mb-2">
+        <div className="text-center mb-0">
           <h1 className="text-xl font-bold text-stone-700 leading-relaxed">
             生きづらさの理由がわかる<br />
             そして、少し<span className="text-purple-500 font-bold">軽く</span>なれる
@@ -27,10 +27,10 @@ export default function IntroScreen({ onStart }: Props) {
         </div>
 
         {/* ヒーローイラスト */}
-        <img src="/intro-hero.png" alt="" className="w-full max-w-xs object-contain -mb-2" />
+        <img src="/intro-hero.png" alt="" className="w-full max-w-xs object-contain -mb-6" />
 
         {/* CTAボタン */}
-        <div className="w-full flex items-center justify-center gap-2 mb-5">
+        <div className="w-full flex items-center justify-center gap-2 mb-4">
           <img src="/intro-btn-lines.png" alt="" className="w-8 object-contain" />
           <button
             onClick={onStart}
