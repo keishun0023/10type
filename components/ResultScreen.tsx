@@ -122,13 +122,13 @@ export default function ResultScreen({
 
           <div className="space-y-3">
             {[
-              { icon: '📊', label: '4つの恐れと\n防衛スタイルを可視化' },
-              { icon: '📋', label: '消耗しやすい\nシーンの分析' },
-              { icon: '✏️', label: '今日から試せる\n練習プログラム' },
+              { img: '/result-icon-1.png', label: '4つの恐れと防衛スタイルを可視化' },
+              { img: '/result-icon-2.png', label: '消耗しやすいシーンの分析' },
+              { img: '/result-icon-3.png', label: '今日から試せる練習プログラム' },
             ].map((item, i) => (
-              <div key={i} className="bg-teal-100/50 rounded-3xl px-6 py-6 flex flex-col items-center text-center gap-3">
-                <span className="text-3xl">{item.icon}</span>
-                <span className="text-sm font-bold text-stone-700 whitespace-pre-line leading-snug">{item.label}</span>
+              <div key={i} className="rounded-2xl px-5 py-4 flex items-center gap-4" style={{ background: 'linear-gradient(135deg, #f3e8ff 0%, #ede9fe 100%)' }}>
+                <img src={item.img} alt="" className="w-12 h-12 object-contain shrink-0" />
+                <span className="text-sm font-bold text-stone-700 leading-snug">{item.label}</span>
               </div>
             ))}
           </div>
