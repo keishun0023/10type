@@ -19,7 +19,7 @@ export default function IntroScreen({ onStart }: Props) {
         <img src="/intro-divider.png" alt="" className="w-12 object-contain mb-3" />
 
         {/* キャッチコピー */}
-        <div className="text-center mb-0">
+        <div className="text-center mb-0 relative z-10">
           <h1 className="text-xl font-bold text-stone-700 leading-relaxed">
             生きづらさの理由がわかる<br />
             そして、少し<span className="text-purple-500 font-bold">軽く</span>なれる
