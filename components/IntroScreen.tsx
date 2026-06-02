@@ -27,7 +27,7 @@ export default function IntroScreen({ onStart }: Props) {
         </div>
 
         {/* ヒーローイラスト */}
-        <img src="/intro-hero.png" alt="" className="w-full max-w-xs object-contain -mb-6" />
+        <img src="/intro-hero.png" alt="" className="w-full max-w-xs object-contain -mb-10" />
 
         {/* CTAボタン */}
         <div className="w-full flex items-center justify-center gap-2 mb-4">
