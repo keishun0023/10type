@@ -6,55 +6,71 @@ interface Props {
 
 export default function IntroScreen({ onStart }: Props) {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-between bg-stone-50 px-5 py-12">
-      <div className="flex-1 flex flex-col items-center justify-center w-full max-w-sm gap-8">
-        {/* Badge */}
-        <div className="text-xs font-medium text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
-          内在化タイプ診断
-        </div>
+    <div className="min-h-screen flex flex-col items-center bg-white px-5 pt-10 pb-8" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
+      <div className="flex flex-col items-center w-full max-w-sm gap-0">
 
-        {/* Headline */}
-        <div className="text-center space-y-3">
-          <h1 className="text-2xl font-bold text-stone-900 leading-tight">
-            あなたの「生きづらさ」の<br />理由がわかる
+        {/* サービスアイコン */}
+        <img src="/intro-service-icon.png" alt="" className="w-12 h-12 object-contain mb-2" />
+
+        {/* ロゴ */}
+        <img src="/intro-logo.png" alt="ここリフト" className="h-10 object-contain mb-3" />
+
+        {/* 区切り線 */}
+        <img src="/intro-divider.png" alt="" className="w-16 object-contain mb-5" />
+
+        {/* キャッチコピー */}
+        <div className="text-center mb-4">
+          <h1 className="text-xl font-bold text-stone-700 leading-relaxed">
+            生きづらさの理由がわかる<br />
+            そして、少し<span className="text-purple-500 font-bold">軽く</span>なれる
           </h1>
         </div>
 
-        {/* Feature list */}
-        <div className="w-full space-y-3">
+        {/* ヒーローイラスト */}
+        <img src="/intro-hero.png" alt="" className="w-full max-w-xs object-contain -mb-2" />
+
+        {/* CTAボタン */}
+        <div className="w-full flex items-center justify-center gap-2 mb-5">
+          <img src="/intro-btn-lines.png" alt="" className="w-8 object-contain scale-x-[-1]" />
+          <button
+            onClick={onStart}
+            className="flex-1 flex items-center gap-3 px-5 py-4 rounded-full font-bold text-white text-base transition-all active:scale-[0.98]"
+            style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)', boxShadow: '0 8px 24px rgba(124, 58, 237, 0.3)' }}
+          >
+            <span className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center shrink-0">
+              <img src="/intro-btn-heart.png" alt="" className="w-5 h-5 object-contain" />
+            </span>
+            <span className="flex-1 text-center">無料診断を始める</span>
+            <span className="text-white/70 text-lg">›</span>
+          </button>
+          <img src="/intro-btn-lines.png" alt="" className="w-8 object-contain" />
+        </div>
+
+        {/* フィーチャー3つ */}
+        <div className="w-full grid grid-cols-3 gap-3 mb-5">
           {[
-            { icon: '🔍', text: '8軸のレーダーチャートで可視化' },
-            { icon: '✓', text: '10タイプの中から、あなたに一番近いかたちを特定' },
-            { icon: '💬', text: '「わかる」が連鎖するあるある共感文' },
-          ].map(({ icon, text }) => (
-            <div key={text} className="flex items-center gap-3 text-sm text-stone-700">
-              <span className="w-7 h-7 flex items-center justify-center bg-white rounded-full shadow-sm text-base flex-shrink-0">
-                {icon}
-              </span>
-              {text}
+            { img: '/intro-feature-1.png', text: 'しんどさの理由を\n見える化' },
+            { img: '/intro-feature-2.png', text: '陥りがちな思考の\nパターンがわかる' },
+            { img: '/intro-feature-3.png', text: '今日から試せる\n行動指針' },
+          ].map((item, i) => (
+            <div key={i} className="flex flex-col items-center gap-2 text-center">
+              <img src={item.img} alt="" className="w-14 h-14 object-contain" />
+              <p className="text-xs text-stone-500 leading-snug whitespace-pre-line">{item.text}</p>
             </div>
           ))}
         </div>
 
-        {/* CTA */}
-        <button
-          onClick={onStart}
-          className="w-full bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-semibold py-4 rounded-2xl text-base transition-colors shadow-md shadow-indigo-200"
-        >
-          診断をはじめる
-        </button>
+        {/* メタ情報 */}
+        <p className="text-xs text-stone-400 text-center mb-6">
+          約3分・40問・無料
+        </p>
 
-        {/* Meta info */}
-        <p className="text-xs text-stone-400 text-center">
-          約3分・40問｜ログイン不要・無料
+        {/* 免責 */}
+        <p className="text-xs text-stone-400 text-center leading-relaxed">
+          ビッグファイブ／認知行動療法（CBT）の考え方をベースにしています。<br />
+          医療診断ではありません。
         </p>
       </div>
-
-      {/* Legal note */}
-      <p className="text-xs text-stone-400 text-center max-w-xs mt-6 leading-relaxed">
-        ビッグファイブ／認知行動療法（CBT）の考え方をベースにしています。
-        医療診断ではありません。
-      </p>
     </div>
   );
 }
