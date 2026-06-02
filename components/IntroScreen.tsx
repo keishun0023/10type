@@ -10,16 +10,16 @@ export default function IntroScreen({ onStart }: Props) {
       <div className="flex flex-col items-center w-full max-w-sm gap-0">
 
         {/* サービスアイコン */}
-        <img src="/intro-service-icon.png" alt="" className="w-12 h-12 object-contain mb-2" />
+        <img src="/intro-service-icon.png" alt="" className="w-12 h-12 object-contain mb-1" />
 
         {/* ロゴ */}
-        <img src="/intro-logo.png" alt="ここリフト" className="h-10 object-contain mb-3" />
+        <img src="/intro-logo.png" alt="ここリフト" className="h-16 object-contain mb-2" />
 
         {/* 区切り線 */}
-        <img src="/intro-divider.png" alt="" className="w-16 object-contain mb-5" />
+        <img src="/intro-divider.png" alt="" className="w-16 object-contain mb-4" />
 
         {/* キャッチコピー */}
-        <div className="text-center mb-4">
+        <div className="text-center mb-2">
           <h1 className="text-xl font-bold text-stone-700 leading-relaxed">
             生きづらさの理由がわかる<br />
             そして、少し<span className="text-purple-500 font-bold">軽く</span>なれる
@@ -31,7 +31,7 @@ export default function IntroScreen({ onStart }: Props) {
 
         {/* CTAボタン */}
         <div className="w-full flex items-center justify-center gap-2 mb-5">
-          <img src="/intro-btn-lines.png" alt="" className="w-8 object-contain scale-x-[-1]" />
+          <img src="/intro-btn-lines.png" alt="" className="w-8 object-contain" />
           <button
             onClick={onStart}
             className="flex-1 flex items-center gap-3 px-5 py-4 rounded-full font-bold text-white text-base transition-all active:scale-[0.98]"
@@ -43,7 +43,7 @@ export default function IntroScreen({ onStart }: Props) {
             <span className="flex-1 text-center">無料診断を始める</span>
             <span className="text-white/70 text-lg">›</span>
           </button>
-          <img src="/intro-btn-lines.png" alt="" className="w-8 object-contain" />
+          <img src="/intro-btn-lines.png" alt="" className="w-8 object-contain scale-x-[-1]" />
         </div>
 
         {/* フィーチャー3つ */}
