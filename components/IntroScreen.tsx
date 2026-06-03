@@ -1,6 +1,6 @@
 'use client';
 
-import { fbqEvent, fbqCustomEvent } from '@/lib/pixel';
+import { fbqEvent } from '@/lib/pixel';
 
 interface Props {
   onStart: () => void;
@@ -35,7 +35,7 @@ export default function IntroScreen({ onStart }: Props) {
         <div className="w-full flex items-center justify-center gap-2 mb-4">
           <img src="/intro-btn-lines.png" alt="" className="w-8 object-contain" />
           <button
-            onClick={() => { fbqCustomEvent('StartTrial'); onStart(); }}
+            onClick={() => { fbqEvent('StartTrial'); onStart(); }}
             className="flex-1 flex items-center gap-3 px-5 py-4 rounded-full font-bold text-white text-base transition-all active:scale-[0.98]"
             style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)', boxShadow: '0 8px 24px rgba(124, 58, 237, 0.3)' }}
           >
