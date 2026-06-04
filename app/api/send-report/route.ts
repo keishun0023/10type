@@ -31,11 +31,13 @@ export async function POST(req: NextRequest) {
   const { email } = await req.json();
   if (!email) return NextResponse.json({ error: 'email required' }, { status: 400 });
 
-  // leadsからsession_idを取得
+  // leadsからsession_idを取得（最新1件）
   const { data: lead } = await sb
     .from('leads')
     .select('session_id')
     .eq('email', email)
+    .order('created_at', { ascending: false })
+    .limit(1)
     .single();
 
   if (!lead) return NextResponse.json({ error: 'email not found' }, { status: 404 });
