@@ -92,14 +92,23 @@ function ProgramPageInner() {
 
   async function handleSelectPlan(plan: 'light' | 'standard') {
     setIsLoading(true);
-    const res = await fetch('/api/create-checkout-session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ plan, email, typeId, onboarding }),
-    });
-    const data = await res.json();
-    if (data.url) window.location.href = data.url;
-    else setIsLoading(false);
+    try {
+      const res = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan, email, typeId, onboarding }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert(data.error || '決済の準備に失敗しました。もう一度お試しください。');
+        setIsLoading(false);
+      }
+    } catch {
+      alert('通信エラーが発生しました。もう一度お試しください。');
+      setIsLoading(false);
+    }
   }
 
   if (screen === 'landing') {
