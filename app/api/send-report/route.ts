@@ -17,8 +17,11 @@ const TYPE_MESSAGE: Record<string, string> = {
 export async function POST(req: NextRequest) {
   // 簡易的な管理者チェック
   const authHeader = req.headers.get('authorization');
+  if (!process.env.ADMIN_SECRET) {
+    return NextResponse.json({ error: 'ADMIN_SECRET not set' }, { status: 500 });
+  }
   if (authHeader !== `Bearer ${process.env.ADMIN_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized', received: authHeader?.slice(0, 20) }, { status: 401 });
   }
 
   const resend = new Resend(process.env.RESEND_API_KEY);
