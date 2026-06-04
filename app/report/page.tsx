@@ -222,7 +222,7 @@ function ReportPageInner() {
 
         {/* 有料版の布石 */}
         <div className="bg-white rounded-3xl p-5 border border-purple-100 space-y-2">
-          <p className="text-xs text-purple-400 font-medium">ここリフトより</p>
+          <p className="text-xs text-purple-400 font-medium">ココリフトより</p>
           <p className="text-sm text-stone-600 leading-relaxed">
             この30日プログラムを、毎日そっとガイドして変化を記録できる仕組みを準備しています。
             できあがったら、いちばんにお知らせします。

@@ -259,7 +259,7 @@ function ProgramPageInner() {
       <div className="min-h-screen px-5 py-12" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
         <div className="w-full max-w-sm mx-auto space-y-8">
           <div className="text-center space-y-3">
-            <h1 className="text-xl font-bold text-stone-900">一人でやるのは、難しい。<br />ここリフトが、毎日あなたの隣にいます。</h1>
+            <h1 className="text-xl font-bold text-stone-900">一人でやるのは、難しい。<br />ココリフトが、毎日あなたの隣にいます。</h1>
             <p className="text-sm text-stone-500">プログラムの内容は無料でお届け済み。<br />毎日続ける仕組みが、有料です。</p>
           </div>
 
