@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { getSupabaseServer } from '@/lib/supabase-server';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 const TYPE_MESSAGE: Record<string, string> = {
   'いい子・承認型': 'ずっと応え続けてきたあなたへ。その頑張りは、本物です。',
@@ -22,6 +21,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const resend = new Resend(process.env.RESEND_API_KEY);
   const sb = getSupabaseServer();
   if (!sb) return NextResponse.json({ error: 'server config error' }, { status: 500 });
 
