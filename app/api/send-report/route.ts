@@ -25,56 +25,55 @@ export async function POST(req: NextRequest) {
   const sb = getSupabaseServer();
   if (!sb) return NextResponse.json({ error: 'server config error' }, { status: 500 });
 
-  // 送信対象を取得（diagnostics + leads をjoin）
-  const { data: targets, error } = await sb
+  const { email } = await req.json();
+  if (!email) return NextResponse.json({ error: 'email required' }, { status: 400 });
+
+  // leadsからsession_idを取得
+  const { data: lead } = await sb
     .from('leads')
-    .select('email, session_id')
-    .not('email', 'is', null);
+    .select('session_id')
+    .eq('email', email)
+    .single();
 
-  if (error || !targets) return NextResponse.json({ error: error?.message }, { status: 500 });
+  if (!lead) return NextResponse.json({ error: 'email not found' }, { status: 404 });
 
-  const results = [];
+  // diagnosticsからtokenとタイプを取得
+  const { data: diag } = await sb
+    .from('diagnostics')
+    .select('report_token, first_type_name')
+    .eq('session_id', lead.session_id)
+    .single();
 
-  for (const target of targets) {
-    // diagnosticsからtokenとタイプを取得
-    const { data: diag } = await sb
-      .from('diagnostics')
-      .select('report_token, first_type_name')
-      .eq('session_id', target.session_id)
-      .single();
+  if (!diag?.report_token) return NextResponse.json({ error: 'diagnostic not found' }, { status: 404 });
 
-    if (!diag?.report_token) continue;
+  const typeName = diag.first_type_name;
+  const message = TYPE_MESSAGE[typeName] || 'あなたのことを、少しでも軽くしたいと思っています。';
+  const reportUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/report?token=${diag.report_token}`;
 
-    const typeName = diag.first_type_name;
-    const message = TYPE_MESSAGE[typeName] || 'あなたのことを、少しでも軽くしたいと思っています。';
-    const reportUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/report?token=${diag.report_token}`;
-
-    const { error: sendError } = await resend.emails.send({
-      from: 'ココリフト <noreply@kokorift.com>',
-      to: target.email,
-      subject: `【ココリフト】あなた専用の診断レポートができました`,
-      html: `
-        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; color: #292524;">
-          <p style="font-size: 15px; line-height: 1.8;">診断ありがとうございました。</p>
-          <p style="font-size: 15px; line-height: 1.8;">あなたは <strong>「${typeName}」</strong> でした。</p>
-          <p style="font-size: 14px; line-height: 1.8; color: #78716c;">${message}</p>
-          <p style="font-size: 15px; line-height: 1.8;">あなた専用の詳細レポートと30日プログラムをご用意しました。</p>
-          <div style="margin: 32px 0;">
-            <a href="${reportUrl}" style="display: inline-block; background: linear-gradient(135deg, #a78bfa, #7c3aed); color: white; padding: 14px 32px; border-radius: 9999px; text-decoration: none; font-weight: bold; font-size: 15px;">
-              あなたのレポートを見る →
-            </a>
-          </div>
-          <p style="font-size: 13px; line-height: 1.8; color: #a8a29e;">
-            ${target.email} 宛に送信しています。<br />
-            ※ CBTの考え方をベースにした自己改善ツールです。医療診断ではありません。
-          </p>
-          <p style="font-size: 13px; color: #a8a29e; margin-top: 24px;">ココリフト</p>
+  const { error: sendError } = await resend.emails.send({
+    from: 'ココリフト <noreply@kokorift.com>',
+    to: email,
+    subject: `【ココリフト】あなた専用の診断レポートができました`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; color: #292524;">
+        <p style="font-size: 15px; line-height: 1.8;">診断ありがとうございました。</p>
+        <p style="font-size: 15px; line-height: 1.8;">あなたは <strong>「${typeName}」</strong> でした。</p>
+        <p style="font-size: 14px; line-height: 1.8; color: #78716c;">${message}</p>
+        <p style="font-size: 15px; line-height: 1.8;">あなた専用の詳細レポートと30日プログラムをご用意しました。</p>
+        <div style="margin: 32px 0;">
+          <a href="${reportUrl}" style="display: inline-block; background: linear-gradient(135deg, #a78bfa, #7c3aed); color: white; padding: 14px 32px; border-radius: 9999px; text-decoration: none; font-weight: bold; font-size: 15px;">
+            あなたのレポートを見る →
+          </a>
         </div>
-      `,
-    });
+        <p style="font-size: 13px; line-height: 1.8; color: #a8a29e;">
+          ${email} 宛に送信しています。<br />
+          ※ CBTの考え方をベースにした自己改善ツールです。医療診断ではありません。
+        </p>
+        <p style="font-size: 13px; color: #a8a29e; margin-top: 24px;">ココリフト</p>
+      </div>
+    `,
+  });
 
-    results.push({ email: target.email, success: !sendError, error: sendError?.message });
-  }
-
-  return NextResponse.json({ sent: results.length, results });
+  if (sendError) return NextResponse.json({ error: sendError.message }, { status: 500 });
+  return NextResponse.json({ ok: true, email, reportUrl });
 }
