@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { PROGRAM_CONTENT, TYPE_NAMES } from '@/data/program';
 
-type Screen = 'onboarding' | 'loading' | 'plan-complete' | 'pricing';
+type Screen = 'landing' | 'onboarding' | 'loading' | 'plan-complete' | 'pricing';
 
 interface Onboarding {
   lifestyle: string;
@@ -48,7 +48,7 @@ function ProgramPageInner() {
   const typeId = searchParams.get('type') || 'distancer';
   const email = searchParams.get('email') || '';
 
-  const [screen, setScreen] = useState<Screen>('onboarding');
+  const [screen, setScreen] = useState<Screen>('landing');
   const [questionIndex, setQuestionIndex] = useState(0);
   const [onboarding, setOnboarding] = useState<Partial<Onboarding>>({});
   const [loadingStep, setLoadingStep] = useState(0);
@@ -100,6 +100,65 @@ function ProgramPageInner() {
     const data = await res.json();
     if (data.url) window.location.href = data.url;
     else setIsLoading(false);
+  }
+
+  if (screen === 'landing') {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center px-5 py-16" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
+        <div className="w-full max-w-sm space-y-8">
+          <div className="text-center space-y-4">
+            <div className="inline-block px-3 py-1 rounded-full bg-purple-100 text-purple-600 text-xs font-medium">
+              あなただけの限定プログラム
+            </div>
+            <h1 className="text-2xl font-bold text-stone-900 leading-snug">
+              <span className="text-purple-600">{typeName}</span>のあなたにぴったりの<br />30日プログラムを<br />ご用意しました。
+            </h1>
+            <p className="text-sm text-stone-500 leading-relaxed">
+              診断結果をもとに、あなたの特性に合わせた<br />毎日のミッションをお届けします。
+            </p>
+          </div>
+
+          <div className="flex justify-center gap-3">
+            <div className="flex items-center gap-1.5 bg-white border border-stone-100 rounded-full px-3 py-1.5 shadow-sm">
+              <span className="text-xs text-stone-500">✦</span>
+              <span className="text-xs text-stone-600 font-medium">CBT準拠</span>
+            </div>
+            <div className="flex items-center gap-1.5 bg-white border border-stone-100 rounded-full px-3 py-1.5 shadow-sm">
+              <span className="text-xs text-stone-500">✦</span>
+              <span className="text-xs text-stone-600 font-medium">30日間プログラム</span>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-3xl p-5 border border-purple-100 space-y-3">
+            <p className="text-xs text-purple-400 font-medium">このプログラムでできること</p>
+            <ul className="space-y-2.5">
+              {[
+                '毎日1つ、あなたに合わせたミッション',
+                '小さな変化を記録・可視化',
+                '続けるほど積み上がる達成感',
+              ].map((item, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-stone-700">
+                  <span className="text-purple-400 mt-0.5">✓</span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <button
+            onClick={() => setScreen('onboarding')}
+            className="w-full py-4 rounded-full font-bold text-white text-base transition-all active:scale-[0.98]"
+            style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)', boxShadow: '0 8px 24px rgba(124, 58, 237, 0.3)' }}
+          >
+            プログラムを見る →
+          </button>
+
+          <p className="text-xs text-stone-400 text-center">
+            ※ CBT（認知行動療法）の考え方をベースにした自己改善ツールです。医療ではありません。
+          </p>
+        </div>
+      </div>
+    );
   }
 
   if (screen === 'onboarding') {
