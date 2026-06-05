@@ -19,6 +19,27 @@ type ReportData = {
   reaction_want: string | null;
 };
 
+function AxisExplainer({ title, items }: { title: string; items: { label: string; desc: string }[] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div>
+      <button onClick={() => setOpen(v => !v)} className="text-xs text-stone-400 underline underline-offset-2">
+        {open ? '閉じる' : title}
+      </button>
+      {open && (
+        <div className="mt-2 space-y-1.5">
+          {items.map(item => (
+            <div key={item.label} className="flex gap-2 text-xs">
+              <span className="text-stone-500 font-medium min-w-fit">{item.label}</span>
+              <span className="text-stone-400">— {item.desc}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ReactionButtons({
   label,
   options,
@@ -139,37 +160,48 @@ function ReportPageInner() {
         <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-3">
           <p className="text-xs text-stone-400 font-medium">恐れの4軸</p>
           <RadarChartComponent fearScores={data.fear_scores} />
-          <p className="text-xs text-stone-400 text-center leading-relaxed">
-            関係喪失 / 評価失墜 / 不完全性 / 制御不能
-          </p>
+          <AxisExplainer title="軸の説明を見る" items={[
+            { label: '関係喪失', desc: '大切な人が離れていく怖さ' },
+            { label: '評価失墜', desc: '能力を低く見られる怖さ' },
+            { label: '不完全性', desc: 'ちゃんとできない自分への怖さ' },
+            { label: '制御不能', desc: '先が読めない・思い通りにならない怖さ' },
+          ]} />
         </div>
 
         {/* 防衛スタイル */}
         <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-4">
           <p className="text-xs text-stone-400 font-medium">防衛スタイル</p>
           <DefenseBarChart defenseScores={data.defense_scores} />
+          <AxisExplainer title="軸の説明を見る" items={[
+            { label: '接近↔回避', desc: '人に近づくか、距離を取るか' },
+            { label: '能動↔受動', desc: '自分から動くか、動かず待つか' },
+            { label: '抑制↔表出', desc: '感情を抑えるか、出すか' },
+          ]} />
         </div>
 
-        {/* 消耗しやすい場面 */}
-        {content ? (
+        {content ? (<>
+          {/* 消耗しやすい場面 */}
           <div className="bg-white rounded-3xl p-5 border border-purple-100 space-y-3">
             <p className="text-xs text-purple-400 font-medium">あなたが消耗しやすい場面</p>
             <p className="text-sm text-stone-700 leading-relaxed">{content.drainScene}</p>
           </div>
-        ) : (
-          <div className="bg-white rounded-3xl p-5 border border-stone-100">
-            <p className="text-xs text-stone-400">このタイプの詳細分析は準備中です。</p>
-          </div>
-        )}
 
-        {/* 30日プログラム */}
-        {content && (
+          {/* 強みリフレーム */}
+          <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-3">
+            <p className="text-xs text-stone-400 font-medium">その力は、本来こういうもの</p>
+            <p className="text-sm text-stone-700 leading-relaxed">{content.strengthReframe}</p>
+          </div>
+
+          {/* 30日プログラム */}
           <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-4">
-            <p className="text-xs text-stone-400 font-medium">あなたの30日プログラム</p>
+            <div className="space-y-1">
+              <p className="text-xs text-stone-400 font-medium">あなたの30日プログラム</p>
+              <p className="text-xs text-stone-400">まずは「気づく」ことが目標です</p>
+            </div>
             <div className="space-y-4">
               {content.program.map((step, i) => (
                 <div key={i} className="flex gap-3">
-                  <div className="flex-shrink-0 w-14 text-center">
+                  <div className="flex-shrink-0 w-16 text-center">
                     <span className="text-xs font-bold text-purple-400">{step.step}</span>
                   </div>
                   <div className="space-y-0.5">
@@ -179,6 +211,16 @@ function ReportPageInner() {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* 30日後には */}
+          <div className="bg-purple-50 rounded-3xl p-5 border border-purple-100 space-y-2">
+            <p className="text-xs text-purple-400 font-medium">30日後には…</p>
+            <p className="text-sm text-stone-700 leading-relaxed">{content.after}</p>
+          </div>
+        </>) : (
+          <div className="bg-white rounded-3xl p-5 border border-stone-100">
+            <p className="text-xs text-stone-400">このタイプの詳細分析は準備中です。</p>
           </div>
         )}
 
