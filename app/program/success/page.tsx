@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { getSupabase } from '@/lib/supabase';
+import { getSupabaseServer } from '@/lib/supabase-server';
 import { TYPE_NAMES } from '@/data/program';
 
 function SuccessPageInner() {
@@ -17,7 +18,7 @@ function SuccessPageInner() {
   const [errorMsg, setErrorMsg] = useState('');
 
   // Stripeセッションからメタデータを取得
-  const [meta, setMeta] = useState<{ email: string; typeId: string; plan: string; onboarding: Record<string, string> } | null>(null);
+  const [meta, setMeta] = useState<{ email: string; typeId: string; plan: string; onboarding: Record<string, string>; diagSession: string } | null>(null);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -33,6 +34,18 @@ function SuccessPageInner() {
     const sb = getSupabase();
     if (!sb) { setStatus('error'); setErrorMsg('接続エラー'); return; }
 
+    // 診断スコアをdiagnosticsから取得
+    let fearScores = null;
+    let defenseScores = null;
+    if (meta.diagSession) {
+      const res = await fetch(`/api/diag-scores?session=${meta.diagSession}`);
+      if (res.ok) {
+        const scores = await res.json();
+        fearScores = scores.fear_scores;
+        defenseScores = scores.defense_scores;
+      }
+    }
+
     const { error } = await sb.from('users').upsert({
       email: meta.email,
       username,
@@ -44,6 +57,8 @@ function SuccessPageInner() {
       change_scene: meta.onboarding?.changeScene,
       paid_plan: meta.plan,
       paid_at: new Date().toISOString(),
+      fear_scores: fearScores,
+      defense_scores: defenseScores,
     }, { onConflict: 'email' });
 
     if (error) { setStatus('error'); setErrorMsg(error.message); return; }

@@ -214,7 +214,7 @@ export default function Home() {
         distressTotal={resultData.distressTotal}
         sessionId={sessionId}
         onRestart={() => setScreen('intro')}
-        onShowEmailInput={() => router.push(`/program?type=${resultData.firstType.id}`)}
+        onShowEmailInput={() => router.push(`/program?type=${resultData.firstType.id}&session=${sessionId}`)}
       />
     );
   }

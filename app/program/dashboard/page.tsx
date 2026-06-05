@@ -4,8 +4,14 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSupabase } from '@/lib/supabase';
 import { PROGRAM_CONTENT, TYPE_NAMES } from '@/data/program';
+import { REPORT_CONTENT } from '@/data/report';
+import { FearAxis, DefenseAxis } from '@/data/questions';
+import dynamic from 'next/dynamic';
 
-type Tab = 'home' | 'mission' | 'record' | 'review';
+const RadarChartComponent = dynamic(() => import('@/components/RadarChartComponent'), { ssr: false });
+const DefenseBarChart = dynamic(() => import('@/components/DefenseBarChart'), { ssr: false });
+
+type Tab = 'home' | 'mission' | 'record' | 'review' | 'report';
 type RecordStep = 'question' | 'detail' | 'done';
 
 export default function DashboardPage() {
@@ -23,6 +29,8 @@ export default function DashboardPage() {
   const [beforeScore, setBeforeScore] = useState(3);
   const [afterScore, setAfterScore] = useState(3);
   const [memo, setMemo] = useState('');
+  const [fearScores, setFearScores] = useState<Record<FearAxis, number> | null>(null);
+  const [defenseScores, setDefenseScores] = useState<Record<DefenseAxis, number> | null>(null);
 
   const content = PROGRAM_CONTENT[typeId];
   const typeName = TYPE_NAMES[typeId];
@@ -38,7 +46,16 @@ export default function DashboardPage() {
     if (tid) setTypeId(tid);
     setUsername(uname);
     loadStats(uid);
+    loadScores(uid);
   }, []);
+
+  async function loadScores(uid: string) {
+    const sb = getSupabase();
+    if (!sb) return;
+    const { data } = await sb.from('users').select('fear_scores, defense_scores').eq('id', uid).single();
+    if (data?.fear_scores) setFearScores(data.fear_scores);
+    if (data?.defense_scores) setDefenseScores(data.defense_scores);
+  }
 
   async function loadStats(uid: string) {
     const sb = getSupabase();
@@ -275,6 +292,72 @@ export default function DashboardPage() {
             </div>
           </div>
         )}
+
+        {tab === 'report' && (() => {
+          const reportContent = REPORT_CONTENT[typeId];
+          return (
+            <div className="space-y-5 pt-2">
+              <h2 className="text-lg font-bold text-stone-900">あなたのレポート</h2>
+
+              {fearScores && (
+                <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-3">
+                  <p className="text-xs text-stone-400 font-medium">恐れの4軸</p>
+                  <RadarChartComponent fearScores={fearScores} />
+                </div>
+              )}
+
+              {defenseScores && (
+                <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-4">
+                  <p className="text-xs text-stone-400 font-medium">防衛スタイル</p>
+                  <DefenseBarChart defenseScores={defenseScores} />
+                </div>
+              )}
+
+              {reportContent ? (<>
+                <div className="bg-white rounded-3xl p-5 border border-purple-100 space-y-3">
+                  <p className="text-xs text-purple-400 font-medium">あなたが消耗しやすい場面</p>
+                  <p className="text-sm text-stone-700 leading-relaxed">{reportContent.drainScene}</p>
+                </div>
+                <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-3">
+                  <p className="text-xs text-stone-400 font-medium">その力は、本来こういうもの</p>
+                  <p className="text-sm text-stone-700 leading-relaxed">{reportContent.strengthReframe}</p>
+                </div>
+                <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-4">
+                  <div className="space-y-1">
+                    <p className="text-xs text-stone-400 font-medium">あなたの30日プログラム</p>
+                    <p className="text-xs text-stone-400">まずは「気づく」ことが目標です</p>
+                  </div>
+                  {reportContent.program.map((step, i) => (
+                    <div key={i} className="flex gap-3">
+                      <div className="flex-shrink-0 w-16 text-center">
+                        <span className="text-xs font-bold text-purple-400">{step.step}</span>
+                      </div>
+                      <div className="space-y-0.5">
+                        <p className="text-sm font-bold text-stone-800">{step.title}</p>
+                        <p className="text-xs text-stone-500 leading-relaxed">{step.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-purple-50 rounded-3xl p-5 border border-purple-100 space-y-2">
+                  <p className="text-xs text-purple-400 font-medium">30日後には…</p>
+                  <p className="text-sm text-stone-700 leading-relaxed">{reportContent.after}</p>
+                </div>
+              </>) : (
+                <div className="bg-white rounded-3xl p-5 border border-stone-100">
+                  <p className="text-xs text-stone-400">準備中です。</p>
+                </div>
+              )}
+
+              <div className="bg-stone-100 rounded-3xl p-5 space-y-2">
+                <p className="text-xs text-stone-500 font-medium">🌿 しんどい時は</p>
+                <p className="text-xs text-stone-500 leading-relaxed">
+                  しんどさが強いときは、無理せず専門の相談窓口や医療機関へ。あなたの力だけで抱え込まなくていいです。
+                </p>
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* ボトムナビ */}
@@ -284,11 +367,12 @@ export default function DashboardPage() {
           { key: 'mission', label: 'ミッション', icon: '🎯' },
           { key: 'record', label: '記録', icon: '📝' },
           { key: 'review', label: '振り返り', icon: '📊' },
+          { key: 'report', label: 'レポート', icon: '📋' },
         ] as { key: Tab; label: string; icon: string }[]).map(item => (
           <button
             key={item.key}
             onClick={() => { setTab(item.key); if (item.key === 'record') setRecordStep('question'); }}
-            className={`flex flex-col items-center gap-1 w-16 transition-colors ${tab === item.key ? 'text-purple-600' : 'text-stone-400'}`}
+            className={`flex flex-col items-center gap-1 w-14 transition-colors ${tab === item.key ? 'text-purple-600' : 'text-stone-400'}`}
           >
             <span className="text-lg">{item.icon}</span>
             <span className="text-xs font-medium">{item.label}</span>

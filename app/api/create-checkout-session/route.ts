@@ -18,7 +18,7 @@ const PLANS = {
 
 export async function POST(req: NextRequest) {
   try {
-    const { plan, email, typeId, onboarding } = await req.json();
+    const { plan, email, typeId, onboarding, session: diagSession } = await req.json();
 
     const planData = PLANS[plan as keyof typeof PLANS];
     if (!planData) return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
       }],
       mode: 'payment',
       customer_email: email,
-      metadata: { plan, typeId, onboarding: JSON.stringify(onboarding) },
+      metadata: { plan, typeId, onboarding: JSON.stringify(onboarding), session: diagSession || '' },
       success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/program/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/program`,
     });

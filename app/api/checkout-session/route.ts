@@ -13,5 +13,6 @@ export async function GET(req: NextRequest) {
     plan: session.metadata?.plan,
     typeId: session.metadata?.typeId,
     onboarding: JSON.parse(session.metadata?.onboarding || '{}'),
+    diagSession: session.metadata?.session || '',
   });
 }
