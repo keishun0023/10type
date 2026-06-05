@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
         quantity: 1,
       }],
       mode: 'payment',
-      customer_email: email,
+      ...(email ? { customer_email: email } : {}),
       metadata: { plan, typeId, onboarding: JSON.stringify(onboarding), session: diagSession || '' },
       success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/program/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/program`,
