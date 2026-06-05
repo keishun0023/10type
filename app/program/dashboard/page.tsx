@@ -67,6 +67,25 @@ export default function DashboardPage() {
   useEffect(() => {
     const sb = getSupabase();
     if (!sb) { setAuthChecked(true); return; }
+    // ハッシュにaccess_tokenがある場合（メール確認リンク経由）はセッションを確立させる
+    const hash = window.location.hash;
+    if (hash.includes('access_token=')) {
+      sb.auth.getSession().then(({ data }) => {
+        const user = data.session?.user;
+        if (!user) { setAuthChecked(true); return; }
+        setIsLoggedIn(true);
+        setUserId(user.id);
+        localStorage.setItem('kokolift_user_id', user.id);
+        loadUserData(user.id);
+        loadStats(user.id);
+        loadScores(user.id);
+        setAuthChecked(true);
+        // ハッシュをURLから消す
+        window.history.replaceState(null, '', '/program/dashboard');
+      });
+      return;
+    }
+
     sb.auth.getSession().then(({ data }) => {
       const user = data.session?.user;
       if (!user) { setAuthChecked(true); return; }

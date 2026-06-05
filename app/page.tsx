@@ -1,10 +1,18 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import LegalFooter from '@/components/LegalFooter';
 
 export default function Home() {
   const router = useRouter();
+
+  useEffect(() => {
+    // Supabaseのメール確認リンクがここに飛んできた場合、ダッシュボードへ転送
+    if (window.location.hash.includes('access_token=')) {
+      router.replace('/program/dashboard' + window.location.hash);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-white" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
