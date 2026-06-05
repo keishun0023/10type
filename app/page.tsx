@@ -1,281 +1,82 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
-import { FEAR_QUESTIONS, DEFENSE_QUESTIONS, DISTRESS_QUESTIONS, Question, FearAxis, DefenseAxis } from '@/data/questions';
-import { calculateFearScores, calculateDefenseScores, calculateDistressTotal, findTypes, getRetypeCandidates } from '@/lib/scoring';
-import { DiagType } from '@/data/types';
-import { saveDiagnostic, updateDiagnosticFeedback } from '@/lib/analytics';
-import IntroScreen from '@/components/IntroScreen';
-import QuestionScreen from '@/components/QuestionScreen';
-import DistressIntroScreen from '@/components/DistressIntroScreen';
-import ResultScreen from '@/components/ResultScreen';
-import EmailInputScreen from '@/components/EmailInputScreen';
-import EmailThanksScreen from '@/components/EmailThanksScreen';
-import FeedbackScreen from '@/components/FeedbackScreen';
-import RetypeScreen from '@/components/RetypeScreen';
-import ThankYouScreen from '@/components/ThankYouScreen';
-
-type Screen = 'intro' | 'strength' | 'distress-intro' | 'distress' | 'result' | 'email-input' | 'email-thanks' | 'feedback' | 'retype' | 'thankyou';
-
-interface ResultData {
-  firstType: DiagType;
-  secondType: DiagType;
-  fearScores: Record<FearAxis, number>;
-  defenseScores: Record<DefenseAxis, number>;
-  distressTotal: number;
-}
-
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-function getOrCreateDeviceId(): string {
-  const KEY = '10type_device_id';
-  let id = localStorage.getItem(KEY);
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem(KEY, id);
-  }
-  return id;
-}
-
-const TOTAL_QUESTIONS = 36; // 20 fear + 12 defense + 4 distress
-
-function HomeInner() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [screen, setScreen] = useState<Screen>('intro');
-  const [sessionId, setSessionId] = useState<string>('');
-  const [deviceId, setDeviceId] = useState<string>('');
-  const [strengthOrder, setStrengthOrder] = useState<string[]>([]);
-  const [strengthIndex, setStrengthIndex] = useState(0);
-  const [distressIndex, setDistressIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, number>>({});
-  const [resultData, setResultData] = useState<ResultData | null>(null);
-  const [feedbackRating, setFeedbackRating] = useState<number | null>(null);
-  const [retypeSelectedName, setRetypeSelectedName] = useState<string | null | undefined>(undefined);
-
-  // Combined ordered question list for shuffled strength phase (fear + defense)
-  const STRENGTH_QUESTIONS: Question[] = [...FEAR_QUESTIONS, ...DEFENSE_QUESTIONS];
-  const allQuestions: Question[] = [...STRENGTH_QUESTIONS, ...DISTRESS_QUESTIONS];
-
-  useEffect(() => {
-    if (searchParams.get('from') === 'start') handleStart();
-  }, []);
-
-  function handleStart() {
-    setSessionId(crypto.randomUUID());
-    setDeviceId(getOrCreateDeviceId());
-    setStrengthOrder(shuffle(STRENGTH_QUESTIONS.map(q => q.id)));
-    setStrengthIndex(0);
-    setDistressIndex(0);
-    setAnswers({});
-    setResultData(null);
-    setFeedbackRating(null);
-    setRetypeSelectedName(undefined);
-    setScreen('strength');
-  }
-
-  function handleStrengthAnswer(value: number) {
-    const qId = strengthOrder[strengthIndex];
-    const newAnswers = { ...answers, [qId]: value };
-    setAnswers(newAnswers);
-    if (strengthIndex < STRENGTH_QUESTIONS.length - 1) {
-      setStrengthIndex(strengthIndex + 1);
-    } else {
-      setScreen('distress-intro');
-    }
-  }
-
-  function handleStrengthBack() {
-    if (strengthIndex > 0) {
-      setStrengthIndex(strengthIndex - 1);
-    } else {
-      setScreen('intro');
-    }
-  }
-
-  function handleDistressAnswer(value: number) {
-    const qId = DISTRESS_QUESTIONS[distressIndex].id;
-    const newAnswers = { ...answers, [qId]: value };
-    setAnswers(newAnswers);
-    if (distressIndex < DISTRESS_QUESTIONS.length - 1) {
-      setDistressIndex(distressIndex + 1);
-    } else {
-      const fearScores = calculateFearScores(newAnswers, allQuestions);
-      const defenseScores = calculateDefenseScores(newAnswers, allQuestions);
-      const distressTotal = calculateDistressTotal(newAnswers, allQuestions);
-      const { first, second } = findTypes(fearScores, defenseScores);
-      const rd = { firstType: first, secondType: second, fearScores, defenseScores, distressTotal };
-      setResultData(rd);
-      // 結果確定時点で即時保存
-      saveDiagnostic({
-        sessionId,
-        deviceId,
-        answers: newAnswers,
-        firstType: first,
-        secondType: second,
-        fearScores,
-        defenseScores,
-        distressTotal,
-        feedbackRating: null,
-        retypeSelectedName: null,
-        retypeSelectedNone: false,
-      });
-      setScreen('result');
-    }
-  }
-
-  function handleDistressBack() {
-    if (distressIndex > 0) {
-      setDistressIndex(distressIndex - 1);
-    } else {
-      setScreen('distress-intro');
-    }
-  }
-
-  function handleFeedbackRate(rating: number) {
-    setFeedbackRating(rating);
-    if (rating >= 4) {
-      goToThankYou(rating, undefined);
-    } else {
-      setScreen('retype');
-    }
-  }
-
-  function handleRetypeSubmit(selectedTypeId: string | null) {
-    setRetypeSelectedName(selectedTypeId);
-    goToThankYou(feedbackRating, selectedTypeId);
-  }
-
-  function goToThankYou(rating: number | null, retype: string | null | undefined) {
-    updateDiagnosticFeedback(
-      sessionId,
-      rating,
-      retype ?? null,
-      retype === null,
-    );
-    setScreen('thankyou');
-  }
-
-  if (screen === 'intro') {
-    return <IntroScreen onStart={handleStart} />;
-  }
-
-  if (screen === 'strength') {
-    const qId = strengthOrder[strengthIndex];
-    const question = STRENGTH_QUESTIONS.find(q => q.id === qId);
-    if (!question) return null;
-    return (
-      <QuestionScreen
-        question={question}
-        questionNumber={strengthIndex + 1}
-        totalQuestions={TOTAL_QUESTIONS}
-        currentAnswer={answers[question.id]}
-        onAnswer={handleStrengthAnswer}
-        onBack={handleStrengthBack}
-        isDistress={false}
-      />
-    );
-  }
-
-  if (screen === 'distress-intro') {
-    return (
-      <DistressIntroScreen
-        onContinue={() => { setDistressIndex(0); setScreen('distress'); }}
-        onBack={() => { setStrengthIndex(STRENGTH_QUESTIONS.length - 1); setScreen('strength'); }}
-      />
-    );
-  }
-
-  if (screen === 'distress') {
-    const question = DISTRESS_QUESTIONS[distressIndex];
-    return (
-      <QuestionScreen
-        question={question}
-        questionNumber={STRENGTH_QUESTIONS.length + distressIndex + 1}
-        totalQuestions={TOTAL_QUESTIONS}
-        currentAnswer={answers[question.id]}
-        onAnswer={handleDistressAnswer}
-        onBack={handleDistressBack}
-        isDistress={true}
-      />
-    );
-  }
-
-  if (screen === 'result' && resultData) {
-    return (
-      <ResultScreen
-        firstType={resultData.firstType}
-        secondType={resultData.secondType}
-        fearScores={resultData.fearScores}
-        defenseScores={resultData.defenseScores}
-        distressTotal={resultData.distressTotal}
-        sessionId={sessionId}
-        onRestart={() => setScreen('intro')}
-        onShowEmailInput={() => router.push(`/program?type=${resultData.firstType.id}&session=${sessionId}`)}
-      />
-    );
-  }
-
-  if (screen === 'email-input' && resultData) {
-    return (
-      <EmailInputScreen
-        sessionId={sessionId}
-        firstTypeName={resultData.firstType.name}
-        onSuccess={() => setScreen('email-thanks')}
-      />
-    );
-  }
-
-  if (screen === 'email-thanks') {
-    return (
-      <EmailThanksScreen
-        onNextFeedback={() => setScreen('feedback')}
-        onRestart={() => setScreen('intro')}
-      />
-    );
-  }
-
-  if (screen === 'feedback' && resultData) {
-    return (
-      <FeedbackScreen
-        typeName={resultData.firstType.name}
-        onRate={handleFeedbackRate}
-      />
-    );
-  }
-
-  if (screen === 'retype' && resultData) {
-    const candidates = getRetypeCandidates(resultData.fearScores, resultData.defenseScores, resultData.firstType.id);
-    const retypeMode: 'partial' | 'miss' = (feedbackRating ?? 0) >= 3 ? 'partial' : 'miss';
-    return (
-      <RetypeScreen
-        candidates={candidates}
-        mode={retypeMode}
-        onSubmit={handleRetypeSubmit}
-      />
-    );
-  }
-
-  if (screen === 'thankyou') {
-    return <ThankYouScreen onRestart={() => setScreen('intro')} />;
-  }
-
-  return null;
-}
+import { useRouter } from 'next/navigation';
+import LegalFooter from '@/components/LegalFooter';
 
 export default function Home() {
+  const router = useRouter();
+
   return (
-    <Suspense>
-      <HomeInner />
-    </Suspense>
+    <div className="min-h-screen flex flex-col bg-white" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
+      <div className="flex-1 flex flex-col items-center px-5 pt-6 pb-8">
+        <div className="flex flex-col items-center w-full max-w-sm gap-0">
+
+          {/* サービスアイコン */}
+          <img src="/intro-service-icon.png" alt="" className="w-10 h-10 object-contain mb-1" />
+
+          {/* ロゴ */}
+          <img src="/intro-logo.png" alt="ココリフト" className="h-12 object-contain mb-2" />
+
+          {/* 区切り線 */}
+          <img src="/intro-divider.png" alt="" className="w-12 object-contain mb-3" />
+
+          {/* キャッチコピー */}
+          <div className="text-center mb-0 relative z-10">
+            <h1 className="text-xl font-bold text-stone-700 leading-relaxed">
+              生きづらさの理由がわかる<br />
+              そして、少し<span className="text-purple-500 font-bold">軽く</span>なれる
+            </h1>
+          </div>
+
+          {/* ヒーローイラスト */}
+          <img src="/intro-hero.png" alt="" className="w-full max-w-xs object-contain -mt-4 -mb-10" />
+
+          {/* CTAボタン */}
+          <div className="w-full flex items-center justify-center gap-2 mb-4">
+            <img src="/intro-btn-lines.png" alt="" className="w-8 object-contain" />
+            <button
+              onClick={() => router.push('/start?from=lp')}
+              className="flex-1 flex items-center gap-3 px-5 py-4 rounded-full font-bold text-white text-base transition-all active:scale-[0.98]"
+              style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)', boxShadow: '0 8px 24px rgba(124, 58, 237, 0.3)' }}
+            >
+              <img src="/intro-btn-heart.png" alt="" className="w-5 h-5 object-contain" />
+              <span className="flex-1 text-center">無料で診断する</span>
+            </button>
+            <img src="/intro-btn-lines.png" alt="" className="w-8 object-contain scale-x-[-1]" />
+          </div>
+
+          <p className="text-xs text-stone-400 text-center mb-6">
+            ※診断は無料です。詳細レポートとプログラムは有料です。
+          </p>
+
+          {/* 特徴3つ */}
+          <div className="w-full grid grid-cols-3 gap-3 mb-6">
+            {[
+              { img: '/intro-feature-1.png', label: '8タイプ\n診断' },
+              { img: '/intro-feature-2.png', label: '恐れの\n可視化' },
+              { img: '/intro-feature-3.png', label: '30日\nプログラム' },
+            ].map((f, i) => (
+              <div key={i} className="flex flex-col items-center gap-1.5 bg-white rounded-2xl p-3 border border-stone-100">
+                <img src={f.img} alt="" className="w-8 h-8 object-contain" />
+                <p className="text-xs text-stone-600 font-medium text-center whitespace-pre-line leading-tight">{f.label}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* サービス説明 */}
+          <div className="w-full bg-white rounded-2xl p-4 border border-stone-100 space-y-2 mb-4">
+            <p className="text-xs font-bold text-stone-700">ココリフトとは</p>
+            <p className="text-xs text-stone-500 leading-relaxed">
+              CBT（認知行動療法）とビッグファイブの考え方をベースに、あなたの「生きづらさのかたち」を8タイプで分析するセルフケアサービスです。診断は無料。詳細レポートと30日間の改善プログラムは有料でご提供しています。
+            </p>
+          </div>
+
+          <p className="text-xs text-stone-400 text-center leading-relaxed">
+            ※医療診断ではありません。効果を保証するものではありません。
+          </p>
+        </div>
+      </div>
+      <LegalFooter />
+    </div>
   );
 }
