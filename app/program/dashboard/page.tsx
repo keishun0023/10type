@@ -24,6 +24,9 @@ export default function DashboardPage() {
   const [loginPassword, setLoginPassword] = useState('');
   const [loginStatus, setLoginStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [loginError, setLoginError] = useState('');
+  const [loginView, setLoginView] = useState<'login' | 'reset' | 'reset-sent'>('login');
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetStatus, setResetStatus] = useState<'idle' | 'loading' | 'error'>('idle');
 
   const [tab, setTab] = useState<Tab>('home');
   const [userId, setUserId] = useState('');
@@ -202,6 +205,18 @@ export default function DashboardPage() {
     setTimeout(() => setProfileSaved(false), 2500);
   }
 
+  async function handleResetPassword(e: React.FormEvent) {
+    e.preventDefault();
+    setResetStatus('loading');
+    const sb = getSupabase();
+    if (!sb) { setResetStatus('error'); return; }
+    const { error } = await sb.auth.resetPasswordForEmail(resetEmail, {
+      redirectTo: `${window.location.origin}/program/dashboard`,
+    });
+    if (error) { setResetStatus('error'); return; }
+    setLoginView('reset-sent');
+  }
+
   async function handleLogout() {
     const sb = getSupabase();
     if (sb) await sb.auth.signOut();
@@ -222,54 +237,130 @@ export default function DashboardPage() {
     );
   }
 
-  // 未ログイン → ログイン画面
+  // 未ログイン → ログイン / パスワードリセット画面
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-5" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
         <div className="w-full max-w-sm space-y-8">
-          <div className="text-center space-y-2">
-            <p className="text-2xl">🔒</p>
-            <h1 className="text-xl font-bold text-stone-900">ログイン</h1>
-            <p className="text-sm text-stone-500">ダッシュボードにアクセスするにはログインが必要です</p>
-          </div>
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-1">
-              <label className="text-xs text-stone-500">メールアドレス</label>
-              <input
-                type="email"
-                value={loginEmail}
-                onChange={e => setLoginEmail(e.target.value)}
-                placeholder="example@email.com"
-                required
-                className="w-full px-4 py-3.5 rounded-xl border border-stone-200 text-sm focus:outline-none focus:border-purple-400"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs text-stone-500">パスワード</label>
-              <input
-                type="password"
-                value={loginPassword}
-                onChange={e => setLoginPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                className="w-full px-4 py-3.5 rounded-xl border border-stone-200 text-sm focus:outline-none focus:border-purple-400"
-              />
+          {loginView === 'login' && (<>
+            <div className="text-center space-y-2">
+              <p className="text-2xl">🔒</p>
+              <h1 className="text-xl font-bold text-stone-900">ログイン</h1>
+              <p className="text-sm text-stone-500">ダッシュボードにアクセスするにはログインが必要です</p>
             </div>
 
-            {loginStatus === 'error' && (
-              <p className="text-xs text-red-500">{loginError}</p>
-            )}
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs text-stone-500">メールアドレス</label>
+                <input
+                  type="email"
+                  value={loginEmail}
+                  onChange={e => setLoginEmail(e.target.value)}
+                  placeholder="example@email.com"
+                  required
+                  className="w-full px-4 py-3.5 rounded-xl border border-stone-200 text-sm focus:outline-none focus:border-purple-400"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-stone-500">パスワード</label>
+                <input
+                  type="password"
+                  value={loginPassword}
+                  onChange={e => setLoginPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  className="w-full px-4 py-3.5 rounded-xl border border-stone-200 text-sm focus:outline-none focus:border-purple-400"
+                />
+              </div>
 
-            <button
-              type="submit"
-              disabled={loginStatus === 'loading'}
-              className="w-full py-4 rounded-full font-bold text-white disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}
-            >
-              {loginStatus === 'loading' ? 'ログイン中...' : 'ログイン'}
-            </button>
-          </form>
+              {loginStatus === 'error' && (
+                <p className="text-xs text-red-500">{loginError}</p>
+              )}
+
+              <button
+                type="submit"
+                disabled={loginStatus === 'loading'}
+                className="w-full py-4 rounded-full font-bold text-white disabled:opacity-50"
+                style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}
+              >
+                {loginStatus === 'loading' ? 'ログイン中...' : 'ログイン'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setResetEmail(loginEmail); setLoginView('reset'); setResetStatus('idle'); }}
+                className="w-full text-center text-xs text-stone-400 hover:text-purple-500 transition-colors py-1"
+              >
+                パスワードを忘れた方はこちら
+              </button>
+            </form>
+          </>)}
+
+          {loginView === 'reset' && (<>
+            <div className="text-center space-y-2">
+              <p className="text-2xl">📧</p>
+              <h1 className="text-xl font-bold text-stone-900">パスワードをリセット</h1>
+              <p className="text-sm text-stone-500">登録したメールアドレスに再設定用のリンクを送ります</p>
+            </div>
+
+            <form onSubmit={handleResetPassword} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs text-stone-500">メールアドレス</label>
+                <input
+                  type="email"
+                  value={resetEmail}
+                  onChange={e => setResetEmail(e.target.value)}
+                  placeholder="example@email.com"
+                  required
+                  className="w-full px-4 py-3.5 rounded-xl border border-stone-200 text-sm focus:outline-none focus:border-purple-400"
+                />
+              </div>
+
+              {resetStatus === 'error' && (
+                <p className="text-xs text-red-500">送信に失敗しました。もう一度お試しください。</p>
+              )}
+
+              <button
+                type="submit"
+                disabled={resetStatus === 'loading'}
+                className="w-full py-4 rounded-full font-bold text-white disabled:opacity-50"
+                style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}
+              >
+                {resetStatus === 'loading' ? '送信中...' : 'リセットメールを送る'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setLoginView('login')}
+                className="w-full text-center text-xs text-stone-400 hover:text-purple-500 transition-colors py-1"
+              >
+                ← ログインに戻る
+              </button>
+            </form>
+          </>)}
+
+          {loginView === 'reset-sent' && (
+            <div className="text-center space-y-6">
+              <p className="text-4xl">✅</p>
+              <div className="space-y-2">
+                <h1 className="text-xl font-bold text-stone-900">メールを送信しました</h1>
+                <p className="text-sm text-stone-500 leading-relaxed">
+                  <span className="font-medium text-stone-700">{resetEmail}</span> に<br />
+                  パスワード再設定用のリンクを送りました。<br />
+                  メールを確認してください。
+                </p>
+              </div>
+              <button
+                onClick={() => setLoginView('login')}
+                className="w-full py-4 rounded-full font-bold text-white"
+                style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}
+              >
+                ログインに戻る
+              </button>
+            </div>
+          )}
+
         </div>
       </div>
     );
