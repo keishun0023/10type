@@ -13,6 +13,7 @@ function SuccessPageInner() {
 
   const [step, setStep] = useState<'account' | 'done'>('account');
   const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
@@ -24,7 +25,10 @@ function SuccessPageInner() {
     if (!sessionId) return;
     fetch(`/api/checkout-session?session_id=${sessionId}`)
       .then(r => r.json())
-      .then(data => setMeta(data));
+      .then(data => {
+        setMeta(data);
+        if (data.email) setEmail(data.email);
+      });
   }, [sessionId]);
 
   async function handleCreateAccount(e: React.FormEvent) {
@@ -33,6 +37,12 @@ function SuccessPageInner() {
     setStatus('loading');
     const sb = getSupabase();
     if (!sb) { setStatus('error'); setErrorMsg('接続エラー'); return; }
+
+    // Supabase Authでアカウント作成
+    const { data: authData, error: authError } = await sb.auth.signUp({ email, password });
+    if (authError) { setStatus('error'); setErrorMsg(authError.message); return; }
+    const uid = authData.user?.id;
+    if (!uid) { setStatus('error'); setErrorMsg('アカウント作成に失敗しました'); return; }
 
     // 診断スコアをdiagnosticsから取得
     let fearScores = null;
@@ -47,7 +57,8 @@ function SuccessPageInner() {
     }
 
     const { error } = await sb.from('users').upsert({
-      email: meta.email,
+      id: uid,
+      email,
       username,
       type_id: meta.typeId,
       lifestyle: meta.onboarding?.lifestyle,
@@ -63,10 +74,8 @@ function SuccessPageInner() {
 
     if (error) { setStatus('error'); setErrorMsg(error.message); return; }
 
-    // ユーザーIDを取得してlocalStorageに保存
-    const { data: userData } = await sb.from('users').select('id').eq('email', meta.email).single();
-    if (userData) localStorage.setItem('kokolift_user_id', userData.id);
-    localStorage.setItem('kokolift_user_email', meta.email);
+    localStorage.setItem('kokolift_user_id', uid);
+    localStorage.setItem('kokolift_user_email', email);
     localStorage.setItem('kokolift_type_id', meta.typeId);
 
     setStep('done');
@@ -123,12 +132,26 @@ function SuccessPageInner() {
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-stone-500">メールアドレス（確認）</label>
+            <label className="text-xs text-stone-500">メールアドレス</label>
             <input
               type="email"
-              value={meta.email}
-              disabled
-              className="w-full px-4 py-3.5 rounded-xl border border-stone-100 text-sm bg-stone-50 text-stone-400"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="example@email.com"
+              required
+              className="w-full px-4 py-3.5 rounded-xl border border-stone-200 text-sm focus:outline-none focus:border-purple-400"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-stone-500">パスワード（6文字以上）</label>
+            <input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              minLength={6}
+              className="w-full px-4 py-3.5 rounded-xl border border-stone-200 text-sm focus:outline-none focus:border-purple-400"
             />
           </div>
 
@@ -136,7 +159,7 @@ function SuccessPageInner() {
 
           <button
             type="submit"
-            disabled={status === 'loading' || !username}
+            disabled={status === 'loading' || !username || !email || !password}
             className="w-full py-4 rounded-full font-bold text-white disabled:opacity-50"
             style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}
           >
