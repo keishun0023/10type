@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { FEAR_QUESTIONS, DEFENSE_QUESTIONS, DISTRESS_QUESTIONS, Question, FearAxis, DefenseAxis } from '@/data/questions';
 import { calculateFearScores, calculateDefenseScores, calculateDistressTotal, findTypes, getRetypeCandidates } from '@/lib/scoring';
 import { DiagType } from '@/data/types';
@@ -47,6 +48,7 @@ function getOrCreateDeviceId(): string {
 const TOTAL_QUESTIONS = 36; // 20 fear + 12 defense + 4 distress
 
 export default function Home() {
+  const router = useRouter();
   const [screen, setScreen] = useState<Screen>('intro');
   const [sessionId, setSessionId] = useState<string>('');
   const [deviceId, setDeviceId] = useState<string>('');
@@ -212,7 +214,7 @@ export default function Home() {
         distressTotal={resultData.distressTotal}
         sessionId={sessionId}
         onRestart={() => setScreen('intro')}
-        onShowEmailInput={() => setScreen('email-input')}
+        onShowEmailInput={() => router.push(`/program?type=${resultData.firstType.id}`)}
       />
     );
   }

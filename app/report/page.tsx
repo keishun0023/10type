@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { FearAxis, DefenseAxis } from '@/data/questions';
 import { REPORT_CONTENT, TYPE_ID_MAP } from '@/data/report';
+import LegalFooter from '@/components/LegalFooter';
 
 const RadarChartComponent = dynamic(() => import('@/components/RadarChartComponent'), { ssr: false });
 const DefenseBarChart = dynamic(() => import('@/components/DefenseBarChart'), { ssr: false });
@@ -275,6 +276,7 @@ function ReportPageInner() {
           ※ ビッグファイブ／CBTの考え方をベースにした自己改善ツールです。医療診断ではありません。効果を保証するものではありません。
         </p>
       </div>
+      <LegalFooter />
     </div>
   );
 }
