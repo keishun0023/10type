@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import { FEAR_QUESTIONS, DEFENSE_QUESTIONS, DISTRESS_QUESTIONS, Question, FearAxis, DefenseAxis } from '@/data/questions';
 import { calculateFearScores, calculateDefenseScores, calculateDistressTotal, findTypes, getRetypeCandidates } from '@/lib/scoring';
 import { DiagType } from '@/data/types';
@@ -47,8 +48,9 @@ function getOrCreateDeviceId(): string {
 
 const TOTAL_QUESTIONS = 36; // 20 fear + 12 defense + 4 distress
 
-export default function Home() {
+function HomeInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [screen, setScreen] = useState<Screen>('intro');
   const [sessionId, setSessionId] = useState<string>('');
   const [deviceId, setDeviceId] = useState<string>('');
@@ -63,6 +65,10 @@ export default function Home() {
   // Combined ordered question list for shuffled strength phase (fear + defense)
   const STRENGTH_QUESTIONS: Question[] = [...FEAR_QUESTIONS, ...DEFENSE_QUESTIONS];
   const allQuestions: Question[] = [...STRENGTH_QUESTIONS, ...DISTRESS_QUESTIONS];
+
+  useEffect(() => {
+    if (searchParams.get('from') === 'start') handleStart();
+  }, []);
 
   function handleStart() {
     setSessionId(crypto.randomUUID());
@@ -264,4 +270,12 @@ export default function Home() {
   }
 
   return null;
+}
+
+export default function Home() {
+  return (
+    <Suspense>
+      <HomeInner />
+    </Suspense>
+  );
 }
