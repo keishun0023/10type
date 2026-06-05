@@ -213,7 +213,7 @@ export default function DashboardPage() {
     const { error } = await sb.auth.resetPasswordForEmail(resetEmail, {
       redirectTo: `${window.location.origin}/program/reset-password`,
     });
-    if (error) { setResetStatus('error'); return; }
+    if (error) { setResetStatus('error'); setLoginError(error.message); return; }
     setLoginView('reset-sent');
   }
 
@@ -318,7 +318,7 @@ export default function DashboardPage() {
               </div>
 
               {resetStatus === 'error' && (
-                <p className="text-xs text-red-500">送信に失敗しました。もう一度お試しください。</p>
+                <p className="text-xs text-red-500">送信に失敗しました：{loginError}</p>
               )}
 
               <button
