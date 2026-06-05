@@ -103,9 +103,28 @@ export default function DashboardPage() {
 
   async function loadUserData(uid: string) {
     const sb = getSupabase();
-    if (!sb) return;
-    const { data } = await sb.from('users').select('*').eq('id', uid).single();
-    if (!data) return;
+    if (!sb) { setProfileData({}  as any); return; }
+
+    let { data, error } = await sb.from('users').select('*').eq('id', uid).single();
+
+    // idで見つからない場合はemailで再検索
+    if (!data || error) {
+      const { data: { user } } = await sb.auth.getUser();
+      if (user?.email) {
+        const res = await sb.from('users').select('*').eq('email', user.email).single();
+        data = res.data;
+        // idを正しいauthのuidで更新
+        if (data) {
+          await sb.from('users').update({ id: uid }).eq('email', user.email);
+        }
+      }
+    }
+
+    if (!data) {
+      setProfileData({ username: '', email: '', lifestyle: '', daily_time: '', best_timing: '', distress_level: '', change_scene: '', type_id: '', paid_plan: '' });
+      return;
+    }
+
     const name = data.username || 'あなた';
     setUsername(name);
     localStorage.setItem('kokolift_username', name);
