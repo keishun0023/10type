@@ -11,11 +11,20 @@ import dynamic from 'next/dynamic';
 const RadarChartComponent = dynamic(() => import('@/components/RadarChartComponent'), { ssr: false });
 const DefenseBarChart = dynamic(() => import('@/components/DefenseBarChart'), { ssr: false });
 
-type Tab = 'home' | 'mission' | 'record' | 'review' | 'report';
+type Tab = 'home' | 'mission' | 'record' | 'review' | 'report' | 'profile';
 type RecordStep = 'question' | 'detail' | 'done';
 
 export default function DashboardPage() {
   const router = useRouter();
+  const [authChecked, setAuthChecked] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // login form
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginStatus, setLoginStatus] = useState<'idle' | 'loading' | 'error'>('idle');
+  const [loginError, setLoginError] = useState('');
+
   const [tab, setTab] = useState<Tab>('home');
   const [userId, setUserId] = useState('');
   const [typeId, setTypeId] = useState('distancer');
@@ -32,22 +41,83 @@ export default function DashboardPage() {
   const [fearScores, setFearScores] = useState<Record<FearAxis, number> | null>(null);
   const [defenseScores, setDefenseScores] = useState<Record<DefenseAxis, number> | null>(null);
 
+  // profile edit state
+  const [profileData, setProfileData] = useState<{
+    username: string;
+    email: string;
+    lifestyle: string;
+    daily_time: string;
+    best_timing: string;
+    distress_level: string;
+    change_scene: string;
+    type_id: string;
+    paid_plan: string;
+  } | null>(null);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileSaved, setProfileSaved] = useState(false);
+
   const content = PROGRAM_CONTENT[typeId];
   const typeName = TYPE_NAMES[typeId];
   const todayMissionIndex = (dayCount - 1) % (content?.missionPool.length || 1);
   const todayMission = content?.missionPool[todayMissionIndex];
 
   useEffect(() => {
-    const uid = localStorage.getItem('kokolift_user_id');
-    const tid = localStorage.getItem('kokolift_type_id');
-    const uname = localStorage.getItem('kokolift_username') || 'あなた';
-    if (!uid) { router.push('/program'); return; }
-    setUserId(uid);
-    if (tid) setTypeId(tid);
-    setUsername(uname);
-    loadStats(uid);
-    loadScores(uid);
+    const sb = getSupabase();
+    if (!sb) { setAuthChecked(true); return; }
+    sb.auth.getSession().then(({ data }) => {
+      const user = data.session?.user;
+      if (!user) { setAuthChecked(true); return; }
+      setIsLoggedIn(true);
+      setUserId(user.id);
+      localStorage.setItem('kokolift_user_id', user.id);
+      loadUserData(user.id);
+      loadStats(user.id);
+      loadScores(user.id);
+      setAuthChecked(true);
+    });
   }, []);
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setLoginStatus('loading');
+    const sb = getSupabase();
+    if (!sb) { setLoginStatus('error'); setLoginError('接続エラー'); return; }
+    const { data, error } = await sb.auth.signInWithPassword({ email: loginEmail, password: loginPassword });
+    if (error || !data.user) {
+      setLoginStatus('error');
+      setLoginError('メールアドレスまたはパスワードが正しくありません');
+      return;
+    }
+    const uid = data.user.id;
+    setUserId(uid);
+    localStorage.setItem('kokolift_user_id', uid);
+    await loadUserData(uid);
+    await loadStats(uid);
+    await loadScores(uid);
+    setIsLoggedIn(true);
+    setLoginStatus('idle');
+  }
+
+  async function loadUserData(uid: string) {
+    const sb = getSupabase();
+    if (!sb) return;
+    const { data } = await sb.from('users').select('*').eq('id', uid).single();
+    if (!data) return;
+    setUsername(data.username || 'あなた');
+    setTypeId(data.type_id || 'distancer');
+    localStorage.setItem('kokolift_type_id', data.type_id || 'distancer');
+    setProfileData({
+      username: data.username || '',
+      email: data.email || '',
+      lifestyle: data.lifestyle || '',
+      daily_time: data.daily_time || '',
+      best_timing: data.best_timing || '',
+      distress_level: data.distress_level || '',
+      change_scene: data.change_scene || '',
+      type_id: data.type_id || '',
+      paid_plan: data.paid_plan || '',
+    });
+  }
 
   async function loadScores(uid: string) {
     const sb = getSupabase();
@@ -63,19 +133,11 @@ export default function DashboardPage() {
     const today = new Date().toISOString().split('T')[0];
     const { data: logs } = await sb.from('daily_logs').select('*').eq('user_id', uid).order('date', { ascending: false });
     if (!logs) return;
-
-    // 今日のログ
     const todayLogData = logs.find(l => l.date === today);
     if (todayLogData) setTodayLog({ done: todayLogData.done, count: todayLogData.count });
-
-    // 累計
     const total = logs.filter(l => l.done).reduce((sum, l) => sum + (l.count || 0), 0);
     setTotalCount(total);
-
-    // 日数
     setDayCount(logs.length + 1);
-
-    // 連続記録
     let s = 0;
     const sortedDates = logs.map(l => l.date).sort().reverse();
     for (let i = 0; i < sortedDates.length; i++) {
@@ -120,7 +182,98 @@ export default function DashboardPage() {
     }, { onConflict: 'user_id,date' });
   }
 
+  async function handleSaveProfile(e: React.FormEvent) {
+    e.preventDefault();
+    if (!profileData) return;
+    setProfileSaving(true);
+    const sb = getSupabase();
+    if (!sb) { setProfileSaving(false); return; }
+    await sb.from('users').update({
+      username: profileData.username,
+      lifestyle: profileData.lifestyle,
+      daily_time: profileData.daily_time,
+      best_timing: profileData.best_timing,
+      distress_level: profileData.distress_level,
+      change_scene: profileData.change_scene,
+    }).eq('id', userId);
+    setUsername(profileData.username);
+    setProfileSaving(false);
+    setProfileSaved(true);
+    setTimeout(() => setProfileSaved(false), 2500);
+  }
+
+  async function handleLogout() {
+    const sb = getSupabase();
+    if (sb) await sb.auth.signOut();
+    localStorage.removeItem('kokolift_user_id');
+    localStorage.removeItem('kokolift_user_email');
+    localStorage.removeItem('kokolift_type_id');
+    setIsLoggedIn(false);
+  }
+
   const progress = Math.min(dayCount / 30, 1);
+
+  // ローディング中
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
+        <div className="w-10 h-10 rounded-full border-4 border-purple-200 border-t-purple-500 animate-spin" />
+      </div>
+    );
+  }
+
+  // 未ログイン → ログイン画面
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center px-5" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
+        <div className="w-full max-w-sm space-y-8">
+          <div className="text-center space-y-2">
+            <p className="text-2xl">🔒</p>
+            <h1 className="text-xl font-bold text-stone-900">ログイン</h1>
+            <p className="text-sm text-stone-500">ダッシュボードにアクセスするにはログインが必要です</p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-xs text-stone-500">メールアドレス</label>
+              <input
+                type="email"
+                value={loginEmail}
+                onChange={e => setLoginEmail(e.target.value)}
+                placeholder="example@email.com"
+                required
+                className="w-full px-4 py-3.5 rounded-xl border border-stone-200 text-sm focus:outline-none focus:border-purple-400"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-stone-500">パスワード</label>
+              <input
+                type="password"
+                value={loginPassword}
+                onChange={e => setLoginPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                className="w-full px-4 py-3.5 rounded-xl border border-stone-200 text-sm focus:outline-none focus:border-purple-400"
+              />
+            </div>
+
+            {loginStatus === 'error' && (
+              <p className="text-xs text-red-500">{loginError}</p>
+            )}
+
+            <button
+              type="submit"
+              disabled={loginStatus === 'loading'}
+              className="w-full py-4 rounded-full font-bold text-white disabled:opacity-50"
+              style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}
+            >
+              {loginStatus === 'loading' ? 'ログイン中...' : 'ログイン'}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-stone-50 pb-24">
@@ -143,7 +296,6 @@ export default function DashboardPage() {
       <div className="max-w-sm mx-auto px-5 space-y-5">
         {tab === 'home' && (
           <>
-            {/* 今日のミッション */}
             <div className="bg-white rounded-3xl p-5 border border-purple-100 space-y-3">
               <p className="text-xs text-purple-400 font-medium">今日のミッション</p>
               <p className="text-sm font-bold text-stone-800 leading-relaxed">{todayMission?.text}</p>
@@ -162,7 +314,6 @@ export default function DashboardPage() {
               )}
             </div>
 
-            {/* 30日進捗 */}
             <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-3">
               <p className="text-xs text-stone-400 font-medium">30日プログラム</p>
               <div className="w-full bg-stone-100 rounded-full h-2">
@@ -171,7 +322,6 @@ export default function DashboardPage() {
               <p className="text-sm text-stone-600">{dayCount - 1} / 30日</p>
             </div>
 
-            {/* 可視化 */}
             <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-2">
               <p className="text-xs text-stone-400 font-medium">今週のあなた</p>
               <p className="text-sm text-stone-600">{content?.visualizationLabel}</p>
@@ -358,24 +508,123 @@ export default function DashboardPage() {
             </div>
           );
         })()}
+
+        {tab === 'profile' && (
+          <div className="space-y-5 pt-2">
+            <h2 className="text-lg font-bold text-stone-900">プロフィール</h2>
+
+            {profileData ? (
+              <form onSubmit={handleSaveProfile} className="space-y-4">
+                <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-4">
+                  <p className="text-xs text-stone-400 font-medium">基本情報</p>
+
+                  <div className="space-y-1">
+                    <label className="text-xs text-stone-500">呼び名</label>
+                    <input
+                      type="text"
+                      value={profileData.username}
+                      onChange={e => setProfileData({ ...profileData, username: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm focus:outline-none focus:border-purple-400"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs text-stone-500">メールアドレス</label>
+                    <input
+                      type="email"
+                      value={profileData.email}
+                      disabled
+                      className="w-full px-4 py-3 rounded-xl border border-stone-100 text-sm bg-stone-50 text-stone-400"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs text-stone-500">診断タイプ</label>
+                    <input
+                      type="text"
+                      value={TYPE_NAMES[profileData.type_id] || profileData.type_id}
+                      disabled
+                      className="w-full px-4 py-3 rounded-xl border border-stone-100 text-sm bg-stone-50 text-stone-400"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs text-stone-500">プラン</label>
+                    <input
+                      type="text"
+                      value={profileData.paid_plan === 'standard' ? 'スタンダードプラン' : profileData.paid_plan === 'light' ? 'ライトプラン' : profileData.paid_plan}
+                      disabled
+                      className="w-full px-4 py-3 rounded-xl border border-stone-100 text-sm bg-stone-50 text-stone-400"
+                    />
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-4">
+                  <p className="text-xs text-stone-400 font-medium">プログラム設定</p>
+
+                  {[
+                    { label: '生活スタイル', key: 'lifestyle' as const, options: ['社会人', '学生', '主婦・主夫', 'その他'] },
+                    { label: '1日に取れる時間', key: 'daily_time' as const, options: ['5分以内', '10〜15分', '30分以上'] },
+                    { label: '続けやすいタイミング', key: 'best_timing' as const, options: ['朝', '昼', '夜'] },
+                    { label: '今の困り度', key: 'distress_level' as const, options: ['とても困っている', '少し困っている', '知的興味で'] },
+                    { label: '変えたい場面', key: 'change_scene' as const, options: ['職場・学校', '家族・パートナー', '友人関係', '自分の思考', '全部'] },
+                  ].map(({ label, key, options }) => (
+                    <div key={key} className="space-y-1">
+                      <label className="text-xs text-stone-500">{label}</label>
+                      <select
+                        value={profileData[key]}
+                        onChange={e => setProfileData({ ...profileData, [key]: e.target.value })}
+                        className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm focus:outline-none focus:border-purple-400 bg-white"
+                      >
+                        <option value="">選択してください</option>
+                        {options.map(o => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={profileSaving}
+                  className="w-full py-4 rounded-full font-bold text-white disabled:opacity-50"
+                  style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}
+                >
+                  {profileSaving ? '保存中...' : profileSaved ? '✓ 保存しました' : '変更を保存する'}
+                </button>
+              </form>
+            ) : (
+              <div className="flex items-center justify-center py-12">
+                <div className="w-8 h-8 rounded-full border-4 border-purple-200 border-t-purple-500 animate-spin" />
+              </div>
+            )}
+
+            <button
+              onClick={handleLogout}
+              className="w-full py-3 rounded-full text-sm font-medium text-stone-400 border border-stone-200"
+            >
+              ログアウト
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ボトムナビ */}
-      <nav className="fixed bottom-0 left-0 w-full bg-white border-t border-stone-100 flex justify-around items-center h-16 px-2">
+      <nav className="fixed bottom-0 left-0 w-full bg-white border-t border-stone-100 flex justify-around items-center h-16 px-1">
         {([
           { key: 'home', label: 'ホーム', icon: '🏠' },
           { key: 'mission', label: 'ミッション', icon: '🎯' },
           { key: 'record', label: '記録', icon: '📝' },
           { key: 'review', label: '振り返り', icon: '📊' },
           { key: 'report', label: 'レポート', icon: '📋' },
+          { key: 'profile', label: 'プロフィール', icon: '👤' },
         ] as { key: Tab; label: string; icon: string }[]).map(item => (
           <button
             key={item.key}
             onClick={() => { setTab(item.key); if (item.key === 'record') setRecordStep('question'); }}
-            className={`flex flex-col items-center gap-1 w-14 transition-colors ${tab === item.key ? 'text-purple-600' : 'text-stone-400'}`}
+            className={`flex flex-col items-center gap-0.5 w-12 transition-colors ${tab === item.key ? 'text-purple-600' : 'text-stone-400'}`}
           >
-            <span className="text-lg">{item.icon}</span>
-            <span className="text-xs font-medium">{item.label}</span>
+            <span className="text-base">{item.icon}</span>
+            <span className="text-[10px] font-medium leading-tight">{item.label}</span>
           </button>
         ))}
       </nav>
