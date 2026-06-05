@@ -31,7 +31,7 @@ export default function DashboardPage() {
   const [tab, setTab] = useState<Tab>('home');
   const [userId, setUserId] = useState('');
   const [typeId, setTypeId] = useState('distancer');
-  const [username, setUsername] = useState('');
+  const [username, setUsername] = useState(() => typeof window !== 'undefined' ? localStorage.getItem('kokolift_username') || '' : '');
   const [streak, setStreak] = useState(0);
   const [dayCount, setDayCount] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -106,7 +106,9 @@ export default function DashboardPage() {
     if (!sb) return;
     const { data } = await sb.from('users').select('*').eq('id', uid).single();
     if (!data) return;
-    setUsername(data.username || 'あなた');
+    const name = data.username || 'あなた';
+    setUsername(name);
+    localStorage.setItem('kokolift_username', name);
     setTypeId(data.type_id || 'distancer');
     localStorage.setItem('kokolift_type_id', data.type_id || 'distancer');
     setProfileData({

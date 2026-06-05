@@ -77,6 +77,7 @@ function SuccessPageInner() {
     localStorage.setItem('kokolift_user_id', uid);
     localStorage.setItem('kokolift_user_email', email);
     localStorage.setItem('kokolift_type_id', meta.typeId);
+    localStorage.setItem('kokolift_username', username);
 
     setStep('done');
   }
