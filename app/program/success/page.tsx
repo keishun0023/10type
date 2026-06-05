@@ -44,35 +44,28 @@ function SuccessPageInner() {
     const uid = authData.user?.id;
     if (!uid) { setStatus('error'); setErrorMsg('アカウント作成に失敗しました'); return; }
 
-    // 診断スコアをdiagnosticsから取得
-    let fearScores = null;
-    let defenseScores = null;
-    if (meta.diagSession) {
-      const res = await fetch(`/api/diag-scores?session=${meta.diagSession}`);
-      if (res.ok) {
-        const scores = await res.json();
-        fearScores = scores.fear_scores;
-        defenseScores = scores.defense_scores;
-      }
+    // service_role経由でusersテーブルに保存（RLS回避）
+    const res = await fetch('/api/register-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: uid,
+        email,
+        username,
+        typeId: meta.typeId,
+        lifestyle: meta.onboarding?.lifestyle,
+        dailyTime: meta.onboarding?.dailyTime,
+        bestTiming: meta.onboarding?.bestTiming,
+        distressLevel: meta.onboarding?.distressLevel,
+        changeScene: meta.onboarding?.changeScene,
+        plan: meta.plan,
+        diagSession: meta.diagSession,
+      }),
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      setStatus('error'); setErrorMsg(data.error || '登録に失敗しました'); return;
     }
-
-    const { error } = await sb.from('users').upsert({
-      id: uid,
-      email,
-      username,
-      type_id: meta.typeId,
-      lifestyle: meta.onboarding?.lifestyle,
-      daily_time: meta.onboarding?.dailyTime,
-      best_timing: meta.onboarding?.bestTiming,
-      distress_level: meta.onboarding?.distressLevel,
-      change_scene: meta.onboarding?.changeScene,
-      paid_plan: meta.plan,
-      paid_at: new Date().toISOString(),
-      fear_scores: fearScores,
-      defense_scores: defenseScores,
-    }, { onConflict: 'email' });
-
-    if (error) { setStatus('error'); setErrorMsg(error.message); return; }
 
     localStorage.setItem('kokolift_user_id', uid);
     localStorage.setItem('kokolift_user_email', email);
