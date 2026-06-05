@@ -211,7 +211,7 @@ export default function DashboardPage() {
     const sb = getSupabase();
     if (!sb) { setResetStatus('error'); return; }
     const { error } = await sb.auth.resetPasswordForEmail(resetEmail, {
-      redirectTo: `${window.location.origin}/program/dashboard`,
+      redirectTo: `${window.location.origin}/program/reset-password`,
     });
     if (error) { setResetStatus('error'); return; }
     setLoginView('reset-sent');
