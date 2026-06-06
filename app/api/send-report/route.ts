@@ -58,19 +58,20 @@ export async function POST(req: NextRequest) {
   const { error: sendError } = await resend.emails.send({
     from: 'ココリフト <noreply@kokorift.com>',
     to: email,
-    subject: `【ココリフト】あなた専用の診断レポートができました`,
+    subject: `【ココリフト】あなたの診断結果と30日プログラムができました`,
     html: `
       <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; color: #292524;">
-        <p style="font-size: 15px; line-height: 1.8;">診断ありがとうございました。</p>
-        <p style="font-size: 15px; line-height: 1.8;">あなたは <strong>「${typeName}」</strong> でした。</p>
-        <p style="font-size: 14px; line-height: 1.8; color: #78716c;">${message}</p>
-        <p style="font-size: 15px; line-height: 1.8;">あなた専用の詳細レポートと30日プログラムをご用意しました。</p>
+        <p style="font-size: 15px; line-height: 1.8;">先日は「ココリフト」の診断を受けていただき、ありがとうございました。</p>
+        <p style="font-size: 15px; line-height: 1.8;">あなたの結果は <strong>「${typeName}」</strong>。</p>
+        <p style="font-size: 15px; line-height: 1.8;">この結果をもとに、あなた専用の <strong>詳細レポート</strong> と <strong>30日プログラム</strong> をご用意しました。</p>
+        <p style="font-size: 14px; line-height: 1.8; color: #78716c;">あなたの「恐れ」と「防衛スタイル」の可視化、消耗しやすい場面、そして今日から試せる小さなプログラムまで、まとめてご覧いただけます。</p>
         <div style="margin: 32px 0;">
           <a href="${reportUrl}" style="display: inline-block; background: linear-gradient(135deg, #a78bfa, #7c3aed); color: white; padding: 14px 32px; border-radius: 9999px; text-decoration: none; font-weight: bold; font-size: 15px;">
             あなたのレポートを見る →
           </a>
         </div>
         <p style="font-size: 13px; line-height: 1.8; color: #a8a29e;">
+          ※お届けまでお時間をいただいてしまい、失礼しました。リンクはいつでもご覧いただけます。<br /><br />
           ${email} 宛に送信しています。<br />
           ※ CBTの考え方をベースにした自己改善ツールです。医療診断ではありません。
         </p>
