@@ -61,6 +61,9 @@ export async function POST(req: NextRequest) {
     subject: `【ココリフト】あなたの診断結果と30日プログラムができました`,
     html: `
       <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; color: #292524;">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <img src="${process.env.NEXT_PUBLIC_BASE_URL}/intro-service-icon.png" alt="ココリフト" width="48" height="48" style="display: inline-block;" />
+        </div>
         <p style="font-size: 15px; line-height: 1.8;">先日は「ココリフト」の診断を受けていただき、ありがとうございました。</p>
         <p style="font-size: 15px; line-height: 1.8;">あなたの結果は <strong>「${typeName}」</strong>。</p>
         <p style="font-size: 15px; line-height: 1.8;">この結果をもとに、あなた専用の <strong>詳細レポート</strong> と <strong>30日プログラム</strong> をご用意しました。</p>
