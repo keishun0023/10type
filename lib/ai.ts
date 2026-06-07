@@ -49,6 +49,43 @@ export async function callClaude(params: {
   return text;
 }
 
+export async function callClaudeMessages(params: {
+  system: string;
+  messages: { role: 'user' | 'assistant'; content: string }[];
+  maxTokens?: number;
+  temperature?: number;
+}): Promise<string> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not set');
+
+  const res = await fetch(ANTHROPIC_URL, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: getAIModel(),
+      max_tokens: params.maxTokens ?? 1024,
+      temperature: params.temperature ?? 0.7,
+      system: params.system,
+      messages: params.messages,
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Anthropic API error ${res.status}: ${text}`);
+  }
+
+  const data = await res.json();
+  const block = data?.content?.[0];
+  const text = typeof block?.text === 'string' ? block.text : '';
+  if (!text) throw new Error('Anthropic API returned empty content');
+  return text;
+}
+
 // Claude応答からJSONを取り出す（コードフェンスや前後テキストに頑健）
 export function parseJSONFromText<T>(text: string): T {
   let t = text.trim();

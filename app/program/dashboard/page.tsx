@@ -9,6 +9,7 @@ import { FearAxis, DefenseAxis } from '@/data/questions';
 import { selectTodayMission, FEAR_FOCUS_LABEL, KIND_LABEL } from '@/lib/missionSelect';
 import { PROGRAM_COMPONENTS } from '@/data/program';
 import dynamic from 'next/dynamic';
+import CognitiveChatSession from '@/components/CognitiveChatSession';
 
 const FEAR_AXIS_LABEL: Record<string, string> = {
   F_REL: '関係喪失', F_EVAL: '評価', F_IMP: '不完全性', F_CTRL: '制御不能',
@@ -659,52 +660,20 @@ export default function DashboardPage() {
                 </div>
               </div>
             ) : (
-              /* Cognitive mission recording form */
-              <div className="space-y-5">
-                <p className="text-sm font-bold text-stone-700">今日、取り組みましたか？</p>
-                <div className="space-y-2">
-                  <p className="text-sm text-stone-600">気づいたこと・考えたこと（任意）</p>
-                  <textarea
-                    value={memo}
-                    onChange={e => setMemo(e.target.value)}
-                    rows={4}
-                    placeholder="今日気づいたこと..."
-                    className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm focus:outline-none focus:border-purple-400 resize-none"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <p className="text-sm text-stone-600">取り組む前の重さ</p>
-                  <div className="flex gap-2">
-                    {[1,2,3,4,5].map(n => (
-                      <button key={n} onClick={() => setBeforeScore(n)} className={`flex-1 h-8 rounded-full text-sm font-bold transition-colors ${beforeScore >= n ? 'bg-purple-400 text-white' : 'bg-stone-100 text-stone-400'}`}>●</button>
-                    ))}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <p className="text-sm text-stone-600">取り組んだ後の軽さ</p>
-                  <div className="flex gap-2">
-                    {[1,2,3,4,5].map(n => (
-                      <button key={n} onClick={() => setAfterScore(n)} className={`flex-1 h-8 rounded-full text-sm font-bold transition-colors ${afterScore >= n ? 'bg-teal-400 text-white' : 'bg-stone-100 text-stone-400'}`}>●</button>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={async () => {
-                      await saveLog(true, 1, beforeScore, afterScore, memo);
-                      setTodayLog({ done: true, count: 1 });
-                      setRecordStep('done');
-                    }}
-                    className="flex-1 py-4 rounded-full font-bold text-white text-sm"
-                    style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}
-                  >
-                    記録する
-                  </button>
-                  <button onClick={() => handleRecord(false)} className="flex-1 py-4 rounded-full font-bold text-stone-500 text-sm">
-                    今日は機会がなかった
-                  </button>
-                </div>
-              </div>
+              /* Cognitive mission: AI chat session */
+              <CognitiveChatSession
+                missionTitle={aiMission?.title ?? todayMission?.text ?? ''}
+                missionWhy={aiMission?.why ?? todayMission?.why ?? ''}
+                componentId={todayComponentId ?? ''}
+                day={dayCount}
+                userId={userId}
+                onComplete={async (summary: string) => {
+                  await saveLog(true, 1, 0, 0, summary);
+                  setTodayLog({ done: true, count: 1 });
+                  setRecordStep('done');
+                }}
+                onSkip={() => handleRecord(false)}
+              />
             )}
           </div>
         )}
