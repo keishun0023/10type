@@ -818,28 +818,38 @@ export default function DashboardPage() {
                       <div className="space-y-3">
                         {(() => {
                           // 連続する同タイトルのミッションをグルーピング
-                          const grouped: { dayLabel: string; days: number[]; title: string; why: string }[] = [];
+                          type GroupedMission = { dayLabel: string; days: number[]; title: string; why: string; componentId: string; kind: string; lv: number };
+                          const grouped: GroupedMission[] = [];
                           wk.days.forEach(m => {
                             const last = grouped[grouped.length - 1];
                             if (last && last.title === m.title) {
                               last.days.push(m.day);
                               last.dayLabel = `Day ${last.days[0]}〜${m.day}`;
                             } else {
-                              grouped.push({ dayLabel: `Day ${m.day}`, days: [m.day], title: m.title, why: m.why });
+                              grouped.push({ dayLabel: `Day ${m.day}`, days: [m.day], title: m.title, why: m.why, componentId: m.componentId, kind: m.kind, lv: m.lv });
                             }
                           });
                           return grouped.map(g => {
                             const isToday = g.days.includes(dayCount);
+                            const comp = PROGRAM_COMPONENTS[g.componentId as keyof typeof PROGRAM_COMPONENTS];
+                            const fearLabel = comp ? FEAR_AXIS_LABEL[comp.fearAxis] : null;
                             return (
-                              <div key={g.dayLabel} className={`flex gap-3 rounded-2xl p-2.5 -mx-1 ${isToday ? 'bg-purple-50 ring-1 ring-purple-200' : ''}`}>
-                                <div className="flex-shrink-0 w-14 text-center">
-                                  <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold leading-tight ${isToday ? 'bg-purple-500 text-white' : 'bg-stone-100 text-stone-500'}`}>
-                                    {g.dayLabel}
-                                  </span>
+                              <div key={g.dayLabel} className={`rounded-2xl p-2.5 -mx-1 space-y-2 ${isToday ? 'bg-purple-50 ring-1 ring-purple-200' : ''}`}>
+                                <div className="flex gap-3">
+                                  <div className="flex-shrink-0 w-14 text-center">
+                                    <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold leading-tight ${isToday ? 'bg-purple-500 text-white' : 'bg-stone-100 text-stone-500'}`}>
+                                      {g.dayLabel}
+                                    </span>
+                                  </div>
+                                  <div className="space-y-0.5 min-w-0">
+                                    <p className="text-sm font-medium text-stone-800 leading-snug">{g.title}</p>
+                                    {g.why && <p className="text-xs text-stone-400 leading-relaxed">{g.why}</p>}
+                                  </div>
                                 </div>
-                                <div className="space-y-0.5 min-w-0">
-                                  <p className="text-sm font-medium text-stone-800 leading-snug">{g.title}</p>
-                                  {g.why && <p className="text-xs text-stone-400 leading-relaxed">{g.why}</p>}
+                                <div className="flex flex-wrap gap-1.5 pl-[68px]">
+                                  {fearLabel && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-100 text-stone-500">{fearLabel}</span>}
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-500">{g.kind === 'action' ? '行動実験' : '考え方の整理'}</span>
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-200 text-stone-500">Lv {g.lv}</span>
                                 </div>
                               </div>
                             );
