@@ -148,7 +148,7 @@ export default function ResultScreen({
               <span>詳細レポートとプログラムを受け取る</span>
               <span className="text-lg opacity-70">›</span>
             </button>
-            <p className="text-xs text-stone-400 text-center">所要時間：約3分 / 完全無料</p>
+
           </div>
         </div>
 

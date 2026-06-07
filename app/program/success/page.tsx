@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { getSupabase } from '@/lib/supabase';
+import { getSupabaseServer } from '@/lib/supabase-server';
 import { TYPE_NAMES } from '@/data/program';
 
 function SuccessPageInner() {
@@ -12,18 +13,22 @@ function SuccessPageInner() {
 
   const [step, setStep] = useState<'account' | 'done'>('account');
   const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
   // Stripeセッションからメタデータを取得
-  const [meta, setMeta] = useState<{ email: string; typeId: string; plan: string; onboarding: Record<string, string> } | null>(null);
+  const [meta, setMeta] = useState<{ email: string; typeId: string; plan: string; onboarding: Record<string, string>; diagSession: string } | null>(null);
 
   useEffect(() => {
     if (!sessionId) return;
     fetch(`/api/checkout-session?session_id=${sessionId}`)
       .then(r => r.json())
-      .then(data => setMeta(data));
+      .then(data => {
+        setMeta(data);
+        if (data.email) setEmail(data.email);
+      });
   }, [sessionId]);
 
   async function handleCreateAccount(e: React.FormEvent) {
@@ -33,26 +38,65 @@ function SuccessPageInner() {
     const sb = getSupabase();
     if (!sb) { setStatus('error'); setErrorMsg('接続エラー'); return; }
 
-    const { error } = await sb.from('users').upsert({
-      email: meta.email,
-      username,
-      type_id: meta.typeId,
-      lifestyle: meta.onboarding?.lifestyle,
-      daily_time: meta.onboarding?.dailyTime,
-      best_timing: meta.onboarding?.bestTiming,
-      distress_level: meta.onboarding?.distressLevel,
-      change_scene: meta.onboarding?.changeScene,
-      paid_plan: meta.plan,
-      paid_at: new Date().toISOString(),
-    }, { onConflict: 'email' });
+    // Supabase Authでアカウント作成
+    const { data: authData, error: authError } = await sb.auth.signUp({ email, password });
+    let uid = authData?.user?.id;
 
-    if (error) { setStatus('error'); setErrorMsg(error.message); return; }
+    if (authError) {
+      // 既に登録済みなど → 同じパスワードでログインを試す
+      const { data: si, error: siErr } = await sb.auth.signInWithPassword({ email, password });
+      if (siErr || !si.user) {
+        setStatus('error');
+        setErrorMsg('このメールアドレスは既に使われています。パスワードが違う場合はログイン画面からお進みください。');
+        return;
+      }
+      uid = si.user.id;
+    } else if (!authData?.session && uid) {
+      // メール確認ON：サーバーで即時確認 → サインインしてセッションを確立
+      await fetch('/api/confirm-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: uid }),
+      });
+      const { error: siErr } = await sb.auth.signInWithPassword({ email, password });
+      if (siErr) {
+        setStatus('error');
+        setErrorMsg('ログインの確立に失敗しました。もう一度お試しください。');
+        return;
+      }
+    }
 
-    // ユーザーIDを取得してlocalStorageに保存
-    const { data: userData } = await sb.from('users').select('id').eq('email', meta.email).single();
-    if (userData) localStorage.setItem('kokolift_user_id', userData.id);
-    localStorage.setItem('kokolift_user_email', meta.email);
+    if (!uid) { setStatus('error'); setErrorMsg('アカウント作成に失敗しました'); return; }
+
+    // service_role経由でusersテーブルに保存（RLS回避）
+    const res = await fetch('/api/register-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: uid,
+        email,
+        username,
+        typeId: meta.typeId,
+        lifestyle: meta.onboarding?.lifestyle,
+        dailyTime: meta.onboarding?.dailyTime,
+        bestTiming: meta.onboarding?.bestTiming,
+        distressLevel: meta.onboarding?.distressLevel,
+        changeScene: meta.onboarding?.changeScene,
+        difficultScene: meta.onboarding?.difficultScene,
+        changeOrientation: meta.onboarding?.changeOrientation,
+        plan: meta.plan,
+        diagSession: meta.diagSession,
+      }),
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      setStatus('error'); setErrorMsg(data.error || '登録に失敗しました'); return;
+    }
+
+    localStorage.setItem('kokolift_user_id', uid);
+    localStorage.setItem('kokolift_user_email', email);
     localStorage.setItem('kokolift_type_id', meta.typeId);
+    localStorage.setItem('kokolift_username', username);
 
     setStep('done');
   }
@@ -75,11 +119,11 @@ function SuccessPageInner() {
             <p className="text-sm text-stone-500">30日プログラムが始まりました。<br />今日から少しずつ、一緒に進みましょう。</p>
           </div>
           <button
-            onClick={() => router.push('/program/dashboard')}
+            onClick={() => router.push('/program/welcome')}
             className="w-full py-4 rounded-full font-bold text-white"
             style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}
           >
-            ダッシュボードへ →
+            プログラムを始める →
           </button>
         </div>
       </div>
@@ -108,12 +152,26 @@ function SuccessPageInner() {
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-stone-500">メールアドレス（確認）</label>
+            <label className="text-xs text-stone-500">メールアドレス</label>
             <input
               type="email"
-              value={meta.email}
-              disabled
-              className="w-full px-4 py-3.5 rounded-xl border border-stone-100 text-sm bg-stone-50 text-stone-400"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="example@email.com"
+              required
+              className="w-full px-4 py-3.5 rounded-xl border border-stone-200 text-sm focus:outline-none focus:border-purple-400"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-stone-500">パスワード（6文字以上）</label>
+            <input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              minLength={6}
+              className="w-full px-4 py-3.5 rounded-xl border border-stone-200 text-sm focus:outline-none focus:border-purple-400"
             />
           </div>
 
@@ -121,7 +179,7 @@ function SuccessPageInner() {
 
           <button
             type="submit"
-            disabled={status === 'loading' || !username}
+            disabled={status === 'loading' || !username || !email || !password}
             className="w-full py-4 rounded-full font-bold text-white disabled:opacity-50"
             style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}
           >
