@@ -14,23 +14,13 @@ type Props = {
   onSkip: () => void;
 };
 
-const INITIAL_MESSAGE: Message = {
-  role: 'assistant',
-  content: '',
-};
-
 export default function CognitiveChatSession({
   missionTitle,
   missionWhy,
   onComplete,
   onSkip,
 }: Props) {
-  const initialMsg: Message = {
-    role: 'assistant',
-    content: `今日のミッション『${missionTitle}』に取り組んでみましょう。まず、今日この場面で感じたことや、心に引っかかったことを教えてください。`,
-  };
-
-  const [messages, setMessages] = useState<Message[]>([initialMsg]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState<string | null>(null);
@@ -104,11 +94,6 @@ export default function CognitiveChatSession({
   if (summary !== null) {
     return (
       <div className="space-y-5">
-        <div className="bg-white rounded-3xl p-5 border border-purple-100">
-          <p className="text-xs text-purple-400 font-medium mb-1">今日のミッション</p>
-          <p className="text-sm font-bold text-stone-800 leading-relaxed">「{missionTitle}」</p>
-        </div>
-
         <div className="bg-purple-50 rounded-3xl p-5 border border-purple-100 space-y-3">
           <p className="text-xs text-purple-500 font-bold">今日の気づき</p>
           <p className="text-sm text-stone-700 leading-relaxed">{summary}</p>
@@ -127,10 +112,9 @@ export default function CognitiveChatSession({
 
   return (
     <div className="flex flex-col" style={{ minHeight: 'calc(100vh - 200px)' }}>
-      {/* ミッション表示 */}
-      <div className="bg-white rounded-3xl p-5 border border-purple-100 mb-4">
-        <p className="text-xs text-purple-400 font-medium mb-1">今日のミッション</p>
-        <p className="text-sm font-bold text-stone-800 leading-relaxed">「{missionTitle}」</p>
+      {/* ブリッジ説明 */}
+      <div className="bg-stone-50 rounded-2xl px-4 py-3 mb-4 border border-stone-100">
+        <p className="text-xs text-stone-500 leading-relaxed">✦ AIと一緒に深めましょう。今日、気になった場面があったら思い出してここに話しかけてみてください。AIがいくつか質問しながら一緒に整理して、気づきをまとめます。</p>
       </div>
 
       {/* チャットエリア */}
