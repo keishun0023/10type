@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { TYPE_NAMES, ChangeOrientation, GeneratedPlan } from '@/data/program';
+import { REPORT_CONTENT } from '@/data/report';
 
 type Screen = 'landing' | 'onboarding' | 'deepdive' | 'loading' | 'plan-complete' | 'pricing';
 
@@ -390,13 +391,27 @@ function ProgramPageInner() {
   if (screen === 'plan-complete') {
     const report = generatedPlan?.report;
     const missions = generatedPlan?.missions ?? [];
-    // 成果物の各ブロック（上から：いまのあなた → 続き）
+    const fallback = REPORT_CONTENT[typeId];
+    // AI生成レポートがあればそれを優先。なければタイプ別固定文にフォールバック。
     const revealSections = [
-      { label: 'いまのあなたについて', body: report?.currentState, accent: true },
-      { label: 'あなたの消耗しやすい場面', body: report?.drainScene },
-      { label: 'あなたの強みの捉え直し', body: report?.strengthReframe },
-      { label: 'これから30日でやること', body: report?.direction },
-    ];
+      {
+        label: 'あなたが消耗しやすい場面',
+        body: report?.drainScene || fallback?.drainScene,
+        accent: true,
+      },
+      {
+        label: 'その力は、本来こういうもの',
+        body: report?.strengthReframe || fallback?.strengthReframe,
+      },
+      {
+        label: 'いまのあなたについて',
+        body: report?.currentState,
+      },
+      {
+        label: 'これから30日でやること',
+        body: report?.direction,
+      },
+    ].filter(s => s.body);
     return (
       <div className="min-h-screen px-5 py-10" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
         <div className="w-full max-w-sm mx-auto space-y-5">
@@ -419,9 +434,7 @@ function ProgramPageInner() {
               {revealSections.map((s, i) => (
                 <div key={i} className={`bg-white rounded-2xl p-5 space-y-1.5 border ${s.accent ? 'border-purple-100' : 'border-stone-100'}`}>
                   <p className="text-xs text-purple-400 font-medium">{s.label}</p>
-                  <p className="text-sm text-stone-700 leading-relaxed">
-                    {s.body || 'あなたの回答をもとに、あなたの状況に合わせて具体的に書いています。'}
-                  </p>
+                  <p className="text-sm text-stone-700 leading-relaxed">{s.body}</p>
                 </div>
               ))}
               {/* 30日ミッションの地図 */}

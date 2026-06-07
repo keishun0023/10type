@@ -12,10 +12,10 @@ const PREVIEW_MISSION_DAYS = 8;
 type PreviewAI = {
   userInsight: string;
   report: { currentState: string; drainScene: string; strengthReframe: string; direction: string };
+  welcomeSteps: { title: string; body: string }[];
   previewMissions: { day: number; title: string; why: string }[];
 };
 type FullAI = {
-  welcomeSteps: { title: string; body: string }[];
   missions: { day: number; title: string; why: string }[];
 };
 
@@ -114,7 +114,7 @@ export async function generatePlan(opts: GeneratePlanOpts): Promise<GeneratedPla
     return persist({
       userInsight: ai.userInsight ?? '',
       report: ai.report,
-      welcomeSteps: [],
+      welcomeSteps: ai.welcomeSteps ?? [],
       missions: mergeMissions(aiByDay),
       config,
       generatedAt: new Date().toISOString(),
@@ -151,7 +151,7 @@ export async function generatePlan(opts: GeneratePlanOpts): Promise<GeneratedPla
     return persist({
       userInsight: base.userInsight ?? '',
       report: base.report,
-      welcomeSteps: ai.welcomeSteps ?? base.welcomeSteps ?? [],
+      welcomeSteps: base.welcomeSteps ?? [],
       missions: mergeMissions(aiByDay, base.missions),
       config,
       generatedAt: new Date().toISOString(),
