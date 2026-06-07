@@ -579,7 +579,7 @@ export default function DashboardPage() {
                 )}
                 {todayKind && (
                   <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-600">
-                    {todayKind === 'action' ? '行動実験' : '考え方の整理'}
+                    {todayKind === 'action' ? '行動' : '認知'}
                   </span>
                 )}
                 <span className="px-3 py-1 rounded-full text-xs font-bold bg-stone-200 text-stone-500">
@@ -902,7 +902,7 @@ export default function DashboardPage() {
                                 </div>
                                 <div className="flex flex-wrap gap-1.5 pl-[68px]">
                                   {fearLabel && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-100 text-stone-500">{fearLabel}</span>}
-                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-500">{g.kind === 'action' ? '行動実験' : '考え方の整理'}</span>
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-500">{g.kind === 'action' ? '行動' : '認知'}</span>
                                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-200 text-stone-500">Lv {g.lv}</span>
                                 </div>
                               </div>
