@@ -685,7 +685,7 @@ export default function DashboardPage() {
                   const sb = getSupabase();
                   if (sb && userId) {
                     const today = new Date().toISOString().split('T')[0];
-                    await sb.from('daily_logs').upsert({
+                    const { error } = await sb.from('daily_logs').upsert({
                       user_id: userId,
                       date: today,
                       mission_id: dayCount,
@@ -696,7 +696,13 @@ export default function DashboardPage() {
                       after_score: 0,
                       memo: summary,
                     }, { onConflict: 'user_id,date' });
-                    await loadStats(userId);
+                    if (error) {
+                      console.error('cognitive session save error:', error);
+                    } else {
+                      await loadStats(userId);
+                    }
+                  } else {
+                    console.error('cognitive session save skipped: sb=', !!getSupabase(), 'userId=', userId);
                   }
                   setTodayLog({ done: true, count: 1 });
                   setRecordStep('done');
