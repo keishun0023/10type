@@ -510,7 +510,9 @@ function ProgramPageInner() {
                   <p className="text-xs text-stone-500 mt-1">AIと一緒に進める</p>
                 </div>
                 <ul className="space-y-2.5 text-sm text-stone-600">
-                  <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>ライトの全機能</li>
+                  <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>あなた専用の30日プラン（診断結果から個別生成）</li>
+                  <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>毎日のミッション</li>
+                  <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>取り組みの記録（回数・連続日数）</li>
                   <li className="flex flex-col gap-1">
                     <span className="flex gap-2 font-bold text-stone-700"><span className="text-purple-400 mt-0.5">✓</span>AI対話セッション</span>
                     <span className="text-xs text-stone-500 pl-6 leading-relaxed">不安になった出来事をAIと対話。事実と思い込みのズレに気づき、考え方のクセを一緒にほぐす</span>
@@ -548,7 +550,9 @@ function ProgramPageInner() {
                   <p className="text-xs text-stone-500 mt-1">とことん向き合う</p>
                 </div>
                 <ul className="space-y-2.5 text-sm text-stone-600">
-                  <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>スタンダードの全機能</li>
+                  <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>あなた専用の30日プラン＋毎日のミッション</li>
+                  <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>AI対話セッション・AIの変化フィードバック</li>
+                  <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>振り返り（詳細）・30日後の継続アクセス</li>
                   <li className="flex flex-col gap-1">
                     <span className="flex gap-2 font-bold text-stone-700"><span className="text-purple-400 mt-0.5">✓</span>月次の総括フィードバック</span>
                     <span className="text-xs text-stone-500 pl-6 leading-relaxed">1ヶ月の歩みをAIが総括し、次の一歩を提案</span>
