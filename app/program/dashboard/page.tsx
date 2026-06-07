@@ -947,17 +947,22 @@ export default function DashboardPage() {
           }
           return (
             <div className="space-y-5 pt-2">
-              <h2 className="text-lg font-bold text-stone-900">あなたについて</h2>
+              <div className="text-center space-y-1 pt-1">
+                <h2 className="text-xl font-bold text-stone-900">あなたについて</h2>
+                <p className="text-xs text-stone-400">現在の心の形と、これからの道のり</p>
+              </div>
 
-              <div className="bg-purple-50 rounded-3xl p-5 border border-purple-100 space-y-2">
+              <div className="bg-purple-50 rounded-3xl p-5 shadow-sm space-y-2">
                 <p className="text-xs text-purple-400 font-medium">この分析について</p>
                 <p className="text-sm text-stone-700 leading-relaxed">CBT（認知行動療法）とACTの考え方をもとに、あなたが「どんな場面でしんどくなりやすいか」「その時どう対処しがちか」を2つの軸で整理しています。スコアに良い悪いはなく、あなたのパターンを知ることが出発点です。</p>
               </div>
 
               {fearScores && (
-                <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-3">
+                <div className="bg-white rounded-3xl p-5 border border-stone-100 shadow-sm space-y-3">
                   <p className="text-xs text-stone-400 font-medium">恐れの4軸</p>
-                  <RadarChartComponent fearScores={fearScores} />
+                  <div className="rounded-2xl" style={{ background: 'radial-gradient(circle at 50% 45%, #f3effe 0%, #ffffff 70%)' }}>
+                    <RadarChartComponent fearScores={fearScores} />
+                  </div>
                   <button
                     onClick={() => setFearAxisOpen(v => !v)}
                     className="flex items-center gap-1.5 text-xs text-stone-400 hover:text-purple-500 transition-colors mt-1"
@@ -979,7 +984,7 @@ export default function DashboardPage() {
               )}
 
               {defenseScores && (
-                <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-4">
+                <div className="bg-white rounded-3xl p-5 border border-stone-100 shadow-sm space-y-4">
                   <p className="text-xs text-stone-400 font-medium">防衛スタイル</p>
                   <DefenseBarChart defenseScores={defenseScores} />
                   <button
@@ -1021,26 +1026,34 @@ export default function DashboardPage() {
               {/* ── あなたの傾向 ── */}
               {reportSubtab === 'tendency' && (
                 report?.currentState ? (<>
-                  <div className="bg-white rounded-3xl p-5 border border-purple-100 space-y-3">
+                  <div className="bg-white rounded-3xl p-5 border border-stone-100 shadow-sm space-y-3">
                     <p className="text-xs text-purple-400 font-medium">いまのあなたについて</p>
                     <p className="text-sm text-stone-700 leading-relaxed">{report.currentState}</p>
                   </div>
-                  <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-3">
+                  <div className="bg-white rounded-3xl p-5 border border-stone-100 shadow-sm space-y-3">
                     <p className="text-xs text-stone-400 font-medium">あなたが消耗しやすい場面</p>
                     <p className="text-sm text-stone-700 leading-relaxed">{report.drainScene}</p>
                   </div>
-                  <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-3">
-                    <p className="text-xs text-stone-400 font-medium">その力は、本来こういうもの</p>
-                    <p className="text-sm text-stone-700 leading-relaxed">{report.strengthReframe}</p>
+                  <div className="rounded-3xl p-6 text-white space-y-3 shadow-sm" style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}>
+                    <p className="text-base font-bold flex items-center gap-2">💜 いびつさは、あなたの個性</p>
+                    <p className="text-sm leading-relaxed text-white/90">{report.strengthReframe}</p>
+                    <div className="bg-white/95 rounded-2xl px-4 py-2.5 flex items-center gap-2">
+                      <span>⭐</span>
+                      <p className="text-xs font-bold text-purple-700">本来の強み</p>
+                    </div>
                   </div>
                 </>) : reportContent ? (<>
-                  <div className="bg-white rounded-3xl p-5 border border-purple-100 space-y-3">
+                  <div className="bg-white rounded-3xl p-5 border border-stone-100 shadow-sm space-y-3">
                     <p className="text-xs text-purple-400 font-medium">あなたが消耗しやすい場面</p>
                     <p className="text-sm text-stone-700 leading-relaxed">{reportContent.drainScene}</p>
                   </div>
-                  <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-3">
-                    <p className="text-xs text-stone-400 font-medium">その力は、本来こういうもの</p>
-                    <p className="text-sm text-stone-700 leading-relaxed">{reportContent.strengthReframe}</p>
+                  <div className="rounded-3xl p-6 text-white space-y-3 shadow-sm" style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}>
+                    <p className="text-base font-bold flex items-center gap-2">💜 いびつさは、あなたの個性</p>
+                    <p className="text-sm leading-relaxed text-white/90">{reportContent.strengthReframe}</p>
+                    <div className="bg-white/95 rounded-2xl px-4 py-2.5 flex items-center gap-2">
+                      <span>⭐</span>
+                      <p className="text-xs font-bold text-purple-700">本来の強み</p>
+                    </div>
                   </div>
                 </>) : (
                   <div className="bg-white rounded-3xl p-5 border border-stone-100">
@@ -1069,7 +1082,7 @@ export default function DashboardPage() {
                   ];
                   const cur = slides[philosophySlide];
                   return (
-                    <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-4">
+                    <div className="bg-white rounded-3xl p-5 border border-stone-100 shadow-sm space-y-4">
                       <div className="flex items-center justify-between">
                         <p className="text-xs text-stone-400 font-medium">このプログラムについて</p>
                         <div className="flex gap-1">
@@ -1107,17 +1120,19 @@ export default function DashboardPage() {
                 })()}
 
                 {report?.direction && (
-                  <div className="bg-purple-50 rounded-3xl p-5 border border-purple-100 space-y-2">
+                  <div className="bg-purple-50 rounded-3xl p-5 shadow-sm space-y-2">
                     <p className="text-xs text-purple-400 font-medium">これから30日でやること</p>
                     <p className="text-sm text-stone-700 leading-relaxed">{report.direction}</p>
                   </div>
                 )}
 
                 {weeks.length ? (
-                  weeks.map((wk, wi) => (
-                    <div key={wi} className="bg-white rounded-3xl p-5 border border-stone-100 space-y-3">
-                      <p className="text-xs text-purple-400 font-medium">{wk.label}</p>
-                      <div className="space-y-3">
+                  <div className="bg-white rounded-3xl p-5 border border-stone-100 shadow-sm space-y-5">
+                    <p className="text-sm font-bold text-stone-800">30日間の道のり</p>
+                    {weeks.map((wk, wi) => (
+                    <div key={wi} className="space-y-2">
+                      <p className="text-xs text-purple-400 font-medium pl-1">{wk.label}</p>
+                      <div className="space-y-0">
                         {(() => {
                           // 連続する同タイトルのミッションをグルーピング
                           type GroupedMission = { dayLabel: string; days: number[]; title: string; why: string; componentId: string; kind: string; lv: number };
@@ -1131,7 +1146,7 @@ export default function DashboardPage() {
                               grouped.push({ dayLabel: `Day ${m.day}`, days: [m.day], title: m.title, why: m.why, componentId: m.componentId, kind: m.kind, lv: m.lv });
                             }
                           });
-                          return grouped.map(g => {
+                          return grouped.map((g, gi) => {
                             const isToday = g.days.includes(dayCount);
                             const comp = PROGRAM_COMPONENTS[g.componentId as keyof typeof PROGRAM_COMPONENTS];
                             const fearLabel = comp ? FEAR_AXIS_LABEL[comp.fearAxis] : null;
@@ -1139,62 +1154,77 @@ export default function DashboardPage() {
                             const loggedDay = g.days.find(d => logsByDay.has(d));
                             const log = loggedDay != null ? logsByDay.get(loggedDay) : null;
                             const isOpen = loggedDay != null && expandedReview === loggedDay;
+                            // ステータス判定：完了 / 現在 / 未来
+                            const lastDay = g.days[g.days.length - 1];
+                            const isDone = !isToday && (loggedDay != null || lastDay < dayCount);
+                            const isFuture = !isToday && !isDone;
+                            const isLast = gi === grouped.length - 1;
                             return (
-                              <div key={g.dayLabel} className={`rounded-2xl p-2.5 -mx-1 space-y-2 ${isToday ? 'bg-purple-50 ring-1 ring-purple-200' : ''}`}>
-                                <div className="flex gap-3">
-                                  <div className="flex-shrink-0 w-14 text-center">
-                                    <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold leading-tight ${isToday ? 'bg-purple-500 text-white' : 'bg-stone-100 text-stone-500'}`}>
-                                      {g.dayLabel}
-                                    </span>
+                              <div key={g.dayLabel} className="flex gap-3">
+                                {/* タイムラインの軸（バッジ＋縦線） */}
+                                <div className="flex flex-col items-center flex-shrink-0">
+                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm shadow-sm ${isToday ? 'bg-purple-500 text-white' : isDone ? 'bg-purple-500 text-white' : 'bg-stone-100 text-stone-300'}`}>
+                                    {isToday ? '🚶' : isDone ? '✓' : '🔒'}
                                   </div>
+                                  {!isLast && <div className={`w-0.5 flex-1 min-h-[16px] ${isDone ? 'bg-purple-200' : 'bg-stone-100'}`} />}
+                                </div>
+                                {/* カード本体 */}
+                                <div className={`flex-1 min-w-0 mb-3 rounded-2xl p-3 space-y-2 ${isToday ? 'bg-purple-50 ring-1 ring-purple-200' : ''}`}>
                                   <div className="space-y-0.5 min-w-0">
-                                    <p className="text-sm font-medium text-stone-800 leading-snug">{g.title}</p>
-                                    {g.why && <p className="text-xs text-stone-400 leading-relaxed">{g.why}</p>}
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold leading-tight ${isToday ? 'bg-purple-500 text-white' : isFuture ? 'bg-stone-100 text-stone-400' : 'bg-stone-100 text-stone-500'}`}>
+                                        {g.dayLabel}
+                                      </span>
+                                      {isToday && <span className="text-[10px] font-bold text-purple-500">(現在)</span>}
+                                    </div>
+                                    <p className={`text-sm font-medium leading-snug ${isFuture ? 'text-stone-400' : 'text-stone-800'}`}>{g.title}</p>
+                                    {g.why && <p className={`text-xs leading-relaxed ${isFuture ? 'text-stone-300' : 'text-stone-400'}`}>{g.why}</p>}
                                   </div>
-                                </div>
-                                <div className="flex flex-wrap gap-1.5 pl-[68px]">
-                                  {fearLabel && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-100 text-stone-500">{fearLabel}</span>}
-                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-500">{g.kind === 'action' ? '行動' : '認知'}</span>
-                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-200 text-stone-500">Lv {g.lv}</span>
-                                </div>
-                                {log && (
-                                  <div className="pl-[68px]">
-                                    <button
-                                      onClick={() => setExpandedReview(isOpen ? null : loggedDay!)}
-                                      className="flex items-center gap-1 text-[11px] font-bold text-purple-500 hover:text-purple-600"
-                                    >
-                                      <span className={`transition-transform ${isOpen ? 'rotate-90' : ''}`}>▶</span>
-                                      振り返る
-                                    </button>
-                                    {isOpen && (
-                                      <div className="mt-2 space-y-2">
-                                        {log.memo ? (
-                                          <div className="bg-purple-50 rounded-2xl p-3">
-                                            <p className="text-[11px] text-purple-500 font-bold mb-1">得られた気づき</p>
-                                            <p className="text-sm text-stone-700 leading-relaxed">{log.memo}</p>
-                                          </div>
-                                        ) : (
-                                          <p className="text-xs text-stone-400">この日はメモがありません。</p>
-                                        )}
-                                        {(log.before_score > 0 || log.after_score > 0) && (
-                                          <div className="flex gap-4 text-xs text-stone-500">
-                                            <span>前：<span className="font-bold text-stone-600">{log.before_score}</span></span>
-                                            <span>後：<span className="font-bold text-teal-600">{log.after_score}</span></span>
-                                          </div>
-                                        )}
-                                      </div>
-                                    )}
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {fearLabel && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-100 text-stone-500">{fearLabel}</span>}
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-500">{g.kind === 'action' ? '行動' : '認知'}</span>
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-200 text-stone-500">Lv {g.lv}</span>
                                   </div>
-                                )}
+                                  {log && (
+                                    <div>
+                                      <button
+                                        onClick={() => setExpandedReview(isOpen ? null : loggedDay!)}
+                                        className="flex items-center gap-1 text-[11px] font-bold text-purple-500 hover:text-purple-600"
+                                      >
+                                        <span className={`transition-transform ${isOpen ? 'rotate-90' : ''}`}>▶</span>
+                                        振り返る
+                                      </button>
+                                      {isOpen && (
+                                        <div className="mt-2 space-y-2">
+                                          {log.memo ? (
+                                            <div className="bg-purple-50 rounded-2xl p-3">
+                                              <p className="text-[11px] text-purple-500 font-bold mb-1">得られた気づき</p>
+                                              <p className="text-sm text-stone-700 leading-relaxed">{log.memo}</p>
+                                            </div>
+                                          ) : (
+                                            <p className="text-xs text-stone-400">この日はメモがありません。</p>
+                                          )}
+                                          {(log.before_score > 0 || log.after_score > 0) && (
+                                            <div className="flex gap-4 text-xs text-stone-500">
+                                              <span>前：<span className="font-bold text-stone-600">{log.before_score}</span></span>
+                                              <span>後：<span className="font-bold text-teal-600">{log.after_score}</span></span>
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             );
                           });
                         })()}
                       </div>
                     </div>
-                  ))
+                    ))}
+                  </div>
                 ) : reportContent ? (<>
-                  <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-4">
+                  <div className="bg-white rounded-3xl p-5 border border-stone-100 shadow-sm space-y-4">
                     <div className="space-y-1">
                       <p className="text-xs text-stone-400 font-medium">あなたの30日プログラム</p>
                       <p className="text-xs text-stone-400">まずは「気づく」ことが目標です</p>
@@ -1211,7 +1241,7 @@ export default function DashboardPage() {
                       </div>
                     ))}
                   </div>
-                  <div className="bg-purple-50 rounded-3xl p-5 border border-purple-100 space-y-2">
+                  <div className="bg-purple-50 rounded-3xl p-5 shadow-sm space-y-2">
                     <p className="text-xs text-purple-400 font-medium">30日後には…</p>
                     <p className="text-sm text-stone-700 leading-relaxed">{reportContent.after}</p>
                   </div>
