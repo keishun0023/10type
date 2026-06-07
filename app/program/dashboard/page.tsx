@@ -30,6 +30,7 @@ export default function DashboardPage() {
   const [resetStatus, setResetStatus] = useState<'idle' | 'loading' | 'error'>('idle');
 
   const [tab, setTab] = useState<Tab>('home');
+  const [reportSubtab, setReportSubtab] = useState<'tendency' | 'program'>('tendency');
   const [userId, setUserId] = useState('');
   const [typeId, setTypeId] = useState('distancer');
   const [username, setUsername] = useState(() => typeof window !== 'undefined' ? localStorage.getItem('kokolift_username') || '' : '');
@@ -117,6 +118,13 @@ export default function DashboardPage() {
       loadScores(user.id);
       setAuthChecked(true);
     });
+  }, []);
+
+  // URLの ?tab= で初期タブを指定（ようこそガイドから「あなたについて」へ飛ばす用）
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get('tab');
+    const valid: Tab[] = ['home', 'mission', 'record', 'review', 'report', 'profile'];
+    if (t && valid.includes(t as Tab)) setTab(t as Tab);
   }, []);
 
   async function handleLogin(e: React.FormEvent) {
@@ -625,9 +633,21 @@ export default function DashboardPage() {
 
         {tab === 'report' && (() => {
           const reportContent = REPORT_CONTENT[typeId];
+          const report = generatedPlan?.report;
+          const missions = generatedPlan?.missions ?? [];
+          // 30日ミッションを週ごとに分割
+          const weeks: { label: string; days: typeof missions }[] = [];
+          if (missions.length) {
+            for (let w = 0; w < Math.ceil(missions.length / 7); w++) {
+              weeks.push({
+                label: `${w + 1}週目`,
+                days: missions.slice(w * 7, w * 7 + 7),
+              });
+            }
+          }
           return (
             <div className="space-y-5 pt-2">
-              <h2 className="text-lg font-bold text-stone-900">あなたのレポート</h2>
+              <h2 className="text-lg font-bold text-stone-900">あなたについて</h2>
 
               {fearScores && (
                 <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-3">
@@ -643,59 +663,114 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {/* AI生成のあなた専用レポート（治療方針）があれば優先表示 */}
-              {generatedPlan?.report?.currentState ? (<>
-                <div className="bg-white rounded-3xl p-5 border border-purple-100 space-y-3">
-                  <p className="text-xs text-purple-400 font-medium">いまのあなたについて</p>
-                  <p className="text-sm text-stone-700 leading-relaxed">{generatedPlan.report.currentState}</p>
-                </div>
-                <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-3">
-                  <p className="text-xs text-stone-400 font-medium">あなたが消耗しやすい場面</p>
-                  <p className="text-sm text-stone-700 leading-relaxed">{generatedPlan.report.drainScene}</p>
-                </div>
-                <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-3">
-                  <p className="text-xs text-stone-400 font-medium">その力は、本来こういうもの</p>
-                  <p className="text-sm text-stone-700 leading-relaxed">{generatedPlan.report.strengthReframe}</p>
-                </div>
-                <div className="bg-purple-50 rounded-3xl p-5 border border-purple-100 space-y-2">
-                  <p className="text-xs text-purple-400 font-medium">これから30日でやること</p>
-                  <p className="text-sm text-stone-700 leading-relaxed">{generatedPlan.report.direction}</p>
-                </div>
-              </>) : reportContent ? (<>
-                <div className="bg-white rounded-3xl p-5 border border-purple-100 space-y-3">
-                  <p className="text-xs text-purple-400 font-medium">あなたが消耗しやすい場面</p>
-                  <p className="text-sm text-stone-700 leading-relaxed">{reportContent.drainScene}</p>
-                </div>
-                <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-3">
-                  <p className="text-xs text-stone-400 font-medium">その力は、本来こういうもの</p>
-                  <p className="text-sm text-stone-700 leading-relaxed">{reportContent.strengthReframe}</p>
-                </div>
-                <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-4">
-                  <div className="space-y-1">
-                    <p className="text-xs text-stone-400 font-medium">あなたの30日プログラム</p>
-                    <p className="text-xs text-stone-400">まずは「気づく」ことが目標です</p>
+              {/* チャート下のサブタブ：傾向 / プログラム */}
+              <div className="flex gap-1 p-1 bg-stone-100 rounded-full">
+                {([
+                  { key: 'tendency', label: 'あなたの傾向' },
+                  { key: 'program', label: '今後のプログラム' },
+                ] as { key: 'tendency' | 'program'; label: string }[]).map(s => (
+                  <button
+                    key={s.key}
+                    onClick={() => setReportSubtab(s.key)}
+                    className={`flex-1 py-2 rounded-full text-xs font-bold transition-colors ${reportSubtab === s.key ? 'bg-white text-purple-600 shadow-sm' : 'text-stone-400'}`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* ── あなたの傾向 ── */}
+              {reportSubtab === 'tendency' && (
+                report?.currentState ? (<>
+                  <div className="bg-white rounded-3xl p-5 border border-purple-100 space-y-3">
+                    <p className="text-xs text-purple-400 font-medium">いまのあなたについて</p>
+                    <p className="text-sm text-stone-700 leading-relaxed">{report.currentState}</p>
                   </div>
-                  {reportContent.program.map((step, i) => (
-                    <div key={i} className="flex gap-3">
-                      <div className="flex-shrink-0 w-16 text-center">
-                        <span className="text-xs font-bold text-purple-400">{step.step}</span>
-                      </div>
-                      <div className="space-y-0.5">
-                        <p className="text-sm font-bold text-stone-800">{step.title}</p>
-                        <p className="text-xs text-stone-500 leading-relaxed">{step.desc}</p>
+                  <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-3">
+                    <p className="text-xs text-stone-400 font-medium">あなたが消耗しやすい場面</p>
+                    <p className="text-sm text-stone-700 leading-relaxed">{report.drainScene}</p>
+                  </div>
+                  <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-3">
+                    <p className="text-xs text-stone-400 font-medium">その力は、本来こういうもの</p>
+                    <p className="text-sm text-stone-700 leading-relaxed">{report.strengthReframe}</p>
+                  </div>
+                </>) : reportContent ? (<>
+                  <div className="bg-white rounded-3xl p-5 border border-purple-100 space-y-3">
+                    <p className="text-xs text-purple-400 font-medium">あなたが消耗しやすい場面</p>
+                    <p className="text-sm text-stone-700 leading-relaxed">{reportContent.drainScene}</p>
+                  </div>
+                  <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-3">
+                    <p className="text-xs text-stone-400 font-medium">その力は、本来こういうもの</p>
+                    <p className="text-sm text-stone-700 leading-relaxed">{reportContent.strengthReframe}</p>
+                  </div>
+                </>) : (
+                  <div className="bg-white rounded-3xl p-5 border border-stone-100">
+                    <p className="text-xs text-stone-400">準備中です。</p>
+                  </div>
+                )
+              )}
+
+              {/* ── 今後のプログラム ── */}
+              {reportSubtab === 'program' && (<>
+                {report?.direction && (
+                  <div className="bg-purple-50 rounded-3xl p-5 border border-purple-100 space-y-2">
+                    <p className="text-xs text-purple-400 font-medium">これから30日でやること</p>
+                    <p className="text-sm text-stone-700 leading-relaxed">{report.direction}</p>
+                  </div>
+                )}
+
+                {weeks.length ? (
+                  weeks.map((wk, wi) => (
+                    <div key={wi} className="bg-white rounded-3xl p-5 border border-stone-100 space-y-3">
+                      <p className="text-xs text-purple-400 font-medium">{wk.label}</p>
+                      <div className="space-y-3">
+                        {wk.days.map(m => {
+                          const isToday = m.day === dayCount;
+                          return (
+                            <div key={m.day} className={`flex gap-3 rounded-2xl p-2.5 -mx-1 ${isToday ? 'bg-purple-50 ring-1 ring-purple-200' : ''}`}>
+                              <div className="flex-shrink-0 w-12 text-center">
+                                <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${isToday ? 'bg-purple-500 text-white' : 'bg-stone-100 text-stone-500'}`}>
+                                  Day {m.day}
+                                </span>
+                              </div>
+                              <div className="space-y-0.5 min-w-0">
+                                <p className="text-sm font-medium text-stone-800 leading-snug">{m.title}</p>
+                                {m.why && <p className="text-xs text-stone-400 leading-relaxed">{m.why}</p>}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
-                  ))}
-                </div>
-                <div className="bg-purple-50 rounded-3xl p-5 border border-purple-100 space-y-2">
-                  <p className="text-xs text-purple-400 font-medium">30日後には…</p>
-                  <p className="text-sm text-stone-700 leading-relaxed">{reportContent.after}</p>
-                </div>
-              </>) : (
-                <div className="bg-white rounded-3xl p-5 border border-stone-100">
-                  <p className="text-xs text-stone-400">準備中です。</p>
-                </div>
-              )}
+                  ))
+                ) : reportContent ? (<>
+                  <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-4">
+                    <div className="space-y-1">
+                      <p className="text-xs text-stone-400 font-medium">あなたの30日プログラム</p>
+                      <p className="text-xs text-stone-400">まずは「気づく」ことが目標です</p>
+                    </div>
+                    {reportContent.program.map((step, i) => (
+                      <div key={i} className="flex gap-3">
+                        <div className="flex-shrink-0 w-16 text-center">
+                          <span className="text-xs font-bold text-purple-400">{step.step}</span>
+                        </div>
+                        <div className="space-y-0.5">
+                          <p className="text-sm font-bold text-stone-800">{step.title}</p>
+                          <p className="text-xs text-stone-500 leading-relaxed">{step.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="bg-purple-50 rounded-3xl p-5 border border-purple-100 space-y-2">
+                    <p className="text-xs text-purple-400 font-medium">30日後には…</p>
+                    <p className="text-sm text-stone-700 leading-relaxed">{reportContent.after}</p>
+                  </div>
+                </>) : (
+                  <div className="bg-white rounded-3xl p-5 border border-stone-100">
+                    <p className="text-xs text-stone-400">プログラムを準備中です。</p>
+                  </div>
+                )}
+              </>)}
 
               <div className="bg-stone-100 rounded-3xl p-5 space-y-2">
                 <p className="text-xs text-stone-500 font-medium">🌿 しんどい時は</p>
@@ -813,7 +888,7 @@ export default function DashboardPage() {
           { key: 'mission', label: 'ミッション', icon: '🎯' },
           { key: 'record', label: '記録', icon: '📝' },
           { key: 'review', label: '振り返り', icon: '📊' },
-          { key: 'report', label: 'レポート', icon: '📋' },
+          { key: 'report', label: 'あなたについて', icon: '📋' },
           { key: 'profile', label: 'プロフィール', icon: '👤' },
         ] as { key: Tab; label: string; icon: string }[]).map(item => (
           <button

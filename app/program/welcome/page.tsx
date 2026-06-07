@@ -65,15 +65,28 @@ export default function WelcomePage() {
           )}
           <h1 className="text-2xl font-bold text-stone-900 leading-snug">{step.title}</h1>
           <p className="text-base text-stone-600 leading-relaxed whitespace-pre-wrap">{step.body}</p>
+
+          {isLast && (
+            <div className="bg-purple-50 rounded-2xl p-4 border border-purple-100">
+              <p className="text-xs text-stone-600 leading-relaxed">
+                あなたの詳細な傾向や、今後30日間のプログラムの内容は、いつでも
+                <span className="font-bold text-purple-600">「あなたについて」</span>
+                から見られます。
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="space-y-3 pt-8">
           <button
-            onClick={async () => { if (isLast) { await markWelcomeDone(); router.push('/program/dashboard'); } else setIdx(idx + 1); }}
+            onClick={async () => {
+              if (isLast) { await markWelcomeDone(); router.push('/program/dashboard?tab=report'); }
+              else setIdx(idx + 1);
+            }}
             className="w-full py-4 rounded-full font-bold text-white text-base transition-all active:scale-[0.98]"
             style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)', boxShadow: '0 8px 24px rgba(124, 58, 237, 0.3)' }}
           >
-            {isLast ? 'はじめる →' : '次へ →'}
+            {isLast ? '詳細を見てみる →' : '次へ →'}
           </button>
           {!isLast && (
             <button
