@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
-import { PROGRAM_CONTENT, TYPE_NAMES } from '@/data/program';
+import { PROGRAM_CONTENT, TYPE_NAMES, ChangeOrientation } from '@/data/program';
 
 type Screen = 'landing' | 'onboarding' | 'loading' | 'plan-complete' | 'pricing';
 
@@ -13,7 +13,16 @@ interface Onboarding {
   bestTiming: string;
   distressLevel: string;
   changeScene: string;
+  difficultScene: string;
+  changeOrientation: string;
 }
+
+// changeOrientation の選択肢 → ChangeOrientation 型へのマッピング
+const ORIENTATION_MAP: Record<string, ChangeOrientation> = {
+  '変わりたい・できるようになりたい': 'change',
+  '今の自分を受け入れて、楽になりたい': 'accept',
+  'まだよく分からない': 'unknown',
+};
 
 const ONBOARDING_QUESTIONS = [
   {
@@ -40,6 +49,27 @@ const ONBOARDING_QUESTIONS = [
     key: 'changeScene',
     question: '変えたい場面はどれですか？',
     options: ['職場・学校', '家族・パートナー', '友人関係', '自分の思考', '全部'],
+  },
+  {
+    key: 'difficultScene',
+    question: '一番しんどくなりやすい場面はどれですか？',
+    options: [
+      '評価される・見られる場面（発表・提出・ミスなど）',
+      '予定が変わったり、見通しが立たないとき',
+      '人に頼んだり、断ったりしないといけないとき',
+      '大切な人との関係がギクシャクしたとき',
+    ],
+    note: 'ミッションの内容をあなたの状況に合わせるために使います',
+  },
+  {
+    key: 'changeOrientation',
+    question: '今の自分に対して、どちらに近いですか？',
+    options: [
+      '変わりたい・できるようになりたい',
+      '今の自分を受け入れて、楽になりたい',
+      'まだよく分からない',
+    ],
+    note: 'プログラムの内容の組み立て方が変わります。正解はありません',
   },
 ];
 
@@ -94,10 +124,12 @@ function ProgramPageInner() {
   async function handleSelectPlan(plan: 'light' | 'standard') {
     setIsLoading(true);
     try {
+      const changeOrientation: ChangeOrientation =
+        ORIENTATION_MAP[onboarding.changeOrientation ?? ''] ?? 'unknown';
       const res = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan, email, typeId, onboarding, session }),
+        body: JSON.stringify({ plan, email, typeId, onboarding: { ...onboarding, changeOrientation }, session }),
       });
       const data = await res.json();
       if (data.url) {
@@ -173,6 +205,7 @@ function ProgramPageInner() {
 
   if (screen === 'onboarding') {
     const q = ONBOARDING_QUESTIONS[questionIndex];
+    const isKeyQuestion = q.key === 'difficultScene' || q.key === 'changeOrientation';
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-5 py-12" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
         <div className="w-full max-w-sm space-y-8">
@@ -183,14 +216,21 @@ function ProgramPageInner() {
               ))}
             </div>
             <p className="text-xs text-stone-400">{questionIndex + 1} / {ONBOARDING_QUESTIONS.length}</p>
-            <h2 className="text-xl font-bold text-stone-800">{q.question}</h2>
+            <h2 className={`font-bold text-stone-800 leading-snug ${isKeyQuestion ? 'text-2xl' : 'text-xl'}`}>{q.question}</h2>
+            {'note' in q && q.note && (
+              <p className="text-xs text-stone-400 leading-relaxed">{q.note}</p>
+            )}
           </div>
           <div className="space-y-3">
             {q.options.map((opt) => (
               <button
                 key={opt}
                 onClick={() => handleAnswer(opt)}
-                className="w-full py-4 px-5 rounded-2xl border-2 border-stone-200 text-left text-sm font-medium text-stone-700 hover:border-purple-400 hover:bg-purple-50 active:scale-[0.98] transition-all"
+                className={`w-full py-4 px-5 rounded-2xl border-2 text-left text-sm font-medium transition-all active:scale-[0.98]
+                  ${isKeyQuestion
+                    ? 'border-stone-200 text-stone-700 hover:border-purple-400 hover:bg-purple-50 leading-snug'
+                    : 'border-stone-200 text-stone-700 hover:border-purple-400 hover:bg-purple-50'
+                  }`}
               >
                 {opt}
               </button>
@@ -220,13 +260,18 @@ function ProgramPageInner() {
 
   if (screen === 'plan-complete') {
     const missions = content?.missionPool.slice(0, 2) || [];
+    const orientation = ORIENTATION_MAP[onboarding.changeOrientation ?? ''] ?? 'unknown';
+    const orientationLabel =
+      orientation === 'change' ? '行動を少しずつ変える練習を中心に、考え方の整理も加えた内容' :
+      orientation === 'accept' ? '考え方をほぐすことを中心に、無理のない内容' :
+      '考え方の整理から始めて、様子を見ながら調整する内容';
     return (
       <div className="min-h-screen px-5 py-12" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
         <div className="w-full max-w-sm mx-auto space-y-8">
           <div className="text-center space-y-2">
             <span className="inline-block px-3 py-1 rounded-full bg-purple-100 text-purple-600 text-xs font-medium">プラン完成</span>
             <h1 className="text-2xl font-bold text-stone-900">{typeName}のあなた専用の<br />30日プランができました。</h1>
-            <p className="text-sm text-stone-500">{onboarding.bestTiming}・{onboarding.dailyTime}に合わせた内容です。</p>
+            <p className="text-sm text-stone-500">{orientationLabel}です。</p>
           </div>
 
           <div className="space-y-3">
