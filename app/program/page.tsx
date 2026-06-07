@@ -377,40 +377,48 @@ function ProgramPageInner() {
   }
 
   if (screen === 'loading') {
-    // リール表示: 前・現在・次 の3行を中央に表示
-    const prev = loadingStep > 0 ? loadingMessages[loadingStep - 1] : null;
-    const current = loadingMessages[loadingStep];
-    const next = loadingStep < loadingMessages.length - 1 ? loadingMessages[loadingStep + 1] : null;
+    const ITEM_HEIGHT = 48;
 
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-5" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
         <div className="w-full max-w-sm flex flex-col items-center gap-10">
           <div className="w-10 h-10 rounded-full border-4 border-purple-200 border-t-purple-500 animate-spin" />
 
-          <div className="w-full flex flex-col items-center gap-4" style={{ minHeight: 120 }}>
-            {/* 直前（上に流れていく） */}
-            <p
-              key={`prev-${loadingStep}`}
-              className="text-sm text-stone-300 text-center transition-all duration-700"
+          {/* リール: overflow hidden で3行分だけ見せる */}
+          <div className="w-full overflow-hidden" style={{ height: ITEM_HEIGHT * 3 }}>
+            <div
+              className="flex flex-col items-center"
+              style={{
+                transform: `translateY(${-loadingStep * ITEM_HEIGHT + ITEM_HEIGHT}px)`,
+                transition: 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
             >
-              {prev ? `✓ ${prev}` : ''}
-            </p>
-
-            {/* 現在（中央・目立つ） */}
-            <p
-              key={`cur-${loadingStep}`}
-              className="text-base font-bold text-purple-600 text-center transition-all duration-500"
-            >
-              {current}
-            </p>
-
-            {/* 次（下に控えてる） */}
-            <p
-              key={`next-${loadingStep}`}
-              className="text-sm text-stone-300 text-center transition-all duration-700"
-            >
-              {next ?? ''}
-            </p>
+              {loadingMessages.map((msg, i) => {
+                const isCurrent = i === loadingStep;
+                const isPast = i < loadingStep;
+                return (
+                  <div
+                    key={i}
+                    className="flex items-center justify-center text-center"
+                    style={{
+                      height: ITEM_HEIGHT,
+                      transition: 'opacity 0.6s, color 0.6s',
+                      opacity: Math.abs(i - loadingStep) <= 1 ? 1 : 0,
+                    }}
+                  >
+                    <p className={
+                      isCurrent
+                        ? 'text-base font-bold text-purple-600'
+                        : isPast
+                          ? 'text-sm text-stone-300'
+                          : 'text-sm text-stone-300'
+                    }>
+                      {isPast ? `✓ ${msg}` : msg}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           <p className="text-xs text-stone-300 text-center">あなた専用に作っています。少しお待ちください。</p>
