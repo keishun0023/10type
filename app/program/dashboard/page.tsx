@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSupabase } from '@/lib/supabase';
-import { PROGRAM_CONTENT, TYPE_NAMES, ProgramConfig } from '@/data/program';
+import { PROGRAM_CONTENT, TYPE_NAMES, ProgramConfig, GeneratedPlan } from '@/data/program';
 import { REPORT_CONTENT } from '@/data/report';
 import { FearAxis, DefenseAxis } from '@/data/questions';
 import { selectTodayMission, FEAR_FOCUS_LABEL, KIND_LABEL } from '@/lib/missionSelect';
@@ -45,6 +45,7 @@ export default function DashboardPage() {
   const [fearScores, setFearScores] = useState<Record<FearAxis, number> | null>(null);
   const [defenseScores, setDefenseScores] = useState<Record<DefenseAxis, number> | null>(null);
   const [programConfig, setProgramConfig] = useState<ProgramConfig | null>(null);
+  const [generatedPlan, setGeneratedPlan] = useState<GeneratedPlan | null>(null);
 
   // profile edit state
   const [profileData, setProfileData] = useState<{
@@ -61,23 +62,27 @@ export default function DashboardPage() {
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
 
-  // 新システム（ProgramConfig）があればそちら、なければ旧シムにフォールバック
+  // 優先順位：AI生成プラン > ProgramConfig（決定論） > 旧タイプ別シム
   const typeName = TYPE_NAMES[typeId];
+  const aiMission = generatedPlan?.missions?.find(m => m.day === dayCount)
+    ?? generatedPlan?.missions?.[(dayCount - 1) % (generatedPlan?.missions?.length || 1)];
   const todayMissionData = programConfig ? selectTodayMission(programConfig, dayCount) : null;
   const shimContent = PROGRAM_CONTENT[typeId];
   const shimMissionIndex = (dayCount - 1) % (shimContent?.missionPool.length || 1);
-  const todayMission = todayMissionData
+  const todayMission = aiMission
+    ? { text: aiMission.title, why: aiMission.why }
+    : todayMissionData
     ? { text: todayMissionData.level.text, why: todayMissionData.level.why }
     : shimContent?.missionPool[shimMissionIndex];
+  const todayComponentId = aiMission?.componentId ?? todayMissionData?.componentId ?? null;
+  const todayKind = aiMission?.kind ?? todayMissionData?.component.kind ?? null;
   const vizLabel = todayMissionData
     ? todayMissionData.component.answerCheckLabel
     : shimContent?.visualizationLabel ?? '';
   const currentFocusLabel = programConfig
     ? FEAR_FOCUS_LABEL[programConfig.currentFocus]
     : null;
-  const currentKindLabel = todayMissionData
-    ? KIND_LABEL[todayMissionData.component.kind]
-    : null;
+  const currentKindLabel = todayKind ? KIND_LABEL[todayKind] : null;
 
   useEffect(() => {
     const sb = getSupabase();
@@ -165,6 +170,7 @@ export default function DashboardPage() {
     setTypeId(data.type_id || 'distancer');
     localStorage.setItem('kokolift_type_id', data.type_id || 'distancer');
     if (data.program_config) setProgramConfig(data.program_config as ProgramConfig);
+    if (data.generated_plan) setGeneratedPlan(data.generated_plan as GeneratedPlan);
     setProfileData({
       username: data.username || '',
       email: data.email || '',
@@ -233,7 +239,7 @@ export default function DashboardPage() {
       user_id: userId,
       date: today,
       mission_id: dayCount,
-      component_id: todayMissionData?.componentId ?? null,
+      component_id: todayComponentId,
       done,
       count,
       before_score: before,
@@ -633,7 +639,25 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {reportContent ? (<>
+              {/* AI生成のあなた専用レポート（治療方針）があれば優先表示 */}
+              {generatedPlan?.report?.currentState ? (<>
+                <div className="bg-white rounded-3xl p-5 border border-purple-100 space-y-3">
+                  <p className="text-xs text-purple-400 font-medium">いまのあなたについて</p>
+                  <p className="text-sm text-stone-700 leading-relaxed">{generatedPlan.report.currentState}</p>
+                </div>
+                <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-3">
+                  <p className="text-xs text-stone-400 font-medium">あなたが消耗しやすい場面</p>
+                  <p className="text-sm text-stone-700 leading-relaxed">{generatedPlan.report.drainScene}</p>
+                </div>
+                <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-3">
+                  <p className="text-xs text-stone-400 font-medium">その力は、本来こういうもの</p>
+                  <p className="text-sm text-stone-700 leading-relaxed">{generatedPlan.report.strengthReframe}</p>
+                </div>
+                <div className="bg-purple-50 rounded-3xl p-5 border border-purple-100 space-y-2">
+                  <p className="text-xs text-purple-400 font-medium">これから30日でやること</p>
+                  <p className="text-sm text-stone-700 leading-relaxed">{generatedPlan.report.direction}</p>
+                </div>
+              </>) : reportContent ? (<>
                 <div className="bg-white rounded-3xl p-5 border border-purple-100 space-y-3">
                   <p className="text-xs text-purple-400 font-medium">あなたが消耗しやすい場面</p>
                   <p className="text-sm text-stone-700 leading-relaxed">{reportContent.drainScene}</p>

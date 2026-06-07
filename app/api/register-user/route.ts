@@ -1,50 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServer } from '@/lib/supabase-server';
-import { buildProgramConfig, distressStringToNumber } from '@/lib/blending';
-import { ChangeOrientation } from '@/data/program';
+import { GeneratedPlan } from '@/data/program';
 import { FearAxis } from '@/data/questions';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const {
-      id, email, username, typeId,
-      lifestyle, dailyTime, bestTiming, distressLevel, changeScene,
-      difficultScene, changeOrientation,
-      plan, diagSession,
-    } = body;
+    const { id, email, username, typeId, plan, diagSession } = body;
 
     const sb = getSupabaseServer();
     if (!sb) return NextResponse.json({ error: 'server config error' }, { status: 500 });
 
-    // 診断スコアを取得
+    // diagnosticsから スコア・オンボ・生成済みプラン を取得
     let fearScores: Record<FearAxis, number> | null = null;
     let defenseScores = null;
+    let generatedPlan: GeneratedPlan | null = null;
+    let onboarding: Record<string, string> = {};
     if (diagSession) {
       const { data } = await sb
         .from('diagnostics')
-        .select('fear_scores, defense_scores')
+        .select('fear_scores, defense_scores, generated_plan, onboarding')
         .eq('session_id', diagSession)
         .single();
       if (data) {
         fearScores = data.fear_scores;
         defenseScores = data.defense_scores;
+        generatedPlan = data.generated_plan;
+        onboarding = data.onboarding ?? {};
       }
     }
 
-    // 配合エンジンで ProgramConfig を生成
-    let programConfig = null;
-    if (fearScores && id) {
-      const orientation: ChangeOrientation =
-        changeOrientation === 'change' || changeOrientation === 'accept'
-          ? changeOrientation
-          : 'unknown';
-      programConfig = buildProgramConfig({
-        userId: id,
-        fearScores,
-        changeOrientation: orientation,
-        distressLevel: distressStringToNumber(distressLevel ?? ''),
-      });
+    // 生成済みプランに userId を埋める
+    if (generatedPlan?.config && id) {
+      generatedPlan.config.userId = id;
     }
 
     const { error } = await sb.from('users').upsert({
@@ -52,18 +40,20 @@ export async function POST(req: NextRequest) {
       email,
       username,
       type_id: typeId,
-      lifestyle,
-      daily_time: dailyTime,
-      best_timing: bestTiming,
-      distress_level: distressLevel,
-      change_scene: changeScene,
-      difficult_scene: difficultScene ?? null,
-      change_orientation: changeOrientation ?? null,
+      lifestyle: onboarding.lifestyle ?? null,
+      daily_time: onboarding.dailyTime ?? null,
+      best_timing: onboarding.bestTiming ?? null,
+      distress_level: onboarding.distressLevel ?? null,
+      difficult_scene: onboarding.difficultScene ?? null,
+      difficult_detail: onboarding.difficultDetail ?? null,
+      difficult_free_text: onboarding.difficultFreeText ?? null,
+      change_orientation: onboarding.changeOrientation ?? null,
       paid_plan: plan,
       paid_at: new Date().toISOString(),
       fear_scores: fearScores,
       defense_scores: defenseScores,
-      program_config: programConfig,
+      program_config: generatedPlan?.config ?? null,
+      generated_plan: generatedPlan,
     }, { onConflict: 'email' });
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });

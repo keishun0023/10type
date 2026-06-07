@@ -3,17 +3,18 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
-import { PROGRAM_CONTENT, TYPE_NAMES, ChangeOrientation } from '@/data/program';
+import { TYPE_NAMES, ChangeOrientation, GeneratedPlan } from '@/data/program';
 
-type Screen = 'landing' | 'onboarding' | 'loading' | 'plan-complete' | 'pricing';
+type Screen = 'landing' | 'onboarding' | 'deepdive' | 'loading' | 'plan-complete' | 'pricing';
 
 interface Onboarding {
   lifestyle: string;
   dailyTime: string;
   bestTiming: string;
   distressLevel: string;
-  changeScene: string;
   difficultScene: string;
+  difficultDetail: string;
+  difficultFreeText: string;
   changeOrientation: string;
 }
 
@@ -46,11 +47,6 @@ const ONBOARDING_QUESTIONS = [
     options: ['とても困っている', '少し困っている', '知的興味で'],
   },
   {
-    key: 'changeScene',
-    question: '変えたい場面はどれですか？',
-    options: ['職場・学校', '家族・パートナー', '友人関係', '自分の思考', '全部'],
-  },
-  {
     key: 'difficultScene',
     question: '一番しんどくなりやすい場面はどれですか？',
     options: [
@@ -73,6 +69,34 @@ const ONBOARDING_QUESTIONS = [
   },
 ];
 
+// difficultScene ごとの「具体的に何に困っているか」の選択肢
+const SCENE_DETAILS: Record<string, string[]> = {
+  '評価される・見られる場面（発表・提出・ミスなど）': [
+    'ミスや失敗を人に見られること',
+    '人前で話す・発表すること',
+    '実力を試される・人と比べられること',
+    '分からないと言う・質問すること',
+  ],
+  '予定が変わったり、見通しが立たないとき': [
+    '急な予定変更',
+    '段取りや計画を自分で決められないこと',
+    '初めての場所・人・状況',
+    '結果が見えないまま進めること',
+  ],
+  '人に頼んだり、断ったりしないといけないとき': [
+    '人に頼みごとをすること',
+    '誘いや依頼を断ること',
+    '自分の希望や意見を言うこと',
+    '相手に負担をかけること',
+  ],
+  '大切な人との関係がギクシャクしたとき': [
+    '返信が来ない・既読スルー',
+    '相手の機嫌や態度が読めないこと',
+    '本音を言って嫌われる不安',
+    '自分から距離を縮めること',
+  ],
+};
+
 function ProgramPageInner() {
   const searchParams = useSearchParams();
   const typeId = searchParams.get('type') || 'distancer';
@@ -84,28 +108,54 @@ function ProgramPageInner() {
   const [onboarding, setOnboarding] = useState<Partial<Onboarding>>({});
   const [loadingStep, setLoadingStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [generatedPlan, setGeneratedPlan] = useState<GeneratedPlan | null>(null);
+  const [genError, setGenError] = useState(false);
+
+  // 深掘り（具体的な困りごと）
+  const [detailSelected, setDetailSelected] = useState<string[]>([]);
+  const [freeText, setFreeText] = useState('');
 
   const typeName = TYPE_NAMES[typeId] || '診断さん';
-  const content = PROGRAM_CONTENT[typeId];
 
   const loadingMessages = [
     `${typeName}の特性を分析しています...`,
     `あなたの回答を反映しています...`,
-    `${onboarding.bestTiming || ''}・${onboarding.dailyTime || ''}に合わせています...`,
-    `あなた専用のプランを作成しています...`,
+    `あなたの「困っていること」を読み込んでいます...`,
+    `あなた専用の30日プログラムを作成しています...`,
   ];
 
+  // loading 画面に入ったら、メッセージを進めつつ実際にAI生成を叩く
   useEffect(() => {
     if (screen !== 'loading') return;
     let step = 0;
     const interval = setInterval(() => {
-      step++;
+      step = Math.min(step + 1, loadingMessages.length);
       setLoadingStep(step);
-      if (step >= loadingMessages.length) {
+    }, 1200);
+
+    (async () => {
+      try {
+        const res = await fetch('/api/generate-plan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ diagSession: session, typeId, onboarding }),
+        });
+        const data = await res.json();
         clearInterval(interval);
-        setTimeout(() => setScreen('plan-complete'), 600);
+        if (data.plan) {
+          setGeneratedPlan(data.plan);
+          setScreen('plan-complete');
+        } else {
+          setGenError(true);
+          setScreen('plan-complete');
+        }
+      } catch {
+        clearInterval(interval);
+        setGenError(true);
+        setScreen('plan-complete');
       }
-    }, 900);
+    })();
+
     return () => clearInterval(interval);
   }, [screen]);
 
@@ -116,9 +166,25 @@ function ProgramPageInner() {
     if (questionIndex < ONBOARDING_QUESTIONS.length - 1) {
       setQuestionIndex(questionIndex + 1);
     } else {
-      setScreen('loading');
-      setLoadingStep(0);
+      // 最後の質問が終わったら深掘りへ
+      setScreen('deepdive');
     }
+  }
+
+  function toggleDetail(opt: string) {
+    setDetailSelected(prev =>
+      prev.includes(opt) ? prev.filter(o => o !== opt) : [...prev, opt]
+    );
+  }
+
+  function handleDeepdiveSubmit() {
+    setOnboarding(prev => ({
+      ...prev,
+      difficultDetail: detailSelected.join('、'),
+      difficultFreeText: freeText.trim(),
+    }));
+    setScreen('loading');
+    setLoadingStep(0);
   }
 
   async function handleSelectPlan(plan: 'light' | 'standard') {
@@ -241,6 +307,75 @@ function ProgramPageInner() {
     );
   }
 
+  if (screen === 'deepdive') {
+    const scene = onboarding.difficultScene ?? '';
+    const details = SCENE_DETAILS[scene] ?? [];
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center px-5 py-12" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
+        <div className="w-full max-w-sm space-y-7">
+          <div className="space-y-2">
+            <span className="inline-block px-3 py-1 rounded-full bg-purple-100 text-purple-600 text-xs font-medium">あと少し</span>
+            <h2 className="text-2xl font-bold text-stone-800 leading-snug">その場面で、具体的にどんなことに困っていますか？</h2>
+            <p className="text-xs text-stone-400 leading-relaxed">
+              ここで教えてもらった内容をもとに、あなた専用のミッションを作ります。当てはまるものを選び、あれば自由に書いてください（任意）。
+            </p>
+          </div>
+
+          {details.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs text-stone-500 font-medium">当てはまるもの（複数可）</p>
+              <div className="space-y-2">
+                {details.map(opt => {
+                  const active = detailSelected.includes(opt);
+                  return (
+                    <button
+                      key={opt}
+                      onClick={() => toggleDetail(opt)}
+                      className={`w-full py-3.5 px-4 rounded-2xl border-2 text-left text-sm font-medium transition-all active:scale-[0.98] flex items-center gap-2
+                        ${active ? 'border-purple-400 bg-purple-50 text-purple-700' : 'border-stone-200 text-stone-700 hover:border-purple-300'}`}
+                    >
+                      <span className={`w-4 h-4 rounded flex-shrink-0 flex items-center justify-center text-[10px] ${active ? 'bg-purple-500 text-white' : 'bg-stone-100'}`}>
+                        {active ? '✓' : ''}
+                      </span>
+                      {opt}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <p className="text-xs text-stone-500 font-medium">あなたの言葉で（任意）</p>
+            <textarea
+              value={freeText}
+              onChange={e => setFreeText(e.target.value)}
+              rows={4}
+              maxLength={500}
+              placeholder="例：会議で意見を求められると頭が真っ白になって、後から『なんで言えなかったんだ』と落ち込む…"
+              className="w-full px-4 py-3 rounded-2xl border-2 border-stone-200 text-sm focus:outline-none focus:border-purple-400 resize-none leading-relaxed"
+            />
+            <p className="text-[10px] text-stone-300 text-right">{freeText.length} / 500</p>
+          </div>
+
+          <button
+            onClick={handleDeepdiveSubmit}
+            className="w-full py-4 rounded-full font-bold text-white text-base transition-all active:scale-[0.98]"
+            style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)', boxShadow: '0 8px 24px rgba(124, 58, 237, 0.3)' }}
+          >
+            プランを作る →
+          </button>
+          <button
+            onClick={handleDeepdiveSubmit}
+            className="w-full text-center text-xs text-stone-400 hover:text-purple-500 transition-colors"
+          >
+            スキップして進む
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (screen === 'loading') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-5" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
@@ -253,40 +388,85 @@ function ProgramPageInner() {
               </p>
             ))}
           </div>
+          <p className="text-xs text-stone-300">あなた専用に作っています。少しだけお待ちください（最大1分ほど）。</p>
         </div>
       </div>
     );
   }
 
   if (screen === 'plan-complete') {
-    const missions = content?.missionPool.slice(0, 2) || [];
-    const orientation = ORIENTATION_MAP[onboarding.changeOrientation ?? ''] ?? 'unknown';
-    const orientationLabel =
-      orientation === 'change' ? '行動を少しずつ変える練習を中心に、考え方の整理も加えた内容' :
-      orientation === 'accept' ? '考え方をほぐすことを中心に、無理のない内容' :
-      '考え方の整理から始めて、様子を見ながら調整する内容';
+    const report = generatedPlan?.report;
+    const missions = generatedPlan?.missions ?? [];
+    const firstMission = missions[0];
+    // ぼかして見せる「続きがある」感の項目
+    const blurredSections = [
+      { label: 'あなたの消耗しやすい場面', body: report?.drainScene },
+      { label: 'あなたの強みの捉え直し', body: report?.strengthReframe },
+      { label: 'これから30日でやること', body: report?.direction },
+    ];
     return (
       <div className="min-h-screen px-5 py-12" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
-        <div className="w-full max-w-sm mx-auto space-y-8">
+        <div className="w-full max-w-sm mx-auto space-y-7">
           <div className="text-center space-y-2">
-            <span className="inline-block px-3 py-1 rounded-full bg-purple-100 text-purple-600 text-xs font-medium">プラン完成</span>
-            <h1 className="text-2xl font-bold text-stone-900">{typeName}のあなた専用の<br />30日プランができました。</h1>
-            <p className="text-sm text-stone-500">{orientationLabel}です。</p>
+            <span className="inline-block px-3 py-1 rounded-full bg-purple-100 text-purple-600 text-xs font-medium">あなたの分析が完成しました</span>
+            <h1 className="text-2xl font-bold text-stone-900">{typeName}のあなたへの<br />30日プログラムができました。</h1>
           </div>
 
-          <div className="space-y-3">
-            {missions.map((m, i) => (
-              <div key={i} className="bg-white rounded-2xl p-4 border border-purple-100 space-y-1">
-                <p className="text-xs text-purple-400 font-medium">DAY {i + 1} のミッション例</p>
-                <p className="text-sm text-stone-700 font-medium">{m.text}</p>
+          {/* 今の状態（ここだけ全文見せる＝フック） */}
+          {report?.currentState && !genError && (
+            <div className="bg-white rounded-3xl p-5 border border-purple-100 space-y-2">
+              <p className="text-xs text-purple-400 font-medium">いまのあなたについて</p>
+              <p className="text-sm text-stone-700 leading-relaxed">{report.currentState}</p>
+            </div>
+          )}
+
+          {genError && (
+            <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-2">
+              <p className="text-sm text-stone-600 leading-relaxed">
+                あなたの回答をもとに、30日分のプログラムを用意しました。続きは登録後にご覧いただけます。
+              </p>
+            </div>
+          )}
+
+          {/* 詳細レポート（ぼかし＝この奥に細かいものがある、と分かる見せ方） */}
+          <div className="relative">
+            <p className="text-xs text-stone-400 font-medium mb-2">この続きに、あなた専用の詳しい分析があります</p>
+            <div className="space-y-3 select-none" style={{ filter: 'blur(5px)', pointerEvents: 'none' }} aria-hidden>
+              {blurredSections.map((s, i) => (
+                <div key={i} className="bg-white rounded-2xl p-4 border border-stone-100 space-y-1.5">
+                  <p className="text-xs text-purple-400 font-medium">{s.label}</p>
+                  <p className="text-sm text-stone-600 leading-relaxed">
+                    {s.body || 'あなたの回答をもとに分析した内容がここに表示されます。あなたの状況に合わせて、具体的に書かれています。'}
+                  </p>
+                </div>
+              ))}
+              {/* 30日ミッションの地図 */}
+              <div className="bg-white rounded-2xl p-4 border border-stone-100 space-y-2">
+                <p className="text-xs text-purple-400 font-medium">30日分のミッション</p>
+                {(missions.length ? missions.slice(0, 6) : Array.from({ length: 6 })).map((m, i) => (
+                  <p key={i} className="text-sm text-stone-600">
+                    Day {i + 1}：{(m as GeneratedPlan['missions'][number])?.title || 'あなた専用のミッション'}
+                  </p>
+                ))}
+                <p className="text-xs text-stone-400">…Day 30 まで全て用意済み</p>
               </div>
-            ))}
-            <div className="bg-white rounded-2xl p-4 border border-stone-100 relative overflow-hidden">
-              <p className="text-xs text-stone-400 font-medium mb-1">DAY 3 以降のプログラム</p>
-              <p className="text-sm text-stone-300 blur-sm select-none">毎日続けるための具体的なミッションと、変化を記録する仕組みが待っています...</p>
-              <div className="absolute inset-0 bg-gradient-to-t from-white/80 to-transparent" />
+            </div>
+            {/* ロック表示 */}
+            <div className="absolute inset-0 flex items-end justify-center pb-4 bg-gradient-to-t from-purple-50 via-purple-50/40 to-transparent rounded-2xl">
+              <div className="flex items-center gap-1.5 bg-white/90 backdrop-blur px-4 py-2 rounded-full shadow-sm">
+                <span className="text-sm">🔒</span>
+                <span className="text-xs font-medium text-stone-500">登録すると全て見られます</span>
+              </div>
             </div>
           </div>
+
+          {/* 1日目だけチラ見せ（具体性を担保） */}
+          {firstMission && !genError && (
+            <div className="bg-white rounded-2xl p-4 border border-purple-100 space-y-1">
+              <p className="text-xs text-purple-400 font-medium">Day 1 のミッション（プレビュー）</p>
+              <p className="text-sm text-stone-700 font-medium leading-relaxed">{firstMission.title}</p>
+            </div>
+          )}
 
           <button
             onClick={() => setScreen('pricing')}

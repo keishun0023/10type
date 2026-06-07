@@ -95,11 +95,11 @@ function SuccessPageInner() {
             <p className="text-sm text-stone-500">30日プログラムが始まりました。<br />今日から少しずつ、一緒に進みましょう。</p>
           </div>
           <button
-            onClick={() => router.push('/program/dashboard')}
+            onClick={() => router.push('/program/welcome')}
             className="w-full py-4 rounded-full font-bold text-white"
             style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}
           >
-            ダッシュボードへ →
+            プログラムを始める →
           </button>
         </div>
       </div>

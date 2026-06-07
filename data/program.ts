@@ -287,6 +287,43 @@ export type ProgramConfig = {
 };
 
 // ─────────────────────────────────────────────
+// AI生成プラン（オンボ完了時に一括生成して保存）
+// ─────────────────────────────────────────────
+
+// 30日の「地図」の1日分（配合エンジンが決定論的に算出）
+export type ScheduledDay = {
+  day: number;             // 1〜30
+  componentId: ComponentId;
+  kind: ComponentKind;
+  lv: 1 | 2 | 3 | 4 | 5;
+  heavy: boolean;          // 重い認知ワーク（まとまった時間が要る日）
+};
+
+// AIが文面を個別化したミッション
+export type GeneratedMission = ScheduledDay & {
+  title: string;  // 個別化されたミッション文
+  why: string;    // 個別化された「なぜこれ」
+};
+
+// 治療方針（レポート）＋ようこそガイド＋30日ミッション
+export type GeneratedPlan = {
+  // 治療方針（レポートタブでいつでも見られる詳細）
+  report: {
+    currentState: string;    // 今の状態
+    drainScene: string;      // 消耗する場面
+    strengthReframe: string; // 本来の強み
+    direction: string;       // どうなりたいか／これから何をやるか
+  };
+  // ようこそガイド（課金直後・一個ずつ「次へ」で進む）
+  welcomeSteps: { title: string; body: string }[];
+  // 30日分のミッション
+  missions: GeneratedMission[];
+  // 生成時のメタ
+  config: ProgramConfig;
+  generatedAt: string;
+};
+
+// ─────────────────────────────────────────────
 // 後方互換: ダッシュボードが旧PROGRAM_CONTENTを使う間の shim
 // ─────────────────────────────────────────────
 
