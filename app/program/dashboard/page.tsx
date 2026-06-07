@@ -697,7 +697,7 @@ export default function DashboardPage() {
                       memo: summary,
                     }, { onConflict: 'user_id,date' });
                     if (error) {
-                      console.error('cognitive session save error:', JSON.stringify(error));
+                      console.error('cognitive session save error:', error.message, error.code, error.details, error.hint);
                     } else {
                       await loadStats(userId);
                     }
