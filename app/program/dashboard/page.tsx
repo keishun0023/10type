@@ -7,7 +7,12 @@ import { PROGRAM_CONTENT, TYPE_NAMES, ProgramConfig, GeneratedPlan } from '@/dat
 import { REPORT_CONTENT } from '@/data/report';
 import { FearAxis, DefenseAxis } from '@/data/questions';
 import { selectTodayMission, FEAR_FOCUS_LABEL, KIND_LABEL } from '@/lib/missionSelect';
+import { PROGRAM_COMPONENTS } from '@/data/program';
 import dynamic from 'next/dynamic';
+
+const FEAR_AXIS_LABEL: Record<string, string> = {
+  F_REL: '関係喪失', F_EVAL: '評価', F_IMP: '不完全性', F_CTRL: '制御不能',
+};
 
 const RadarChartComponent = dynamic(() => import('@/components/RadarChartComponent'), { ssr: false });
 const DefenseBarChart = dynamic(() => import('@/components/DefenseBarChart'), { ssr: false });
@@ -77,6 +82,7 @@ export default function DashboardPage() {
     : shimContent?.missionPool[shimMissionIndex];
   const todayComponentId = aiMission?.componentId ?? todayMissionData?.componentId ?? null;
   const todayKind = aiMission?.kind ?? todayMissionData?.component.kind ?? null;
+  const todayLv = aiMission?.lv ?? todayMissionData?.level.lv ?? 1;
   const vizLabel = todayMissionData
     ? todayMissionData.component.answerCheckLabel
     : shimContent?.visualizationLabel ?? '';
@@ -547,6 +553,26 @@ export default function DashboardPage() {
         {tab === 'mission' && todayMission && (
           <div className="space-y-5 pt-2">
             <h2 className="text-lg font-bold text-stone-900">今日のミッション</h2>
+
+            {/* Badges */}
+            {todayComponentId && (
+              <div className="flex flex-wrap gap-2">
+                {FEAR_AXIS_LABEL[PROGRAM_COMPONENTS[todayComponentId as keyof typeof PROGRAM_COMPONENTS]?.fearAxis ?? ''] && (
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-stone-100 text-stone-600">
+                    {FEAR_AXIS_LABEL[PROGRAM_COMPONENTS[todayComponentId as keyof typeof PROGRAM_COMPONENTS]?.fearAxis]}
+                  </span>
+                )}
+                {todayKind && (
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-600">
+                    {todayKind === 'action' ? '行動実験' : '考え方の整理'}
+                  </span>
+                )}
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-stone-200 text-stone-500">
+                  Lv {todayLv}
+                </span>
+              </div>
+            )}
+
             <div className="bg-white rounded-3xl p-5 border border-purple-100 space-y-4">
               <p className="text-base font-bold text-stone-800 leading-relaxed">「{todayMission.text}」</p>
               <div className="border-t border-stone-100 pt-4">
@@ -554,34 +580,30 @@ export default function DashboardPage() {
                 <p className="text-sm text-stone-600 leading-relaxed">{todayMission.why}</p>
               </div>
             </div>
-            <div className="flex gap-3">
-              <button onClick={() => { setTab('record'); setRecordStep('question'); }} className="flex-1 py-4 rounded-full font-bold text-white text-sm" style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}>
-                やってみる
-              </button>
-              <button onClick={() => handleRecord(false)} className="flex-1 py-4 rounded-full font-bold text-stone-500 border-2 border-stone-200 text-sm">
-                今日はパス
-              </button>
-            </div>
-          </div>
-        )}
 
-        {tab === 'record' && (
-          <div className="space-y-5 pt-2">
-            <h2 className="text-lg font-bold text-stone-900">記録する</h2>
-            {recordStep === 'question' && (
-              <div className="space-y-4">
-                <p className="text-sm text-stone-600">今日はできましたか？</p>
-                <div className="flex gap-3">
-                  <button onClick={() => handleRecord(true)} className="flex-1 py-4 rounded-full font-bold text-white text-sm" style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}>
-                    できた
-                  </button>
-                  <button onClick={() => handleRecord(false)} className="flex-1 py-4 rounded-full font-bold text-stone-500 border-2 border-stone-200 text-sm">
-                    機会がなかった
-                  </button>
-                </div>
+            <div className="border-t border-stone-100" />
+
+            {/* Inline recording */}
+            {recordStep === 'done' ? (
+              <div className="text-center space-y-4 py-6">
+                <div className="text-4xl">{todayLog?.done ? '🎉' : '👍'}</div>
+                <p className="font-bold text-stone-800">{todayLog?.done ? '記録しました！' : '今日はパスしました'}</p>
+                <p className="text-sm text-stone-500">{todayLog?.done ? `${vizLabel}が増えています` : '機会がなかった日もある。それでOKです。'}</p>
+                <button onClick={() => setTab('home')} className="w-full py-4 rounded-full font-bold text-white text-sm" style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}>
+                  ホームへ
+                </button>
               </div>
-            )}
-            {recordStep === 'detail' && (
+            ) : todayLog?.done ? (
+              <div className="bg-green-50 rounded-3xl p-5 border border-green-100 space-y-2">
+                <p className="text-sm font-bold text-green-700">今日の記録済み ✓</p>
+                <p className="text-xs text-green-600">{todayLog.count}回完了</p>
+              </div>
+            ) : todayLog?.done === false ? (
+              <div className="bg-stone-50 rounded-3xl p-5 border border-stone-100">
+                <p className="text-sm font-bold text-stone-500">今日はパス済み</p>
+              </div>
+            ) : todayKind === 'action' ? (
+              /* Action mission recording form */
               <div className="space-y-5">
                 <div className="space-y-2">
                   <p className="text-sm text-stone-600">何回できましたか？</p>
@@ -592,7 +614,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <p className="text-sm text-stone-600">やる前、どれくらい不安でしたか？</p>
+                  <p className="text-sm text-stone-600">やる前の不安度</p>
                   <div className="flex gap-2">
                     {[1,2,3,4,5].map(n => (
                       <button key={n} onClick={() => setBeforeScore(n)} className={`flex-1 h-8 rounded-full text-sm font-bold transition-colors ${beforeScore >= n ? 'bg-purple-400 text-white' : 'bg-stone-100 text-stone-400'}`}>●</button>
@@ -600,7 +622,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <p className="text-sm text-stone-600">実際は、どうでしたか？</p>
+                  <p className="text-sm text-stone-600">実際はどうでしたか？</p>
                   <div className="flex gap-2">
                     {[1,2,3,4,5].map(n => (
                       <button key={n} onClick={() => setAfterScore(n)} className={`flex-1 h-8 rounded-full text-sm font-bold transition-colors ${afterScore >= n ? 'bg-teal-400 text-white' : 'bg-stone-100 text-stone-400'}`}>●</button>
@@ -611,23 +633,66 @@ export default function DashboardPage() {
                   <p className="text-sm text-stone-600">ひとことメモ（任意）</p>
                   <input type="text" value={memo} onChange={e => setMemo(e.target.value)} placeholder="今日気づいたこと..." className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm focus:outline-none focus:border-purple-400" />
                 </div>
-                <button onClick={handleDetailRecord} className="w-full py-4 rounded-full font-bold text-white text-sm" style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}>
-                  記録する
-                </button>
+                <div className="flex gap-3">
+                  <button onClick={handleDetailRecord} className="flex-1 py-4 rounded-full font-bold text-white text-sm" style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}>
+                    記録する
+                  </button>
+                  <button onClick={() => handleRecord(false)} className="flex-1 py-4 rounded-full font-bold text-stone-500 text-sm">
+                    今日は機会がなかった
+                  </button>
+                </div>
               </div>
-            )}
-            {recordStep === 'done' && (
-              <div className="text-center space-y-4 py-8">
-                <div className="text-4xl">{todayLog?.done ? '🎉' : '👍'}</div>
-                <p className="font-bold text-stone-800">{todayLog?.done ? '記録しました！' : '今日はパスしました'}</p>
-                <p className="text-sm text-stone-500">{todayLog?.done ? `${vizLabel}が増えています` : '機会がなかった日もある。それでOKです。'}</p>
-                <button onClick={() => setTab('home')} className="w-full py-4 rounded-full font-bold text-white text-sm" style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}>
-                  ホームへ
-                </button>
+            ) : (
+              /* Cognitive mission recording form */
+              <div className="space-y-5">
+                <p className="text-sm font-bold text-stone-700">今日、取り組みましたか？</p>
+                <div className="space-y-2">
+                  <p className="text-sm text-stone-600">気づいたこと・考えたこと（任意）</p>
+                  <textarea
+                    value={memo}
+                    onChange={e => setMemo(e.target.value)}
+                    rows={4}
+                    placeholder="今日気づいたこと..."
+                    className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm focus:outline-none focus:border-purple-400 resize-none"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm text-stone-600">取り組む前の重さ</p>
+                  <div className="flex gap-2">
+                    {[1,2,3,4,5].map(n => (
+                      <button key={n} onClick={() => setBeforeScore(n)} className={`flex-1 h-8 rounded-full text-sm font-bold transition-colors ${beforeScore >= n ? 'bg-purple-400 text-white' : 'bg-stone-100 text-stone-400'}`}>●</button>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm text-stone-600">取り組んだ後の軽さ</p>
+                  <div className="flex gap-2">
+                    {[1,2,3,4,5].map(n => (
+                      <button key={n} onClick={() => setAfterScore(n)} className={`flex-1 h-8 rounded-full text-sm font-bold transition-colors ${afterScore >= n ? 'bg-teal-400 text-white' : 'bg-stone-100 text-stone-400'}`}>●</button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={async () => {
+                      await saveLog(true, 1, beforeScore, afterScore, memo);
+                      setTodayLog({ done: true, count: 1 });
+                      setRecordStep('done');
+                    }}
+                    className="flex-1 py-4 rounded-full font-bold text-white text-sm"
+                    style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}
+                  >
+                    記録する
+                  </button>
+                  <button onClick={() => handleRecord(false)} className="flex-1 py-4 rounded-full font-bold text-stone-500 text-sm">
+                    今日は機会がなかった
+                  </button>
+                </div>
               </div>
             )}
           </div>
         )}
+
 
         {tab === 'review' && (
           <div className="space-y-5 pt-2">
@@ -926,14 +991,13 @@ export default function DashboardPage() {
         {([
           { key: 'home', label: 'ホーム', icon: '🏠' },
           { key: 'mission', label: 'ミッション', icon: '🎯' },
-          { key: 'record', label: '記録', icon: '📝' },
           { key: 'review', label: '振り返り', icon: '📊' },
           { key: 'report', label: 'あなたについて', icon: '📋' },
           { key: 'profile', label: 'プロフィール', icon: '👤' },
         ] as { key: Tab; label: string; icon: string }[]).map(item => (
           <button
             key={item.key}
-            onClick={() => { setTab(item.key); if (item.key === 'record') setRecordStep('question'); }}
+            onClick={() => setTab(item.key)}
             className={`flex flex-col items-center gap-0.5 w-12 transition-colors ${tab === item.key ? 'text-purple-600' : 'text-stone-400'}`}
           >
             <span className="text-base">{item.icon}</span>
