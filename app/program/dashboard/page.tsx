@@ -183,7 +183,7 @@ export default function DashboardPage() {
     localStorage.setItem('kokolift_username', name);
     setTypeId(data.type_id || 'distancer');
     localStorage.setItem('kokolift_type_id', data.type_id || 'distancer');
-    if (data.welcome_completed === false && data.generated_plan) {
+    if (!data.welcome_completed && data.generated_plan) {
       router.replace('/program/welcome');
       return;
     }

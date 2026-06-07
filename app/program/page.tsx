@@ -118,16 +118,16 @@ function ProgramPageInner() {
   const typeName = TYPE_NAMES[typeId] || '診断さん';
 
   const loadingMessages = [
-    `${typeName}の特性を読み込んでいます...`,
-    `あなたの回答を反映しています...`,
-    `困りごとの背景を整理しています...`,
-    `恐れのパターンを分析しています...`,
-    `あなたに合った取り組み方を考えています...`,
-    `分析レポートをまとめています...`,
-    `30日のスケジュールを組んでいます...`,
-    `ミッションの内容を調整しています...`,
-    `最後の仕上げをしています...`,
-    `もう少しです...`,
+    `${typeName}の特性を読み込んでいます`,
+    `あなたの回答を反映しています`,
+    `困りごとの背景を整理しています`,
+    `恐れのパターンを分析しています`,
+    `あなたに合った取り組み方を考えています`,
+    `プログラムの構成を決めています`,
+    `分析レポートを書いています`,
+    `ようこそガイドを作っています`,
+    `ミッション文を個別化しています`,
+    `最後の調整をしています`,
   ];
 
   // loading 画面に入ったら、メッセージを進めつつ実際にAI生成を叩く
@@ -135,10 +135,9 @@ function ProgramPageInner() {
     if (screen !== 'loading') return;
     let step = 0;
     const interval = setInterval(() => {
-      // 最後のメッセージで止まる（ループしない）
       step = Math.min(step + 1, loadingMessages.length - 1);
       setLoadingStep(step);
-    }, 3000);
+    }, 2800);
 
     (async () => {
       try {
@@ -378,25 +377,27 @@ function ProgramPageInner() {
   }
 
   if (screen === 'loading') {
-    const progress = Math.round((loadingStep / (loadingMessages.length - 1)) * 100);
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-5" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
-        <div className="w-full max-w-sm space-y-10 text-center">
-          <div className="w-16 h-16 mx-auto rounded-full border-4 border-purple-200 border-t-purple-500 animate-spin" />
-          <div className="space-y-4">
-            <p className="text-base font-medium text-purple-600 min-h-[1.5rem] transition-all">
-              {loadingMessages[loadingStep]}
-            </p>
-            {/* プログレスバー */}
-            <div className="w-full bg-stone-100 rounded-full h-1.5">
-              <div
-                className="bg-purple-400 h-1.5 rounded-full transition-all duration-[2800ms] ease-out"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-            <p className="text-xs text-stone-400">{progress}%</p>
+        <div className="w-full max-w-sm space-y-8">
+          <div className="flex justify-center">
+            <div className="w-12 h-12 rounded-full border-4 border-purple-200 border-t-purple-500 animate-spin" />
           </div>
-          <p className="text-xs text-stone-300">あなた専用に作っています。<br />30秒ほどかかる場合があります。</p>
+          <div className="space-y-2.5">
+            {loadingMessages.map((msg, i) => {
+              if (i > loadingStep) return null;
+              const isCurrent = i === loadingStep;
+              return (
+                <div key={i} className={`flex items-center gap-3 transition-all ${isCurrent ? 'opacity-100' : 'opacity-40'}`}>
+                  <div className={`w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold ${isCurrent ? 'border-2 border-purple-400 bg-white' : 'bg-purple-400'}`}>
+                    {!isCurrent && <span className="text-white">✓</span>}
+                  </div>
+                  <p className={`text-sm ${isCurrent ? 'text-purple-600 font-medium' : 'text-stone-400'}`}>{msg}</p>
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-xs text-stone-300 text-center">あなた専用に作っています。少しお待ちください。</p>
         </div>
       </div>
     );

@@ -37,6 +37,12 @@ export async function generatePlan(opts: GeneratePlanOpts): Promise<GeneratedPla
     .single();
 
   const existingPlan = existing?.generated_plan as GeneratedPlan | undefined;
+  const onboarding = opts.onboarding ?? (existing?.onboarding as Record<string, string>) ?? {};
+
+  // onboardingが渡されたら常に diagnostics に保存（キャッシュヒット時も）
+  if (opts.onboarding && Object.keys(opts.onboarding).length > 0) {
+    await sb.from('diagnostics').update({ onboarding }).eq('session_id', diagSession);
+  }
 
   // キャッシュ：プレビューは何か作ってあればそれを返す／フルは fullまで完了済みなら返す
   if (phase === 'preview' && existingPlan) return existingPlan;
@@ -44,7 +50,6 @@ export async function generatePlan(opts: GeneratePlanOpts): Promise<GeneratedPla
 
   const fearScores = existing?.fear_scores as Record<FearAxis, number> | undefined;
   const defenseScores = (existing?.defense_scores as Record<DefenseAxis, number> | undefined) ?? null;
-  const onboarding = opts.onboarding ?? (existing?.onboarding as Record<string, string>) ?? {};
 
   // プレビュー生成にはfearScores必須。フルはexistingPlanのconfigを再利用できる。
   if (!fearScores && phase === 'preview') throw new Error('diagnostics not found');
