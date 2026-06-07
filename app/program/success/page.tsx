@@ -58,6 +58,8 @@ function SuccessPageInner() {
         bestTiming: meta.onboarding?.bestTiming,
         distressLevel: meta.onboarding?.distressLevel,
         changeScene: meta.onboarding?.changeScene,
+        difficultScene: meta.onboarding?.difficultScene,
+        changeOrientation: meta.onboarding?.changeOrientation,
         plan: meta.plan,
         diagSession: meta.diagSession,
       }),

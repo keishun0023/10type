@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSupabase } from '@/lib/supabase';
-import { PROGRAM_CONTENT, TYPE_NAMES } from '@/data/program';
+import { PROGRAM_CONTENT, TYPE_NAMES, ProgramConfig } from '@/data/program';
 import { REPORT_CONTENT } from '@/data/report';
 import { FearAxis, DefenseAxis } from '@/data/questions';
+import { selectTodayMission, FEAR_FOCUS_LABEL, KIND_LABEL } from '@/lib/missionSelect';
 import dynamic from 'next/dynamic';
 
 const RadarChartComponent = dynamic(() => import('@/components/RadarChartComponent'), { ssr: false });
@@ -43,6 +44,7 @@ export default function DashboardPage() {
   const [memo, setMemo] = useState('');
   const [fearScores, setFearScores] = useState<Record<FearAxis, number> | null>(null);
   const [defenseScores, setDefenseScores] = useState<Record<DefenseAxis, number> | null>(null);
+  const [programConfig, setProgramConfig] = useState<ProgramConfig | null>(null);
 
   // profile edit state
   const [profileData, setProfileData] = useState<{
@@ -59,10 +61,23 @@ export default function DashboardPage() {
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
 
-  const content = PROGRAM_CONTENT[typeId];
+  // 新システム（ProgramConfig）があればそちら、なければ旧シムにフォールバック
   const typeName = TYPE_NAMES[typeId];
-  const todayMissionIndex = (dayCount - 1) % (content?.missionPool.length || 1);
-  const todayMission = content?.missionPool[todayMissionIndex];
+  const todayMissionData = programConfig ? selectTodayMission(programConfig, dayCount) : null;
+  const shimContent = PROGRAM_CONTENT[typeId];
+  const shimMissionIndex = (dayCount - 1) % (shimContent?.missionPool.length || 1);
+  const todayMission = todayMissionData
+    ? { text: todayMissionData.level.text, why: todayMissionData.level.why }
+    : shimContent?.missionPool[shimMissionIndex];
+  const vizLabel = todayMissionData
+    ? todayMissionData.component.answerCheckLabel
+    : shimContent?.visualizationLabel ?? '';
+  const currentFocusLabel = programConfig
+    ? FEAR_FOCUS_LABEL[programConfig.currentFocus]
+    : null;
+  const currentKindLabel = todayMissionData
+    ? KIND_LABEL[todayMissionData.component.kind]
+    : null;
 
   useEffect(() => {
     const sb = getSupabase();
@@ -149,6 +164,7 @@ export default function DashboardPage() {
     localStorage.setItem('kokolift_username', name);
     setTypeId(data.type_id || 'distancer');
     localStorage.setItem('kokolift_type_id', data.type_id || 'distancer');
+    if (data.program_config) setProgramConfig(data.program_config as ProgramConfig);
     setProfileData({
       username: data.username || '',
       email: data.email || '',
@@ -216,7 +232,8 @@ export default function DashboardPage() {
     await sb.from('daily_logs').upsert({
       user_id: userId,
       date: today,
-      mission_id: todayMissionIndex,
+      mission_id: dayCount,
+      component_id: todayMissionData?.componentId ?? null,
       done,
       count,
       before_score: before,
@@ -427,6 +444,25 @@ export default function DashboardPage() {
       <div className="max-w-sm mx-auto px-5 space-y-5">
         {tab === 'home' && (
           <>
+            {/* 現在地 */}
+            {currentFocusLabel && (
+              <div className="bg-purple-50 rounded-3xl p-4 border border-purple-100 flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-purple-400 font-medium">今取り組んでいること</p>
+                  <p className="text-sm font-bold text-purple-700 mt-0.5">{currentFocusLabel}</p>
+                  {currentKindLabel && (
+                    <p className="text-xs text-purple-400 mt-0.5">{currentKindLabel}を中心に</p>
+                  )}
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-stone-400">{dayCount - 1} / 30日</p>
+                  <div className="w-16 bg-purple-200 rounded-full h-1.5 mt-1">
+                    <div className="bg-purple-500 h-1.5 rounded-full" style={{ width: `${progress * 100}%` }} />
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="bg-white rounded-3xl p-5 border border-purple-100 space-y-3">
               <p className="text-xs text-purple-400 font-medium">今日のミッション</p>
               <p className="text-sm font-bold text-stone-800 leading-relaxed">{todayMission?.text}</p>
@@ -445,19 +481,20 @@ export default function DashboardPage() {
               )}
             </div>
 
-            <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-3">
-              <p className="text-xs text-stone-400 font-medium">30日プログラム</p>
-              <div className="w-full bg-stone-100 rounded-full h-2">
-                <div className="bg-purple-400 h-2 rounded-full transition-all" style={{ width: `${progress * 100}%` }} />
+            {!currentFocusLabel && (
+              <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-3">
+                <p className="text-xs text-stone-400 font-medium">30日プログラム</p>
+                <div className="w-full bg-stone-100 rounded-full h-2">
+                  <div className="bg-purple-400 h-2 rounded-full transition-all" style={{ width: `${progress * 100}%` }} />
+                </div>
+                <p className="text-sm text-stone-600">{dayCount - 1} / 30日</p>
               </div>
-              <p className="text-sm text-stone-600">{dayCount - 1} / 30日</p>
-            </div>
+            )}
 
             <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-2">
-              <p className="text-xs text-stone-400 font-medium">今週のあなた</p>
-              <p className="text-sm text-stone-600">{content?.visualizationLabel}</p>
+              <p className="text-xs text-stone-400 font-medium">積み上げ</p>
+              <p className="text-sm text-stone-600">{vizLabel}</p>
               <p className="text-2xl font-bold text-purple-500">{totalCount}<span className="text-sm text-stone-400 font-normal ml-1">回</span></p>
-              <p className="text-xs text-stone-400">{content?.accumulator}：累計 {totalCount}回</p>
             </div>
           </>
         )}
@@ -538,7 +575,7 @@ export default function DashboardPage() {
               <div className="text-center space-y-4 py-8">
                 <div className="text-4xl">{todayLog?.done ? '🎉' : '👍'}</div>
                 <p className="font-bold text-stone-800">{todayLog?.done ? '記録しました！' : '今日はパスしました'}</p>
-                <p className="text-sm text-stone-500">{todayLog?.done ? `${content?.visualizationLabel}が増えています` : '機会がなかった日もある。それでOKです。'}</p>
+                <p className="text-sm text-stone-500">{todayLog?.done ? `${vizLabel}が増えています` : '機会がなかった日もある。それでOKです。'}</p>
                 <button onClick={() => setTab('home')} className="w-full py-4 rounded-full font-bold text-white text-sm" style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}>
                   ホームへ
                 </button>
@@ -552,13 +589,15 @@ export default function DashboardPage() {
             <h2 className="text-lg font-bold text-stone-900">今週のあなた</h2>
             <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-4">
               <div className="space-y-3">
+                {currentFocusLabel && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-stone-500">今取り組んでいること</span>
+                    <span className="font-bold text-purple-500">{currentFocusLabel}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-sm">
-                  <span className="text-stone-500">{content?.visualizationLabel}</span>
+                  <span className="text-stone-500">{vizLabel}</span>
                   <span className="font-bold text-purple-500">{totalCount}回</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-stone-500">{content?.accumulator}</span>
-                  <span className="font-bold text-stone-700">累計 {totalCount}回</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-stone-500">連続記録</span>
