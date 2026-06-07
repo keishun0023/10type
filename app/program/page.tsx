@@ -120,7 +120,7 @@ function ProgramPageInner() {
     `${typeName}の特性を分析しています...`,
     `あなたの回答を反映しています...`,
     `あなたの「困っていること」を読み込んでいます...`,
-    `あなた専用の30日プログラムを作成しています...`,
+    `あなた専用の分析結果をまとめています...`,
   ];
 
   // loading 画面に入ったら、メッセージを進めつつ実際にAI生成を叩く
@@ -137,7 +137,7 @@ function ProgramPageInner() {
         const res = await fetch('/api/generate-plan', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ diagSession: session, typeId, onboarding }),
+          body: JSON.stringify({ diagSession: session, typeId, onboarding, phase: 'preview' }),
         });
         const data = await res.json();
         clearInterval(interval);
@@ -381,7 +381,7 @@ function ProgramPageInner() {
               </p>
             ))}
           </div>
-          <p className="text-xs text-stone-300">あなた専用に作っています。少しだけお待ちください（最大1分ほど）。</p>
+          <p className="text-xs text-stone-300">あなた専用にまとめています。少しだけお待ちください。</p>
         </div>
       </div>
     );

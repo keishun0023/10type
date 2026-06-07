@@ -307,6 +307,9 @@ export type GeneratedMission = ScheduledDay & {
 
 // 治療方針（レポート）＋ようこそガイド＋30日ミッション
 export type GeneratedPlan = {
+  // 本人の自由記述・選択・恐れ/防衛スコアを統合し、一段抽象化した「結局この人は何に困っているか」の要約。
+  // 全文面の土台に使う（具体例そのままは繰り返さない）。
+  userInsight?: string;
   // 治療方針（レポートタブでいつでも見られる詳細）
   report: {
     currentState: string;    // 今の状態
@@ -321,6 +324,8 @@ export type GeneratedPlan = {
   // 生成時のメタ
   config: ProgramConfig;
   generatedAt: string;
+  // 生成フェーズ：preview=課金前（要約＋レポート＋ようこそ＋最初の数日）/ full=課金後（30日分すべて）
+  phase?: 'preview' | 'full';
 };
 
 // ─────────────────────────────────────────────

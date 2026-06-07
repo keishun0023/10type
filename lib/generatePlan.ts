@@ -1,0 +1,170 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { buildProgramConfig, distressStringToNumber } from '@/lib/blending';
+import { buildSchedule, scheduleSkeleton } from '@/lib/schedule';
+import { buildPreviewPrompt, buildFullPrompt } from '@/lib/prompt';
+import { callClaude, parseJSONFromText, isAIConfigured } from '@/lib/ai';
+import { ChangeOrientation, GeneratedPlan, GeneratedMission, ScheduledDay } from '@/data/program';
+import { FearAxis, DefenseAxis } from '@/data/questions';
+
+// プレビュー（課金前）で先に作るミッション数。残りは課金後のフルで作る。
+const PREVIEW_MISSION_DAYS = 8;
+
+type PreviewAI = {
+  userInsight: string;
+  report: { currentState: string; drainScene: string; strengthReframe: string; direction: string };
+  previewMissions: { day: number; title: string; why: string }[];
+};
+type FullAI = {
+  welcomeSteps: { title: string; body: string }[];
+  missions: { day: number; title: string; why: string }[];
+};
+
+export type GeneratePlanOpts = {
+  sb: SupabaseClient;
+  diagSession: string;
+  typeId: string;
+  onboarding?: Record<string, string>;
+  phase: 'preview' | 'full';
+};
+
+export async function generatePlan(opts: GeneratePlanOpts): Promise<GeneratedPlan> {
+  const { sb, diagSession, typeId, phase } = opts;
+
+  const { data: existing } = await sb
+    .from('diagnostics')
+    .select('generated_plan, fear_scores, defense_scores, onboarding')
+    .eq('session_id', diagSession)
+    .single();
+
+  const existingPlan = existing?.generated_plan as GeneratedPlan | undefined;
+
+  // キャッシュ：プレビューは何か作ってあればそれを返す／フルは fullまで完了済みなら返す
+  if (phase === 'preview' && existingPlan) return existingPlan;
+  if (phase === 'full' && existingPlan?.phase === 'full') return existingPlan;
+
+  const fearScores = existing?.fear_scores as Record<FearAxis, number> | undefined;
+  if (!fearScores) throw new Error('diagnostics not found');
+  const defenseScores = (existing?.defense_scores as Record<DefenseAxis, number> | undefined) ?? null;
+
+  const onboarding = opts.onboarding ?? (existing?.onboarding as Record<string, string>) ?? {};
+
+  // 配合エンジン（決定論）
+  const orientation: ChangeOrientation =
+    onboarding?.changeOrientation === 'change' || onboarding?.changeOrientation === 'accept'
+      ? (onboarding.changeOrientation as ChangeOrientation)
+      : 'unknown';
+  const config = buildProgramConfig({
+    userId: '',
+    fearScores,
+    changeOrientation: orientation,
+    distressLevel: distressStringToNumber(onboarding?.distressLevel ?? ''),
+  });
+
+  // 30日の地図（決定論）
+  const schedule: ScheduledDay[] = buildSchedule(config, onboarding?.dailyTime ?? '');
+  const skeleton = scheduleSkeleton(schedule);
+
+  // AI文面（とフォールバックの骨格）を day番号でマージ。優先：AIフル > ベース(プレビュー) > 骨格
+  function mergeMissions(
+    aiByDay: Map<number, { title: string; why: string }>,
+    base?: GeneratedMission[],
+  ): GeneratedMission[] {
+    const baseByDay = new Map((base ?? []).map(m => [m.day, m]));
+    return schedule.map(d => {
+      const sk = skeleton.find(s => s.day === d.day)!;
+      const ai = aiByDay.get(d.day);
+      const b = baseByDay.get(d.day);
+      return {
+        ...d,
+        title: ai?.title || b?.title || sk.skeletonTitle,
+        why: ai?.why || b?.why || sk.skeletonWhy,
+      };
+    });
+  }
+
+  async function persist(plan: GeneratedPlan): Promise<GeneratedPlan> {
+    await sb.from('diagnostics').update({ generated_plan: plan, onboarding }).eq('session_id', diagSession);
+    return plan;
+  }
+
+  // ── プレビュー生成 ──
+  async function runPreview(): Promise<GeneratedPlan> {
+    if (!isAIConfigured()) {
+      return persist({
+        userInsight: '',
+        report: { currentState: '', drainScene: '', strengthReframe: '', direction: '' },
+        welcomeSteps: [],
+        missions: mergeMissions(new Map()),
+        config,
+        generatedAt: new Date().toISOString(),
+        phase: 'preview',
+      });
+    }
+    const { system, user } = buildPreviewPrompt({
+      typeId: typeId || 'distancer',
+      fearScores: fearScores!,
+      defenseScores,
+      config,
+      onboarding,
+      schedule: skeleton.slice(0, PREVIEW_MISSION_DAYS),
+    });
+    const raw = await callClaude({ system, user, maxTokens: 3000, temperature: 0.7 });
+    const ai = parseJSONFromText<PreviewAI>(raw);
+    const aiByDay = new Map((ai.previewMissions ?? []).map(m => [m.day, m]));
+    return persist({
+      userInsight: ai.userInsight ?? '',
+      report: ai.report,
+      welcomeSteps: [],
+      missions: mergeMissions(aiByDay),
+      config,
+      generatedAt: new Date().toISOString(),
+      phase: 'preview',
+    });
+  }
+
+  // ── フル生成（プレビューの土台を踏襲。残りの日数のみAIに作らせる）──
+  async function runFull(base: GeneratedPlan): Promise<GeneratedPlan> {
+    if (!isAIConfigured()) {
+      return persist({
+        ...base,
+        missions: mergeMissions(new Map(), base.missions),
+        config,
+        generatedAt: new Date().toISOString(),
+        phase: 'full',
+      });
+    }
+    // 残り（プレビューで未生成の日）だけをAIに依頼
+    const remaining = skeleton.filter(s => s.day > PREVIEW_MISSION_DAYS);
+    const { system, user } = buildFullPrompt({
+      typeId: typeId || 'distancer',
+      fearScores: fearScores!,
+      defenseScores,
+      config,
+      onboarding,
+      schedule: remaining,
+      userInsight: base.userInsight ?? '',
+      report: base.report,
+    });
+    const raw = await callClaude({ system, user, maxTokens: 8000, temperature: 0.7 });
+    const ai = parseJSONFromText<FullAI>(raw);
+    const aiByDay = new Map((ai.missions ?? []).map(m => [m.day, m]));
+    return persist({
+      userInsight: base.userInsight ?? '',
+      report: base.report,
+      welcomeSteps: ai.welcomeSteps ?? base.welcomeSteps ?? [],
+      missions: mergeMissions(aiByDay, base.missions),
+      config,
+      generatedAt: new Date().toISOString(),
+      phase: 'full',
+    });
+  }
+
+  if (phase === 'preview') return runPreview();
+
+  // full：土台（プレビュー）が無い／レポート未生成なら先にプレビューを作る
+  let base = existingPlan;
+  if (!base || (isAIConfigured() && !base.report?.currentState)) {
+    base = await runPreview();
+  }
+  return runFull(base);
+}
