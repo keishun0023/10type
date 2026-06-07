@@ -467,7 +467,7 @@ function ProgramPageInner() {
         <div className="w-full max-w-sm mx-auto space-y-8">
           <div className="text-center space-y-3">
             <h1 className="text-xl font-bold text-stone-900">一人でやるのは、難しい。<br />ココリフトが、毎日あなたの隣にいます。</h1>
-            <p className="text-sm text-stone-500">プログラムの内容は無料でお届け済み。<br />毎日続ける仕組みが、有料です。</p>
+            <p className="text-sm text-stone-500">あなただけの30日プログラムが完成しました。<br />ここから、毎日の一歩を一緒に続けていきます。</p>
           </div>
 
           <div className="space-y-4">
