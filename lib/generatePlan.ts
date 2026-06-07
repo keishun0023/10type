@@ -43,25 +43,28 @@ export async function generatePlan(opts: GeneratePlanOpts): Promise<GeneratedPla
   if (phase === 'full' && existingPlan?.phase === 'full') return existingPlan;
 
   const fearScores = existing?.fear_scores as Record<FearAxis, number> | undefined;
-  if (!fearScores) throw new Error('diagnostics not found');
   const defenseScores = (existing?.defense_scores as Record<DefenseAxis, number> | undefined) ?? null;
-
   const onboarding = opts.onboarding ?? (existing?.onboarding as Record<string, string>) ?? {};
 
-  // 配合エンジン（決定論）
+  // プレビュー生成にはfearScores必須。フルはexistingPlanのconfigを再利用できる。
+  if (!fearScores && phase === 'preview') throw new Error('diagnostics not found');
+
+  // 配合エンジン（決定論）。フルはexistingPlanにconfigが入っていればそれを再利用。
   const orientation: ChangeOrientation =
     onboarding?.changeOrientation === 'change' || onboarding?.changeOrientation === 'accept'
       ? (onboarding.changeOrientation as ChangeOrientation)
       : 'unknown';
-  const config = buildProgramConfig({
+  const config = existingPlan?.config ?? (fearScores ? buildProgramConfig({
     userId: '',
     fearScores,
     changeOrientation: orientation,
     distressLevel: distressStringToNumber(onboarding?.distressLevel ?? ''),
-  });
+  }) : null);
+  if (!config) throw new Error('diagnostics not found');
+  const safeConfig = config;
 
   // 30日の地図（決定論）
-  const schedule: ScheduledDay[] = buildSchedule(config, onboarding?.dailyTime ?? '');
+  const schedule: ScheduledDay[] = buildSchedule(safeConfig, onboarding?.dailyTime ?? '');
   const skeleton = scheduleSkeleton(schedule);
 
   // AI文面（とフォールバックの骨格）を day番号でマージ。優先：AIフル > ベース(プレビュー) > 骨格
@@ -95,7 +98,7 @@ export async function generatePlan(opts: GeneratePlanOpts): Promise<GeneratedPla
         report: { currentState: '', drainScene: '', strengthReframe: '', direction: '' },
         welcomeSteps: [],
         missions: mergeMissions(new Map()),
-        config,
+        config: safeConfig,
         generatedAt: new Date().toISOString(),
         phase: 'preview',
       });
@@ -104,7 +107,7 @@ export async function generatePlan(opts: GeneratePlanOpts): Promise<GeneratedPla
       typeId: typeId || 'distancer',
       fearScores: fearScores!,
       defenseScores,
-      config,
+      config: safeConfig,
       onboarding,
       schedule: skeleton.slice(0, PREVIEW_MISSION_DAYS),
     });
@@ -116,7 +119,7 @@ export async function generatePlan(opts: GeneratePlanOpts): Promise<GeneratedPla
       report: ai.report,
       welcomeSteps: ai.welcomeSteps ?? [],
       missions: mergeMissions(aiByDay),
-      config,
+      config: safeConfig,
       generatedAt: new Date().toISOString(),
       phase: 'preview',
     });
@@ -128,7 +131,7 @@ export async function generatePlan(opts: GeneratePlanOpts): Promise<GeneratedPla
       return persist({
         ...base,
         missions: mergeMissions(new Map(), base.missions),
-        config,
+        config: safeConfig,
         generatedAt: new Date().toISOString(),
         phase: 'full',
       });
@@ -139,7 +142,7 @@ export async function generatePlan(opts: GeneratePlanOpts): Promise<GeneratedPla
       typeId: typeId || 'distancer',
       fearScores: fearScores!,
       defenseScores,
-      config,
+      config: safeConfig,
       onboarding,
       schedule: remaining,
       userInsight: base.userInsight ?? '',
@@ -153,7 +156,7 @@ export async function generatePlan(opts: GeneratePlanOpts): Promise<GeneratedPla
       report: base.report,
       welcomeSteps: base.welcomeSteps ?? [],
       missions: mergeMissions(aiByDay, base.missions),
-      config,
+      config: safeConfig,
       generatedAt: new Date().toISOString(),
       phase: 'full',
     });
