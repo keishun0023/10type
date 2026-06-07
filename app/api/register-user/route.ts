@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServer } from '@/lib/supabase-server';
-import { generatePlan } from '@/lib/generatePlan';
 import { GeneratedPlan } from '@/data/program';
 import { FearAxis } from '@/data/questions';
-
-export const maxDuration = 300; // 課金後にフルプラン（残り日数）を生成するため
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,13 +28,7 @@ export async function POST(req: NextRequest) {
         generatedPlan = data.generated_plan;
         onboarding = data.onboarding ?? {};
       }
-
-      // 課金後：残りのミッション＋ようこそガイドを生成（フル）。失敗してもプレビュー分で続行。
-      try {
-        generatedPlan = await generatePlan({ sb, diagSession, typeId, phase: 'full' });
-      } catch (err) {
-        console.error('full plan generation failed:', err);
-      }
+      // フル生成はダッシュボード初回起動時にバックグラウンドで実行するため、ここでは行わない
     }
 
     // 生成済みプランに userId を埋める

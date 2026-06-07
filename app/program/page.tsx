@@ -118,10 +118,16 @@ function ProgramPageInner() {
   const typeName = TYPE_NAMES[typeId] || '診断さん';
 
   const loadingMessages = [
-    `${typeName}の特性を分析しています...`,
+    `${typeName}の特性を読み込んでいます...`,
     `あなたの回答を反映しています...`,
-    `あなたの「困っていること」を読み込んでいます...`,
-    `あなた専用の分析結果をまとめています...`,
+    `困りごとの背景を整理しています...`,
+    `恐れのパターンを分析しています...`,
+    `あなたに合った取り組み方を考えています...`,
+    `分析レポートをまとめています...`,
+    `30日のスケジュールを組んでいます...`,
+    `ミッションの内容を調整しています...`,
+    `最後の仕上げをしています...`,
+    `もう少しです...`,
   ];
 
   // loading 画面に入ったら、メッセージを進めつつ実際にAI生成を叩く
@@ -129,9 +135,10 @@ function ProgramPageInner() {
     if (screen !== 'loading') return;
     let step = 0;
     const interval = setInterval(() => {
-      step = Math.min(step + 1, loadingMessages.length);
+      // 最後のメッセージで止まる（ループしない）
+      step = Math.min(step + 1, loadingMessages.length - 1);
       setLoadingStep(step);
-    }, 1200);
+    }, 3000);
 
     (async () => {
       try {
@@ -371,18 +378,25 @@ function ProgramPageInner() {
   }
 
   if (screen === 'loading') {
+    const progress = Math.round((loadingStep / (loadingMessages.length - 1)) * 100);
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-5" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
-        <div className="w-full max-w-sm space-y-8 text-center">
+        <div className="w-full max-w-sm space-y-10 text-center">
           <div className="w-16 h-16 mx-auto rounded-full border-4 border-purple-200 border-t-purple-500 animate-spin" />
-          <div className="space-y-3">
-            {loadingMessages.slice(0, loadingStep).map((msg, i) => (
-              <p key={i} className={`text-sm transition-all ${i === loadingStep - 1 ? 'text-purple-600 font-medium' : 'text-stone-400'}`}>
-                {i < loadingStep - 1 ? '✓ ' : ''}{msg}
-              </p>
-            ))}
+          <div className="space-y-4">
+            <p className="text-base font-medium text-purple-600 min-h-[1.5rem] transition-all">
+              {loadingMessages[loadingStep]}
+            </p>
+            {/* プログレスバー */}
+            <div className="w-full bg-stone-100 rounded-full h-1.5">
+              <div
+                className="bg-purple-400 h-1.5 rounded-full transition-all duration-[2800ms] ease-out"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <p className="text-xs text-stone-400">{progress}%</p>
           </div>
-          <p className="text-xs text-stone-300">あなた専用にまとめています。少しだけお待ちください。</p>
+          <p className="text-xs text-stone-300">あなた専用に作っています。<br />30秒ほどかかる場合があります。</p>
         </div>
       </div>
     );

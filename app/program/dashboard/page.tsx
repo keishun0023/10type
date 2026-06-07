@@ -182,7 +182,13 @@ export default function DashboardPage() {
       return;
     }
     if (data.program_config) setProgramConfig(data.program_config as ProgramConfig);
-    if (data.generated_plan) setGeneratedPlan(data.generated_plan as GeneratedPlan);
+    if (data.generated_plan) {
+      setGeneratedPlan(data.generated_plan as GeneratedPlan);
+      // プレビュープランのままならバックグラウンドでフル生成
+      if ((data.generated_plan as GeneratedPlan).phase === 'preview' && data.diag_session) {
+        upgradeToFullPlan(uid, data.diag_session, data.type_id || 'distancer');
+      }
+    }
     setProfileData({
       username: data.username || '',
       email: data.email || '',
@@ -194,6 +200,27 @@ export default function DashboardPage() {
       type_id: data.type_id || '',
       paid_plan: data.paid_plan || '',
     });
+  }
+
+  async function upgradeToFullPlan(uid: string, diagSession: string, typeId: string) {
+    try {
+      const res = await fetch('/api/generate-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ diagSession, typeId, phase: 'full' }),
+      });
+      const result = await res.json();
+      if (result.plan) {
+        setGeneratedPlan(result.plan as GeneratedPlan);
+        const sb = getSupabase();
+        await sb?.from('users').update({
+          generated_plan: result.plan,
+          program_config: result.plan.config ?? null,
+        }).eq('id', uid);
+      }
+    } catch (e) {
+      console.error('background full plan upgrade failed:', e);
+    }
   }
 
   async function loadScores(uid: string) {
@@ -724,22 +751,35 @@ export default function DashboardPage() {
                     <div key={wi} className="bg-white rounded-3xl p-5 border border-stone-100 space-y-3">
                       <p className="text-xs text-purple-400 font-medium">{wk.label}</p>
                       <div className="space-y-3">
-                        {wk.days.map(m => {
-                          const isToday = m.day === dayCount;
-                          return (
-                            <div key={m.day} className={`flex gap-3 rounded-2xl p-2.5 -mx-1 ${isToday ? 'bg-purple-50 ring-1 ring-purple-200' : ''}`}>
-                              <div className="flex-shrink-0 w-12 text-center">
-                                <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${isToday ? 'bg-purple-500 text-white' : 'bg-stone-100 text-stone-500'}`}>
-                                  Day {m.day}
-                                </span>
+                        {(() => {
+                          // 連続する同タイトルのミッションをグルーピング
+                          const grouped: { dayLabel: string; days: number[]; title: string; why: string }[] = [];
+                          wk.days.forEach(m => {
+                            const last = grouped[grouped.length - 1];
+                            if (last && last.title === m.title) {
+                              last.days.push(m.day);
+                              last.dayLabel = `Day ${last.days[0]}〜${m.day}`;
+                            } else {
+                              grouped.push({ dayLabel: `Day ${m.day}`, days: [m.day], title: m.title, why: m.why });
+                            }
+                          });
+                          return grouped.map(g => {
+                            const isToday = g.days.includes(dayCount);
+                            return (
+                              <div key={g.dayLabel} className={`flex gap-3 rounded-2xl p-2.5 -mx-1 ${isToday ? 'bg-purple-50 ring-1 ring-purple-200' : ''}`}>
+                                <div className="flex-shrink-0 w-14 text-center">
+                                  <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold leading-tight ${isToday ? 'bg-purple-500 text-white' : 'bg-stone-100 text-stone-500'}`}>
+                                    {g.dayLabel}
+                                  </span>
+                                </div>
+                                <div className="space-y-0.5 min-w-0">
+                                  <p className="text-sm font-medium text-stone-800 leading-snug">{g.title}</p>
+                                  {g.why && <p className="text-xs text-stone-400 leading-relaxed">{g.why}</p>}
+                                </div>
                               </div>
-                              <div className="space-y-0.5 min-w-0">
-                                <p className="text-sm font-medium text-stone-800 leading-snug">{m.title}</p>
-                                {m.why && <p className="text-xs text-stone-400 leading-relaxed">{m.why}</p>}
-                              </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          });
+                        })()}
                       </div>
                     </div>
                   ))
