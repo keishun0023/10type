@@ -28,6 +28,14 @@ const DEFENSE_AXIS_DESC: { axis: string; label: string; desc: string }[] = [
   { axis: 'D_EXP', label: '抑制 ↔ 表出', desc: '気持ちを内にためるか（抑制）、外に出すか（表出）。どちらにも消耗しやすい場面と、うまく機能する場面があります。' },
 ];
 
+// 1日の区切りは日本時間 午前3時（夜型に配慮）。
+// JST(UTC+9) で 3時より前は前日扱い → UTCに +6時間 した日付を「論理的な今日」とする。
+function logicalDate(daysAgo = 0): string {
+  const d = new Date(Date.now() + 6 * 60 * 60 * 1000);
+  d.setUTCDate(d.getUTCDate() - daysAgo);
+  return d.toISOString().split('T')[0];
+}
+
 const RadarChartComponent = dynamic(() => import('@/components/RadarChartComponent'), { ssr: false });
 const DefenseBarChart = dynamic(() => import('@/components/DefenseBarChart'), { ssr: false });
 
@@ -276,7 +284,7 @@ export default function DashboardPage() {
   async function loadStats(uid: string) {
     const sb = getSupabase();
     if (!sb) return;
-    const today = new Date().toISOString().split('T')[0];
+    const today = logicalDate();
     const { data: logs } = await sb.from('daily_logs').select('*').eq('user_id', uid).order('date', { ascending: false });
     if (!logs) return;
     setLogs(logs as DailyLog[]);
@@ -288,9 +296,7 @@ export default function DashboardPage() {
     let s = 0;
     const sortedDates = logs.map(l => l.date).sort().reverse();
     for (let i = 0; i < sortedDates.length; i++) {
-      const d = new Date();
-      d.setDate(d.getDate() - i - 1);
-      if (sortedDates[i] === d.toISOString().split('T')[0]) s++;
+      if (sortedDates[i] === logicalDate(i + 1)) s++;
       else break;
     }
     setStreak(s);
@@ -340,7 +346,7 @@ export default function DashboardPage() {
   async function saveLog(done: boolean, count: number, before: number, after: number, m: string) {
     const sb = getSupabase();
     if (!sb || !userId || !todayMission) return;
-    const today = new Date().toISOString().split('T')[0];
+    const today = logicalDate();
     await sb.from('daily_logs').upsert({
       user_id: userId,
       date: today,
@@ -723,7 +729,7 @@ export default function DashboardPage() {
                 onComplete={async (summary: string) => {
                   const sb = getSupabase();
                   if (sb && userId) {
-                    const today = new Date().toISOString().split('T')[0];
+                    const today = logicalDate();
                     const { error } = await sb.from('daily_logs').upsert({
                       user_id: userId,
                       date: today,
