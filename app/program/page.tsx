@@ -377,26 +377,42 @@ function ProgramPageInner() {
   }
 
   if (screen === 'loading') {
+    // リール表示: 前・現在・次 の3行を中央に表示
+    const prev = loadingStep > 0 ? loadingMessages[loadingStep - 1] : null;
+    const current = loadingMessages[loadingStep];
+    const next = loadingStep < loadingMessages.length - 1 ? loadingMessages[loadingStep + 1] : null;
+
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-5" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
-        <div className="w-full max-w-sm space-y-8">
-          <div className="flex justify-center">
-            <div className="w-12 h-12 rounded-full border-4 border-purple-200 border-t-purple-500 animate-spin" />
+        <div className="w-full max-w-sm flex flex-col items-center gap-10">
+          <div className="w-10 h-10 rounded-full border-4 border-purple-200 border-t-purple-500 animate-spin" />
+
+          <div className="w-full flex flex-col items-center gap-4" style={{ minHeight: 120 }}>
+            {/* 直前（上に流れていく） */}
+            <p
+              key={`prev-${loadingStep}`}
+              className="text-sm text-stone-300 text-center transition-all duration-700"
+            >
+              {prev ? `✓ ${prev}` : ''}
+            </p>
+
+            {/* 現在（中央・目立つ） */}
+            <p
+              key={`cur-${loadingStep}`}
+              className="text-base font-bold text-purple-600 text-center transition-all duration-500"
+            >
+              {current}
+            </p>
+
+            {/* 次（下に控えてる） */}
+            <p
+              key={`next-${loadingStep}`}
+              className="text-sm text-stone-300 text-center transition-all duration-700"
+            >
+              {next ?? ''}
+            </p>
           </div>
-          <div className="space-y-2.5">
-            {loadingMessages.map((msg, i) => {
-              if (i > loadingStep) return null;
-              const isCurrent = i === loadingStep;
-              return (
-                <div key={i} className={`flex items-center gap-3 transition-all ${isCurrent ? 'opacity-100' : 'opacity-40'}`}>
-                  <div className={`w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold ${isCurrent ? 'border-2 border-purple-400 bg-white' : 'bg-purple-400'}`}>
-                    {!isCurrent && <span className="text-white">✓</span>}
-                  </div>
-                  <p className={`text-sm ${isCurrent ? 'text-purple-600 font-medium' : 'text-stone-400'}`}>{msg}</p>
-                </div>
-              );
-            })}
-          </div>
+
           <p className="text-xs text-stone-300 text-center">あなた専用に作っています。少しお待ちください。</p>
         </div>
       </div>
