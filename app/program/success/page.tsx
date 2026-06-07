@@ -40,8 +40,32 @@ function SuccessPageInner() {
 
     // Supabase Authでアカウント作成
     const { data: authData, error: authError } = await sb.auth.signUp({ email, password });
-    if (authError) { setStatus('error'); setErrorMsg(authError.message); return; }
-    const uid = authData.user?.id;
+    let uid = authData?.user?.id;
+
+    if (authError) {
+      // 既に登録済みなど → 同じパスワードでログインを試す
+      const { data: si, error: siErr } = await sb.auth.signInWithPassword({ email, password });
+      if (siErr || !si.user) {
+        setStatus('error');
+        setErrorMsg('このメールアドレスは既に使われています。パスワードが違う場合はログイン画面からお進みください。');
+        return;
+      }
+      uid = si.user.id;
+    } else if (!authData?.session && uid) {
+      // メール確認ON：サーバーで即時確認 → サインインしてセッションを確立
+      await fetch('/api/confirm-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: uid }),
+      });
+      const { error: siErr } = await sb.auth.signInWithPassword({ email, password });
+      if (siErr) {
+        setStatus('error');
+        setErrorMsg('ログインの確立に失敗しました。もう一度お試しください。');
+        return;
+      }
+    }
+
     if (!uid) { setStatus('error'); setErrorMsg('アカウント作成に失敗しました'); return; }
 
     // service_role経由でusersテーブルに保存（RLS回避）
