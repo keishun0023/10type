@@ -109,7 +109,6 @@ function ProgramPageInner() {
   const [loadingStep, setLoadingStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState<GeneratedPlan | null>(null);
-  const [genError, setGenError] = useState(false);
 
   // 深掘り（具体的な困りごと）
   const [detailSelected, setDetailSelected] = useState<string[]>([]);
@@ -142,16 +141,10 @@ function ProgramPageInner() {
         });
         const data = await res.json();
         clearInterval(interval);
-        if (data.plan) {
-          setGeneratedPlan(data.plan);
-          setScreen('plan-complete');
-        } else {
-          setGenError(true);
-          setScreen('plan-complete');
-        }
+        if (data.plan) setGeneratedPlan(data.plan);
+        setScreen('plan-complete');
       } catch {
         clearInterval(interval);
-        setGenError(true);
         setScreen('plan-complete');
       }
     })();
@@ -315,7 +308,7 @@ function ProgramPageInner() {
         <div className="w-full max-w-sm space-y-7">
           <div className="space-y-2">
             <span className="inline-block px-3 py-1 rounded-full bg-purple-100 text-purple-600 text-xs font-medium">あと少し</span>
-            <h2 className="text-2xl font-bold text-stone-800 leading-snug">その場面で、具体的にどんなことに困っていますか？</h2>
+            <h2 className="text-2xl font-bold text-stone-800 leading-snug">具体的に困っていることを教えてください</h2>
             <p className="text-xs text-stone-400 leading-relaxed">
               ここで教えてもらった内容をもとに、あなた専用のミッションを作ります。当てはまるものを選び、あれば自由に書いてください（任意）。
             </p>
@@ -397,53 +390,44 @@ function ProgramPageInner() {
   if (screen === 'plan-complete') {
     const report = generatedPlan?.report;
     const missions = generatedPlan?.missions ?? [];
-    const firstMission = missions[0];
-    // ぼかして見せる「続きがある」感の項目
-    const blurredSections = [
+    // 成果物の各ブロック（上から：いまのあなた → 続き）
+    const revealSections = [
+      { label: 'いまのあなたについて', body: report?.currentState, accent: true },
       { label: 'あなたの消耗しやすい場面', body: report?.drainScene },
       { label: 'あなたの強みの捉え直し', body: report?.strengthReframe },
       { label: 'これから30日でやること', body: report?.direction },
     ];
     return (
-      <div className="min-h-screen px-5 py-12" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
-        <div className="w-full max-w-sm mx-auto space-y-7">
+      <div className="min-h-screen px-5 py-10" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
+        <div className="w-full max-w-sm mx-auto space-y-5">
           <div className="text-center space-y-2">
             <span className="inline-block px-3 py-1 rounded-full bg-purple-100 text-purple-600 text-xs font-medium">あなたの分析が完成しました</span>
             <h1 className="text-2xl font-bold text-stone-900">{typeName}のあなたへの<br />30日プログラムができました。</h1>
           </div>
 
-          {/* 今の状態（ここだけ全文見せる＝フック） */}
-          {report?.currentState && !genError && (
-            <div className="bg-white rounded-3xl p-5 border border-purple-100 space-y-2">
-              <p className="text-xs text-purple-400 font-medium">いまのあなたについて</p>
-              <p className="text-sm text-stone-700 leading-relaxed">{report.currentState}</p>
-            </div>
-          )}
-
-          {genError && (
-            <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-2">
-              <p className="text-sm text-stone-600 leading-relaxed">
-                あなたの回答をもとに、30日分のプログラムを用意しました。続きは登録後にご覧いただけます。
-              </p>
-            </div>
-          )}
-
-          {/* 詳細レポート（ぼかし＝この奥に細かいものがある、と分かる見せ方） */}
+          {/* 成果物：上3割はくっきり、その先はフェードしながらロック */}
           <div className="relative">
-            <p className="text-xs text-stone-400 font-medium mb-2">この続きに、あなた専用の詳しい分析があります</p>
-            <div className="space-y-3 select-none" style={{ filter: 'blur(5px)', pointerEvents: 'none' }} aria-hidden>
-              {blurredSections.map((s, i) => (
-                <div key={i} className="bg-white rounded-2xl p-4 border border-stone-100 space-y-1.5">
+            <div
+              className="space-y-3"
+              style={{
+                maxHeight: 440,
+                overflow: 'hidden',
+                WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 34%, rgba(0,0,0,0.12) 72%, transparent 100%)',
+                maskImage: 'linear-gradient(to bottom, #000 0%, #000 34%, rgba(0,0,0,0.12) 72%, transparent 100%)',
+              }}
+            >
+              {revealSections.map((s, i) => (
+                <div key={i} className={`bg-white rounded-2xl p-5 space-y-1.5 border ${s.accent ? 'border-purple-100' : 'border-stone-100'}`}>
                   <p className="text-xs text-purple-400 font-medium">{s.label}</p>
-                  <p className="text-sm text-stone-600 leading-relaxed">
-                    {s.body || 'あなたの回答をもとに分析した内容がここに表示されます。あなたの状況に合わせて、具体的に書かれています。'}
+                  <p className="text-sm text-stone-700 leading-relaxed">
+                    {s.body || 'あなたの回答をもとに、あなたの状況に合わせて具体的に書いています。'}
                   </p>
                 </div>
               ))}
               {/* 30日ミッションの地図 */}
-              <div className="bg-white rounded-2xl p-4 border border-stone-100 space-y-2">
+              <div className="bg-white rounded-2xl p-5 border border-stone-100 space-y-2">
                 <p className="text-xs text-purple-400 font-medium">30日分のミッション</p>
-                {(missions.length ? missions.slice(0, 6) : Array.from({ length: 6 })).map((m, i) => (
+                {(missions.length ? missions.slice(0, 8) : Array.from({ length: 8 })).map((m, i) => (
                   <p key={i} className="text-sm text-stone-600">
                     Day {i + 1}：{(m as GeneratedPlan['missions'][number])?.title || 'あなた専用のミッション'}
                   </p>
@@ -451,22 +435,15 @@ function ProgramPageInner() {
                 <p className="text-xs text-stone-400">…Day 30 まで全て用意済み</p>
               </div>
             </div>
-            {/* ロック表示 */}
-            <div className="absolute inset-0 flex items-end justify-center pb-4 bg-gradient-to-t from-purple-50 via-purple-50/40 to-transparent rounded-2xl">
-              <div className="flex items-center gap-1.5 bg-white/90 backdrop-blur px-4 py-2 rounded-full shadow-sm">
+
+            {/* ロック（スクロールせず画面内に収まる位置） */}
+            <div className="absolute left-0 right-0 flex justify-center pointer-events-none" style={{ top: '300px' }}>
+              <div className="flex items-center gap-1.5 bg-white/95 backdrop-blur px-4 py-2 rounded-full shadow-md border border-purple-100">
                 <span className="text-sm">🔒</span>
-                <span className="text-xs font-medium text-stone-500">登録すると全て見られます</span>
+                <span className="text-xs font-medium text-stone-600">登録すると全て見られます</span>
               </div>
             </div>
           </div>
-
-          {/* 1日目だけチラ見せ（具体性を担保） */}
-          {firstMission && !genError && (
-            <div className="bg-white rounded-2xl p-4 border border-purple-100 space-y-1">
-              <p className="text-xs text-purple-400 font-medium">Day 1 のミッション（プレビュー）</p>
-              <p className="text-sm text-stone-700 font-medium leading-relaxed">{firstMission.title}</p>
-            </div>
-          )}
 
           <button
             onClick={() => setScreen('pricing')}
@@ -475,6 +452,10 @@ function ProgramPageInner() {
           >
             プランを始める →
           </button>
+
+          <p className="text-xs text-stone-400 text-center leading-relaxed">
+            あなたの回答をもとに作った内容です。<br />続きは登録後に、すべてご覧いただけます。
+          </p>
         </div>
       </div>
     );
