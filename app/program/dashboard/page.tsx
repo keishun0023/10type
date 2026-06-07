@@ -82,6 +82,9 @@ export default function DashboardPage() {
   const [logs, setLogs] = useState<DailyLog[]>([]);
   const [expandedLog, setExpandedLog] = useState<number | null>(null);
   const [expandedReview, setExpandedReview] = useState<number | null>(null);
+  const [paidPlan, setPaidPlan] = useState('');
+  const [actionFeedback, setActionFeedback] = useState('');
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
 
   // profile edit state
   const [profileData, setProfileData] = useState<{
@@ -120,6 +123,8 @@ export default function DashboardPage() {
     ? FEAR_FOCUS_LABEL[programConfig.currentFocus]
     : null;
   const currentKindLabel = todayKind ? KIND_LABEL[todayKind] : null;
+  // スタンダード以上はAIサポートあり（ライトは自分で取り組む）
+  const hasAISupport = paidPlan === 'standard' || paidPlan === 'premium';
 
   useEffect(() => {
     const sb = getSupabase();
@@ -211,6 +216,7 @@ export default function DashboardPage() {
     const name = data.username || 'あなた';
     setUsername(name);
     localStorage.setItem('kokolift_username', name);
+    setPaidPlan(data.paid_plan || '');
     setTypeId(data.type_id || 'distancer');
     localStorage.setItem('kokolift_type_id', data.type_id || 'distancer');
     if (!data.welcome_completed && data.generated_plan) {
@@ -305,6 +311,30 @@ export default function DashboardPage() {
     setTodayLog({ done: true, count: recordCount });
     setTotalCount(prev => prev + recordCount);
     setRecordStep('done');
+    await loadStats(userId);
+    // スタンダード以上：AIが変化を言語化
+    if (hasAISupport) {
+      setFeedbackLoading(true);
+      try {
+        const res = await fetch('/api/cognitive-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'action-feedback',
+            missionTitle: aiMission?.title ?? todayMission?.text ?? '',
+            before: beforeScore,
+            after: afterScore,
+            memo,
+          }),
+        });
+        const data = await res.json();
+        if (data.message) setActionFeedback(data.message);
+      } catch {
+        // フィードバック取得失敗は無視（記録自体は完了している）
+      } finally {
+        setFeedbackLoading(false);
+      }
+    }
   }
 
   async function saveLog(done: boolean, count: number, before: number, after: number, m: string) {
@@ -620,6 +650,15 @@ export default function DashboardPage() {
                 <div className="text-4xl">{todayLog?.done ? '🎉' : '👍'}</div>
                 <p className="font-bold text-stone-800">{todayLog?.done ? '記録しました！' : '今日はパスしました'}</p>
                 <p className="text-sm text-stone-500">{todayLog?.done ? `${vizLabel}が増えています` : '機会がなかった日もある。それでOKです。'}</p>
+                {/* スタンダード以上：AIの変化フィードバック */}
+                {todayLog?.done && hasAISupport && (feedbackLoading || actionFeedback) && (
+                  <div className="bg-purple-50 rounded-2xl p-4 border border-purple-100 text-left">
+                    <p className="text-[11px] text-purple-500 font-bold mb-1">AIからのフィードバック</p>
+                    {feedbackLoading
+                      ? <p className="text-sm text-stone-400">読み取っています...</p>
+                      : <p className="text-sm text-stone-700 leading-relaxed">{actionFeedback}</p>}
+                  </div>
+                )}
                 <button onClick={() => setTab('home')} className="w-full py-4 rounded-full font-bold text-white text-sm" style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}>
                   ホームへ
                 </button>
@@ -673,8 +712,8 @@ export default function DashboardPage() {
                   </button>
                 </div>
               </div>
-            ) : (
-              /* Cognitive mission: AI chat session */
+            ) : hasAISupport ? (
+              /* Cognitive mission (スタンダード以上): AI chat session */
               <CognitiveChatSession
                 missionTitle={aiMission?.title ?? todayMission?.text ?? ''}
                 missionWhy={aiMission?.why ?? todayMission?.why ?? ''}
@@ -709,6 +748,54 @@ export default function DashboardPage() {
                 }}
                 onSkip={() => handleRecord(false)}
               />
+            ) : (
+              /* Cognitive mission (ライト): 自分で書き出す */
+              <div className="space-y-5">
+                <p className="text-sm font-bold text-stone-700">今日のワークに取り組んでみましょう</p>
+                <div className="space-y-2">
+                  <p className="text-sm text-stone-600">気づいたこと・考えたこと</p>
+                  <textarea
+                    value={memo}
+                    onChange={e => setMemo(e.target.value)}
+                    rows={5}
+                    placeholder="今日気づいたこと、考えたことを書き出してみましょう..."
+                    className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm focus:outline-none focus:border-purple-400 resize-none leading-relaxed"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm text-stone-600">取り組む前の重さ</p>
+                  <div className="flex gap-2">
+                    {[1,2,3,4,5].map(n => (
+                      <button key={n} onClick={() => setBeforeScore(n)} className={`flex-1 h-8 rounded-full text-sm font-bold transition-colors ${beforeScore >= n ? 'bg-purple-400 text-white' : 'bg-stone-100 text-stone-400'}`}>●</button>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm text-stone-600">取り組んだ後の軽さ</p>
+                  <div className="flex gap-2">
+                    {[1,2,3,4,5].map(n => (
+                      <button key={n} onClick={() => setAfterScore(n)} className={`flex-1 h-8 rounded-full text-sm font-bold transition-colors ${afterScore >= n ? 'bg-teal-400 text-white' : 'bg-stone-100 text-stone-400'}`}>●</button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={async () => {
+                      await saveLog(true, 1, beforeScore, afterScore, memo);
+                      setTodayLog({ done: true, count: 1 });
+                      setRecordStep('done');
+                      await loadStats(userId);
+                    }}
+                    className="flex-1 py-4 rounded-full font-bold text-white text-sm"
+                    style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}
+                  >
+                    記録する
+                  </button>
+                  <button onClick={() => handleRecord(false)} className="flex-1 py-4 rounded-full font-bold text-stone-500 text-sm">
+                    今日は機会がなかった
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         )}
@@ -1188,7 +1275,7 @@ export default function DashboardPage() {
                     <label className="text-xs text-stone-500">プラン</label>
                     <input
                       type="text"
-                      value={profileData.paid_plan === 'standard' ? 'スタンダードプラン' : profileData.paid_plan === 'light' ? 'ライトプラン' : profileData.paid_plan}
+                      value={profileData.paid_plan === 'premium' ? 'プレミアムプラン' : profileData.paid_plan === 'standard' ? 'スタンダードプラン' : profileData.paid_plan === 'light' ? 'ライトプラン' : profileData.paid_plan}
                       disabled
                       className="w-full px-4 py-3 rounded-xl border border-stone-100 text-sm bg-stone-50 text-stone-400"
                     />

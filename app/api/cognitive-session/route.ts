@@ -47,15 +47,42 @@ function buildSummarizeSystem(): string {
 - まとめだけを出力し、前置き・後書きは不要`;
 }
 
+function buildActionFeedbackSystem(): string {
+  return `あなたはCBT/ACTをベースとした自己改善プログラムの伴走者です。
+ユーザーが行動ミッションに取り組んだ後の「取り組み前の不安度」「取り組み後の実際」「ひとことメモ」を見て、その人の進歩を温かく言葉にして返してください。
+
+- 2〜3文で短く
+- 数値の変化に具体的に触れる（例：「予想より不安が小さかったんですね」）
+- 不安が下がっていなくても責めない。取り組んだこと自体を肯定する
+- 「事前の予測より実際は大丈夫だった」という気づきがあれば、それを言語化する
+- 煽らない、断定しない、医療用語を使わない
+- メッセージ本文だけを出力。前置き・後書き不要`;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { action, missionTitle = '', missionWhy = '', messages = [] } = body as {
+    const { action, missionTitle = '', missionWhy = '', messages = [], before = 0, after = 0, memo = '' } = body as {
       action: string;
       missionTitle?: string;
       missionWhy?: string;
       messages?: Message[];
+      before?: number;
+      after?: number;
+      memo?: string;
     };
+
+    if (action === 'action-feedback') {
+      const system = buildActionFeedbackSystem();
+      const fbMessages: Message[] = [
+        {
+          role: 'user',
+          content: `ミッション：「${missionTitle}」\n取り組み前の不安度：${before}/5\n取り組み後の実際：${after}/5\nひとことメモ：${memo || 'なし'}\n\nこの人の進歩を温かく言葉にして返してください。`,
+        },
+      ];
+      const message = await callClaudeMessages({ system, messages: fbMessages, maxTokens: 256 });
+      return NextResponse.json({ message });
+    }
 
     if (action === 'chat') {
       const system = buildChatSystem(missionTitle, missionWhy);
