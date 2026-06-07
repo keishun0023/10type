@@ -1375,11 +1375,18 @@ export default function DashboardPage() {
               onClick={() => setTab(item.key)}
               className={`flex flex-col items-center gap-1 w-14 transition-colors ${active ? 'text-purple-600' : 'text-stone-400'}`}
             >
-              <span className={`flex items-center justify-center w-9 h-9 rounded-full transition-colors ${active ? 'bg-purple-600' : 'bg-transparent'}`}>
+              <span className={`relative flex items-center justify-center w-9 h-9 rounded-full transition-colors ${active ? 'bg-purple-600' : 'bg-transparent'}`}>
+                {/* 両方を重ねて置き opacity で切替（src差し替えによる読み込み遅延を防ぐ） */}
                 <img
-                  src={`/icons/${item.key}${active ? '-active' : ''}.png`}
+                  src={`/icons/${item.key}.png`}
                   alt={item.label}
-                  className="w-5 h-5 object-contain"
+                  className={`w-5 h-5 object-contain transition-opacity ${active ? 'opacity-0' : 'opacity-100'}`}
+                />
+                <img
+                  src={`/icons/${item.key}-active.png`}
+                  alt=""
+                  aria-hidden
+                  className={`absolute w-5 h-5 object-contain transition-opacity ${active ? 'opacity-100' : 'opacity-0'}`}
                 />
               </span>
               <span className="text-[10px] font-medium leading-tight">{item.label}</span>
