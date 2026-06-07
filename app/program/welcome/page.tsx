@@ -20,7 +20,8 @@ export default function WelcomePage() {
       const { data: { session } } = await sb.auth.getSession();
       const user = session?.user;
       if (!user) { router.replace('/program/dashboard'); return; }
-      const { data } = await sb.from('users').select('generated_plan').eq('id', user.id).single();
+      const { data } = await sb.from('users').select('generated_plan, welcome_completed').eq('id', user.id).single();
+      if (data?.welcome_completed) { router.replace('/program/dashboard'); return; }
       const plan = data?.generated_plan as GeneratedPlan | null;
       const ws = plan?.welcomeSteps;
       if (ws && ws.length > 0) setSteps(ws);
@@ -34,6 +35,15 @@ export default function WelcomePage() {
         <div className="w-10 h-10 rounded-full border-4 border-purple-200 border-t-purple-500 animate-spin" />
       </div>
     );
+  }
+
+  async function markWelcomeDone() {
+    const sb = getSupabase();
+    if (!sb) return;
+    const { data: { session } } = await sb.auth.getSession();
+    if (session?.user) {
+      await sb.from('users').update({ welcome_completed: true }).eq('id', session.user.id);
+    }
   }
 
   const step = steps[idx];
@@ -59,7 +69,7 @@ export default function WelcomePage() {
 
         <div className="space-y-3 pt-8">
           <button
-            onClick={() => { if (isLast) router.push('/program/dashboard'); else setIdx(idx + 1); }}
+            onClick={async () => { if (isLast) { await markWelcomeDone(); router.push('/program/dashboard'); } else setIdx(idx + 1); }}
             className="w-full py-4 rounded-full font-bold text-white text-base transition-all active:scale-[0.98]"
             style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)', boxShadow: '0 8px 24px rgba(124, 58, 237, 0.3)' }}
           >
@@ -67,7 +77,7 @@ export default function WelcomePage() {
           </button>
           {!isLast && (
             <button
-              onClick={() => router.push('/program/dashboard')}
+              onClick={async () => { await markWelcomeDone(); router.push('/program/dashboard'); }}
               className="w-full text-center text-xs text-stone-400 hover:text-purple-500 transition-colors"
             >
               スキップ
