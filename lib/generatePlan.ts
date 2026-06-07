@@ -44,8 +44,10 @@ export async function generatePlan(opts: GeneratePlanOpts): Promise<GeneratedPla
     await sb.from('diagnostics').update({ onboarding }).eq('session_id', diagSession);
   }
 
-  // キャッシュ：プレビューは何か作ってあればそれを返す／フルは fullまで完了済みなら返す
-  if (phase === 'preview' && existingPlan) return existingPlan;
+  // キャッシュ：AI未設定 or レポートに中身があるプランのみ返す。空reportは再生成する。
+  if (phase === 'preview' && existingPlan) {
+    if (!isAIConfigured() || existingPlan.report?.currentState) return existingPlan;
+  }
   if (phase === 'full' && existingPlan?.phase === 'full') return existingPlan;
 
   const fearScores = existing?.fear_scores as Record<FearAxis, number> | undefined;
