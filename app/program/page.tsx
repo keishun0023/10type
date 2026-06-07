@@ -509,21 +509,21 @@ function ProgramPageInner() {
                   <p className="font-bold text-stone-900">スタンダードプラン</p>
                   <p className="text-xs text-stone-500 mt-1">AIと一緒に進める</p>
                 </div>
-                <ul className="space-y-2.5 text-sm text-stone-600">
+                <ul className="space-y-2.5 text-sm font-bold text-stone-700">
                   <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>あなた専用の30日プラン（診断結果から個別生成）</li>
                   <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>毎日のミッション</li>
                   <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>取り組みの記録（回数・連続日数）</li>
                   <li className="flex flex-col gap-1">
-                    <span className="flex gap-2 text-stone-700"><span className="text-purple-400 mt-0.5">✓</span>AI対話セッション</span>
-                    <span className="text-xs text-stone-500 pl-6 leading-relaxed">不安になった出来事をAIと対話。事実と思い込みのズレに気づき、考え方のクセを一緒にほぐす</span>
+                    <span className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>AI対話セッション</span>
+                    <span className="text-xs font-normal text-stone-500 pl-6 leading-relaxed">不安になった出来事をAIと対話。事実と思い込みのズレに気づき、考え方のクセを一緒にほぐす</span>
                   </li>
                   <li className="flex flex-col gap-1">
-                    <span className="flex gap-2 text-stone-700"><span className="text-purple-400 mt-0.5">✓</span>AIの変化フィードバック</span>
-                    <span className="text-xs text-stone-500 pl-6 leading-relaxed">取り組み前後の不安の変化をAIが読み取り、あなたの進歩を言葉にして返す</span>
+                    <span className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>AIの変化フィードバック</span>
+                    <span className="text-xs font-normal text-stone-500 pl-6 leading-relaxed">取り組み前後の不安の変化をAIが読み取り、あなたの進歩を言葉にして返す</span>
                   </li>
                   <li className="flex flex-col gap-1">
-                    <span className="flex gap-2 text-stone-700"><span className="text-purple-400 mt-0.5">✓</span>振り返り（詳細）</span>
-                    <span className="text-xs text-stone-500 pl-6 leading-relaxed">恐れ軸別・認知/行動別の統計と気づきの蓄積。変化がグラフと言葉の両方で見える</span>
+                    <span className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>振り返り（詳細）</span>
+                    <span className="text-xs font-normal text-stone-500 pl-6 leading-relaxed">恐れ軸別・認知/行動別の統計と気づきの蓄積。変化がグラフと言葉の両方で見える</span>
                   </li>
                   <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>30日後の継続アクセス</li>
                 </ul>
@@ -549,17 +549,17 @@ function ProgramPageInner() {
                   <p className="font-bold text-stone-900">プレミアムプラン</p>
                   <p className="text-xs text-stone-500 mt-1">とことん向き合う</p>
                 </div>
-                <ul className="space-y-2.5 text-sm text-stone-600">
+                <ul className="space-y-2.5 text-sm font-bold text-stone-700">
                   <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>あなた専用の30日プラン＋毎日のミッション</li>
                   <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>AI対話セッション・AIの変化フィードバック</li>
                   <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>振り返り（詳細）・30日後の継続アクセス</li>
                   <li className="flex flex-col gap-1">
-                    <span className="flex gap-2 text-stone-700"><span className="text-purple-400 mt-0.5">✓</span>月次の総括フィードバック</span>
-                    <span className="text-xs text-stone-500 pl-6 leading-relaxed">1ヶ月の歩みをAIが総括し、次の一歩を提案</span>
+                    <span className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>月次の総括フィードバック</span>
+                    <span className="text-xs font-normal text-stone-500 pl-6 leading-relaxed">1ヶ月の歩みをAIが総括し、次の一歩を提案</span>
                   </li>
                   <li className="flex flex-col gap-1">
-                    <span className="flex gap-2 text-stone-700"><span className="text-purple-400 mt-0.5">✓</span>サブスク優待</span>
-                    <span className="text-xs text-stone-500 pl-6 leading-relaxed">31日目以降も続けたい人向けの継続プランを優待価格で</span>
+                    <span className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>サブスク優待</span>
+                    <span className="text-xs font-normal text-stone-500 pl-6 leading-relaxed">31日目以降も続けたい人向けの継続プランを優待価格で</span>
                   </li>
                 </ul>
                 <div className="flex items-end gap-1">
