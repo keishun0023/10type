@@ -377,7 +377,7 @@ function ProgramPageInner() {
   }
 
   if (screen === 'loading') {
-    const ITEM_HEIGHT = 32;
+    const ITEM_HEIGHT = 20;
 
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-5" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
