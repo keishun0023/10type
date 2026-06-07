@@ -51,6 +51,7 @@ export default function DashboardPage() {
   const [reportSubtab, setReportSubtab] = useState<'tendency' | 'program'>('tendency');
   const [fearAxisOpen, setFearAxisOpen] = useState(false);
   const [defenseAxisOpen, setDefenseAxisOpen] = useState(false);
+  const [philosophySlide, setPhilosophySlide] = useState(0);
   const [userId, setUserId] = useState('');
   const [typeId, setTypeId] = useState('distancer');
   const [username, setUsername] = useState(() => typeof window !== 'undefined' ? localStorage.getItem('kokolift_username') || '' : '');
@@ -858,6 +859,61 @@ export default function DashboardPage() {
 
               {/* ── 今後のプログラム ── */}
               {reportSubtab === 'program' && (<>
+                {/* ── プログラム設計の思想カルーセル ── */}
+                {(() => {
+                  const slides = [
+                    {
+                      label: 'あなた専用の設計です',
+                      body: '不安や緊張が起きやすい場面は人によって違います。「評価されることが怖い人」と「関係が壊れることが怖い人」では、効くトレーニングも変わります。このプログラムは、診断であなたの恐れのパターンを分析し、そこに特化したアプローチだけを選んで組み合わせています。だから、同じアプリを使っていても、人によってまったく違うプログラムになります。',
+                    },
+                    {
+                      label: '認知と行動、両方から崩す',
+                      body: '不安には「頭の中の解釈（認知）」と「実際の行動（行動）」の2つが絡み合っています。認知のミッションでは、自分がどんなパターンで考えがちかに気づき、別の見方を試します。行動のミッションでは、実際に小さな行動を試してみて「思ってたほど怖くなかった」を体験します。どちらか一方ではなく、両方を繰り返すことで少しずつパターンが崩れていきます。',
+                    },
+                    {
+                      label: '小さく始めて、少しずつ本番に近づく',
+                      body: '最初のミッションは、あえてハードルを低く設定しています。失敗しても何も起きない安全な場面で「やってみたら意外と大丈夫だった」を積み重ねることが目的です。Lvが上がるにつれて、少しずつ現実の場面に近い状況へ移っていきます。いきなり難しい場面に飛び込まず、成功体験を土台にして進むのがこのプログラムの進め方です。',
+                    },
+                  ];
+                  const cur = slides[philosophySlide];
+                  return (
+                    <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-stone-400 font-medium">このプログラムについて</p>
+                        <div className="flex gap-1">
+                          {slides.map((_, i) => (
+                            <button
+                              key={i}
+                              onClick={() => setPhilosophySlide(i)}
+                              className={`w-1.5 h-1.5 rounded-full transition-colors ${i === philosophySlide ? 'bg-purple-500' : 'bg-stone-200'}`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-stone-800 mb-2">{cur.label}</p>
+                        <p className="text-sm text-stone-600 leading-relaxed">{cur.body}</p>
+                      </div>
+                      <div className="flex justify-between">
+                        <button
+                          onClick={() => setPhilosophySlide(v => Math.max(0, v - 1))}
+                          disabled={philosophySlide === 0}
+                          className="text-xs text-stone-400 disabled:opacity-30 px-2 py-1"
+                        >
+                          ← 前へ
+                        </button>
+                        <button
+                          onClick={() => setPhilosophySlide(v => Math.min(slides.length - 1, v + 1))}
+                          disabled={philosophySlide === slides.length - 1}
+                          className="text-xs text-stone-400 disabled:opacity-30 px-2 py-1"
+                        >
+                          次へ →
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {report?.direction && (
                   <div className="bg-purple-50 rounded-3xl p-5 border border-purple-100 space-y-2">
                     <p className="text-xs text-purple-400 font-medium">これから30日でやること</p>
