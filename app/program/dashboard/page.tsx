@@ -682,7 +682,22 @@ export default function DashboardPage() {
                 day={dayCount}
                 userId={userId}
                 onComplete={async (summary: string) => {
-                  await saveLog(true, 1, 0, 0, summary);
+                  const sb = getSupabase();
+                  if (sb && userId) {
+                    const today = new Date().toISOString().split('T')[0];
+                    await sb.from('daily_logs').upsert({
+                      user_id: userId,
+                      date: today,
+                      mission_id: dayCount,
+                      component_id: todayComponentId,
+                      done: true,
+                      count: 1,
+                      before_score: 0,
+                      after_score: 0,
+                      memo: summary,
+                    }, { onConflict: 'user_id,date' });
+                    await loadStats(userId);
+                  }
                   setTodayLog({ done: true, count: 1 });
                   setRecordStep('done');
                 }}
