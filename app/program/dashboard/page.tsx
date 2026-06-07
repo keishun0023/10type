@@ -14,6 +14,19 @@ const FEAR_AXIS_LABEL: Record<string, string> = {
   F_REL: '関係喪失', F_EVAL: '評価', F_IMP: '不完全性', F_CTRL: '制御不能',
 };
 
+const FEAR_AXIS_DESC: { axis: string; label: string; desc: string }[] = [
+  { axis: 'F_REL', label: '関係喪失への恐れ', desc: '大切な人との関係が壊れたり、嫌われたりすることへの不安。人に合わせすぎたり、衝突を避けたりする行動につながりやすい。' },
+  { axis: 'F_EVAL', label: '評価への恐れ', desc: '他者に批判されたり、否定的に見られることへの不安。発言を控えたり、完璧に見せようとしたりする行動につながりやすい。' },
+  { axis: 'F_IMP', label: '不完全性への恐れ', desc: '失敗したり、できない自分をさらけ出すことへの不安。準備に時間をかけすぎたり、行動を先送りにしたりする行動につながりやすい。' },
+  { axis: 'F_CTRL', label: '制御不能への恐れ', desc: '状況がコントロールできなくなることへの不安。見通しを立てようとしすぎたり、決定を先送りにしたりする行動につながりやすい。' },
+];
+
+const DEFENSE_AXIS_DESC: { axis: string; label: string; desc: string }[] = [
+  { axis: 'D_APP', label: '回避 ↔ 接近', desc: 'しんどい場面から離れるか（回避）、あえて向き合うか（接近）。どちらも状況によって合理的な対処です。' },
+  { axis: 'D_ACT', label: '受動 ↔ 能動', desc: '相手や状況に合わせるか（受動）、自分から動くか（能動）。どちらが「良い」ではなく、状況や目的によって使い分けが変わります。' },
+  { axis: 'D_EXP', label: '抑制 ↔ 表出', desc: '気持ちを内にためるか（抑制）、外に出すか（表出）。どちらにも消耗しやすい場面と、うまく機能する場面があります。' },
+];
+
 const RadarChartComponent = dynamic(() => import('@/components/RadarChartComponent'), { ssr: false });
 const DefenseBarChart = dynamic(() => import('@/components/DefenseBarChart'), { ssr: false });
 
@@ -36,6 +49,8 @@ export default function DashboardPage() {
 
   const [tab, setTab] = useState<Tab>('home');
   const [reportSubtab, setReportSubtab] = useState<'tendency' | 'program'>('tendency');
+  const [fearAxisOpen, setFearAxisOpen] = useState(false);
+  const [defenseAxisOpen, setDefenseAxisOpen] = useState(false);
   const [userId, setUserId] = useState('');
   const [typeId, setTypeId] = useState('distancer');
   const [username, setUsername] = useState(() => typeof window !== 'undefined' ? localStorage.getItem('kokolift_username') || '' : '');
@@ -741,10 +756,32 @@ export default function DashboardPage() {
             <div className="space-y-5 pt-2">
               <h2 className="text-lg font-bold text-stone-900">あなたについて</h2>
 
+              <div className="bg-purple-50 rounded-3xl p-5 border border-purple-100 space-y-2">
+                <p className="text-xs text-purple-400 font-medium">この分析について</p>
+                <p className="text-sm text-stone-700 leading-relaxed">CBT（認知行動療法）とACTの考え方をもとに、あなたが「どんな場面でしんどくなりやすいか」「その時どう対処しがちか」を2つの軸で整理しています。スコアに良い悪いはなく、あなたのパターンを知ることが出発点です。</p>
+              </div>
+
               {fearScores && (
                 <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-3">
                   <p className="text-xs text-stone-400 font-medium">恐れの4軸</p>
                   <RadarChartComponent fearScores={fearScores} />
+                  <button
+                    onClick={() => setFearAxisOpen(v => !v)}
+                    className="flex items-center gap-1.5 text-xs text-stone-400 hover:text-purple-500 transition-colors mt-1"
+                  >
+                    <span className={`transition-transform ${fearAxisOpen ? 'rotate-90' : ''}`}>▶</span>
+                    各軸の意味を見る
+                  </button>
+                  {fearAxisOpen && (
+                    <div className="space-y-3 pt-1 border-t border-stone-100">
+                      {FEAR_AXIS_DESC.map(f => (
+                        <div key={f.axis} className="space-y-0.5">
+                          <p className="text-xs font-bold text-stone-600">{f.label}</p>
+                          <p className="text-xs text-stone-400 leading-relaxed">{f.desc}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -752,6 +789,23 @@ export default function DashboardPage() {
                 <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-4">
                   <p className="text-xs text-stone-400 font-medium">防衛スタイル</p>
                   <DefenseBarChart defenseScores={defenseScores} />
+                  <button
+                    onClick={() => setDefenseAxisOpen(v => !v)}
+                    className="flex items-center gap-1.5 text-xs text-stone-400 hover:text-purple-500 transition-colors"
+                  >
+                    <span className={`transition-transform ${defenseAxisOpen ? 'rotate-90' : ''}`}>▶</span>
+                    各軸の見方を見る
+                  </button>
+                  {defenseAxisOpen && (
+                    <div className="space-y-3 pt-1 border-t border-stone-100">
+                      {DEFENSE_AXIS_DESC.map(d => (
+                        <div key={d.axis} className="space-y-0.5">
+                          <p className="text-xs font-bold text-stone-600">{d.label}</p>
+                          <p className="text-xs text-stone-400 leading-relaxed">{d.desc}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
