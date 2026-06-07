@@ -90,7 +90,7 @@ function ProgramPageInner() {
     }
   }
 
-  async function handleSelectPlan(plan: 'light' | 'standard') {
+  async function handleSelectPlan(plan: 'light' | 'standard' | 'premium') {
     setIsLoading(true);
     const res = await fetch('/api/create-checkout-session', {
       method: 'POST',
@@ -204,16 +204,16 @@ function ProgramPageInner() {
               <div className="space-y-4">
                 <div>
                   <p className="font-bold text-stone-900">スタンダードプラン</p>
-                  <p className="text-xs text-stone-500 mt-1">毎日のミッション提示＋変化の可視化＋記録機能</p>
+                  <p className="text-xs text-stone-500 mt-1">AIサポート＋毎日のミッション＋変化の可視化</p>
                 </div>
                 <ul className="space-y-2 text-sm text-stone-600">
-                  <li className="flex gap-2"><span className="text-purple-400">✓</span>毎日のミッション自動提示（30日分）</li>
-                  <li className="flex gap-2"><span className="text-purple-400">✓</span>変化の可視化グラフ</li>
-                  <li className="flex gap-2"><span className="text-purple-400">✓</span>記録・振り返り機能</li>
-                  <li className="flex gap-2"><span className="text-purple-400">✓</span>プログラム閲覧</li>
+                  <li className="flex gap-2"><span className="text-purple-400 flex-shrink-0">✓</span>あなた専用の30日プログラム</li>
+                  <li className="flex gap-2"><span className="text-purple-400 flex-shrink-0">✓</span>AIと対話する認知ミッション</li>
+                  <li className="flex gap-2"><span className="text-purple-400 flex-shrink-0">✓</span>変化の可視化グラフ</li>
+                  <li className="flex gap-2"><span className="text-purple-400 flex-shrink-0">✓</span>記録・振り返り機能</li>
                 </ul>
                 <div className="flex items-end gap-1">
-                  <span className="text-3xl font-bold text-stone-900">¥2,980</span>
+                  <span className="text-3xl font-bold text-stone-900">¥4,980</span>
                   <span className="text-stone-400 text-sm mb-1">買い切り</span>
                 </div>
                 <button
@@ -227,19 +227,46 @@ function ProgramPageInner() {
               </div>
             </div>
 
+            {/* プレミアム */}
+            <div className="bg-white rounded-3xl p-6 border border-stone-200">
+              <div className="space-y-4">
+                <div>
+                  <p className="font-bold text-stone-900">プレミアムプラン</p>
+                  <p className="text-xs text-stone-500 mt-1">スタンダード全機能＋月次AIサマリー</p>
+                </div>
+                <ul className="space-y-2 text-sm text-stone-600">
+                  <li className="flex gap-2"><span className="text-purple-400 flex-shrink-0">✓</span>スタンダードの全機能</li>
+                  <li className="flex gap-2"><span className="text-purple-400 flex-shrink-0">✓</span>月次AIサマリーレポート</li>
+                  <li className="flex gap-2"><span className="text-purple-400 flex-shrink-0">✓</span>優先サポート</li>
+                </ul>
+                <div className="flex items-end gap-1">
+                  <span className="text-3xl font-bold text-stone-900">¥9,800</span>
+                  <span className="text-stone-400 text-sm mb-1">買い切り</span>
+                </div>
+                <button
+                  onClick={() => handleSelectPlan('premium')}
+                  disabled={isLoading}
+                  className="w-full py-4 rounded-full font-bold text-white transition-all active:scale-[0.98] disabled:opacity-50"
+                  style={{ background: 'linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%)' }}
+                >
+                  {isLoading ? '処理中...' : 'プレミアムで始める'}
+                </button>
+              </div>
+            </div>
+
             {/* ライト */}
             <div className="bg-white rounded-3xl p-6 border border-stone-200">
               <div className="space-y-4">
                 <div>
                   <p className="font-bold text-stone-900">ライトプラン</p>
-                  <p className="text-xs text-stone-500 mt-1">プログラム閲覧＋記録機能</p>
+                  <p className="text-xs text-stone-500 mt-1">自分のペースで取り組みたい方へ</p>
                 </div>
                 <ul className="space-y-2 text-sm text-stone-600">
-                  <li className="flex gap-2"><span className="text-stone-300">✓</span>記録機能</li>
-                  <li className="flex gap-2"><span className="text-stone-300">✓</span>プログラム閲覧</li>
+                  <li className="flex gap-2"><span className="text-stone-400 flex-shrink-0">✓</span>あなた専用の30日プログラム</li>
+                  <li className="flex gap-2"><span className="text-stone-400 flex-shrink-0">✓</span>記録・振り返り機能</li>
                 </ul>
                 <div className="flex items-end gap-1">
-                  <span className="text-3xl font-bold text-stone-900">¥1,980</span>
+                  <span className="text-3xl font-bold text-stone-900">¥2,980</span>
                   <span className="text-stone-400 text-sm mb-1">買い切り</span>
                 </div>
                 <button

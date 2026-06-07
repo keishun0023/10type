@@ -7,12 +7,17 @@ const PLANS = {
   light: {
     name: 'ライトプラン',
     description: 'プログラム閲覧＋記録機能',
-    amount: 1980,
+    amount: 2980,
   },
   standard: {
     name: 'スタンダードプラン',
-    description: '毎日のミッション提示＋変化の可視化',
-    amount: 2980,
+    description: '毎日のミッション提示＋AIサポート＋変化の可視化',
+    amount: 4980,
+  },
+  premium: {
+    name: 'プレミアムプラン',
+    description: 'スタンダード全機能＋月次AIサマリー',
+    amount: 9800,
   },
 };
 
