@@ -1034,26 +1034,18 @@ export default function DashboardPage() {
                     <p className="text-xs text-stone-400 font-medium">あなたが消耗しやすい場面</p>
                     <p className="text-sm text-stone-700 leading-relaxed">{report.drainScene}</p>
                   </div>
-                  <div className="rounded-3xl p-6 text-white space-y-3 shadow-sm" style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}>
-                    <p className="text-base font-bold flex items-center gap-2">💜 いびつさは、あなたの個性</p>
-                    <p className="text-sm leading-relaxed text-white/90">{report.strengthReframe}</p>
-                    <div className="bg-white/95 rounded-2xl px-4 py-2.5 flex items-center gap-2">
-                      <span>⭐</span>
-                      <p className="text-xs font-bold text-purple-700">本来の強み</p>
-                    </div>
+                  <div className="rounded-3xl p-6 space-y-3 shadow-sm border border-purple-100" style={{ background: 'linear-gradient(135deg, #f5f1fe 0%, #ede7fb 100%)' }}>
+                    <p className="text-sm font-bold text-purple-600 flex items-center gap-2">💜 その力は、本来こういうもの</p>
+                    <p className="text-sm leading-relaxed text-stone-700">{report.strengthReframe}</p>
                   </div>
                 </>) : reportContent ? (<>
                   <div className="bg-white rounded-3xl p-5 border border-stone-100 shadow-sm space-y-3">
                     <p className="text-xs text-purple-400 font-medium">あなたが消耗しやすい場面</p>
                     <p className="text-sm text-stone-700 leading-relaxed">{reportContent.drainScene}</p>
                   </div>
-                  <div className="rounded-3xl p-6 text-white space-y-3 shadow-sm" style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}>
-                    <p className="text-base font-bold flex items-center gap-2">💜 いびつさは、あなたの個性</p>
-                    <p className="text-sm leading-relaxed text-white/90">{reportContent.strengthReframe}</p>
-                    <div className="bg-white/95 rounded-2xl px-4 py-2.5 flex items-center gap-2">
-                      <span>⭐</span>
-                      <p className="text-xs font-bold text-purple-700">本来の強み</p>
-                    </div>
+                  <div className="rounded-3xl p-6 space-y-3 shadow-sm border border-purple-100" style={{ background: 'linear-gradient(135deg, #f5f1fe 0%, #ede7fb 100%)' }}>
+                    <p className="text-sm font-bold text-purple-600 flex items-center gap-2">💜 その力は、本来こういうもの</p>
+                    <p className="text-sm leading-relaxed text-stone-700">{reportContent.strengthReframe}</p>
                   </div>
                 </>) : (
                   <div className="bg-white rounded-3xl p-5 border border-stone-100">
@@ -1364,21 +1356,28 @@ export default function DashboardPage() {
       {/* ボトムナビ */}
       <nav className="fixed bottom-0 left-0 w-full bg-white border-t border-stone-100 flex justify-around items-center h-16 px-1">
         {([
-          { key: 'home', label: 'ホーム', icon: '🏠' },
-          { key: 'mission', label: 'ミッション', icon: '🎯' },
-          { key: 'review', label: '振り返り', icon: '📊' },
-          { key: 'report', label: 'あなたについて', icon: '📋' },
-          { key: 'profile', label: 'プロフィール', icon: '👤' },
-        ] as { key: Tab; label: string; icon: string }[]).map(item => (
-          <button
-            key={item.key}
-            onClick={() => setTab(item.key)}
-            className={`flex flex-col items-center gap-0.5 w-12 transition-colors ${tab === item.key ? 'text-purple-600' : 'text-stone-400'}`}
-          >
-            <span className="text-base">{item.icon}</span>
-            <span className="text-[10px] font-medium leading-tight">{item.label}</span>
-          </button>
-        ))}
+          { key: 'home', label: 'ホーム' },
+          { key: 'mission', label: 'ミッション' },
+          { key: 'review', label: '振り返り' },
+          { key: 'report', label: 'あなたについて' },
+          { key: 'profile', label: 'プロフィール' },
+        ] as { key: Tab; label: string }[]).map(item => {
+          const active = tab === item.key;
+          return (
+            <button
+              key={item.key}
+              onClick={() => setTab(item.key)}
+              className={`flex flex-col items-center gap-0.5 w-14 transition-colors ${active ? 'text-purple-600' : 'text-stone-400'}`}
+            >
+              <img
+                src={`/icons/${item.key}${active ? '-active' : ''}.png`}
+                alt={item.label}
+                className="w-6 h-6 object-contain"
+              />
+              <span className="text-[10px] font-medium leading-tight">{item.label}</span>
+            </button>
+          );
+        })}
       </nav>
     </div>
   );
