@@ -58,6 +58,7 @@ export async function POST(req: NextRequest) {
       difficult_detail: onboarding.difficultDetail ?? null,
       difficult_free_text: onboarding.difficultFreeText ?? null,
       change_orientation: onboarding.changeOrientation ?? null,
+      diag_session: diagSession ?? null,
       paid_plan: plan,
       paid_at: new Date().toISOString(),
       fear_scores: fearScores,
