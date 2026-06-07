@@ -1367,13 +1367,15 @@ export default function DashboardPage() {
             <button
               key={item.key}
               onClick={() => setTab(item.key)}
-              className={`flex flex-col items-center gap-0.5 w-14 transition-colors ${active ? 'text-purple-600' : 'text-stone-400'}`}
+              className={`flex flex-col items-center gap-1 w-14 transition-colors ${active ? 'text-purple-600' : 'text-stone-400'}`}
             >
-              <img
-                src={`/icons/${item.key}${active ? '-active' : ''}.png`}
-                alt={item.label}
-                className="w-6 h-6 object-contain"
-              />
+              <span className={`flex items-center justify-center w-9 h-9 rounded-full transition-colors ${active ? 'bg-purple-600' : 'bg-transparent'}`}>
+                <img
+                  src={`/icons/${item.key}${active ? '-active' : ''}.png`}
+                  alt={item.label}
+                  className="w-5 h-5 object-contain"
+                />
+              </span>
               <span className="text-[10px] font-medium leading-tight">{item.label}</span>
             </button>
           );
