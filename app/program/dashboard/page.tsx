@@ -79,6 +79,7 @@ export default function DashboardPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [todayLog, setTodayLog] = useState<{ done: boolean; count: number } | null>(null);
   const [recordStep, setRecordStep] = useState<RecordStep>('question');
+  const [chatModalOpen, setChatModalOpen] = useState(false);
   const [recordCount, setRecordCount] = useState(3);
   const [beforeScore, setBeforeScore] = useState(3);
   const [afterScore, setAfterScore] = useState(3);
@@ -720,40 +721,70 @@ export default function DashboardPage() {
               </div>
             ) : hasAISupport ? (
               /* Cognitive mission (スタンダード以上): AI chat session */
-              <CognitiveChatSession
-                missionTitle={aiMission?.title ?? todayMission?.text ?? ''}
-                missionWhy={aiMission?.why ?? todayMission?.why ?? ''}
-                componentId={todayComponentId ?? ''}
-                day={dayCount}
-                userId={userId}
-                onComplete={async (summary: string) => {
-                  const sb = getSupabase();
-                  if (sb && userId) {
-                    const today = logicalDate();
-                    const { error } = await sb.from('daily_logs').upsert({
-                      user_id: userId,
-                      date: today,
-                      mission_id: dayCount,
-                      component_id: todayComponentId,
-                      done: true,
-                      count: 1,
-                      before_score: 0,
-                      after_score: 0,
-                      memo: summary,
-                    }, { onConflict: 'user_id,date' });
-                    if (error) {
-                      console.error('cognitive session save error:', error.message, error.code, error.details, error.hint);
-                    } else {
-                      await loadStats(userId);
-                    }
-                  } else {
-                    console.error('cognitive session save skipped: sb=', !!getSupabase(), 'userId=', userId);
-                  }
-                  setTodayLog({ done: true, count: 1 });
-                  setRecordStep('done');
-                }}
-                onSkip={() => handleRecord(false)}
-              />
+              <>
+                {/* 開くボタン */}
+                <button
+                  onClick={() => setChatModalOpen(true)}
+                  className="w-full py-4 rounded-full font-bold text-white text-sm flex items-center justify-center gap-2"
+                  style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}
+                >
+                  <span>💬</span> AIと対話しながら深めてみる
+                </button>
+                <button onClick={() => handleRecord(false)} className="w-full text-xs text-stone-400 hover:text-stone-600 transition-colors mt-1">
+                  今日は機会がなかった
+                </button>
+
+                {/* フルスクリーンモーダル */}
+                {chatModalOpen && (
+                  <div className="fixed inset-0 z-50 flex flex-col bg-white">
+                    {/* ヘッダー */}
+                    <div className="flex items-center gap-3 px-4 py-3 border-b border-stone-100">
+                      <button onClick={() => setChatModalOpen(false)} className="w-9 h-9 flex items-center justify-center rounded-full bg-stone-100 text-stone-500 text-lg">
+                        ✕
+                      </button>
+                      <p className="text-sm font-bold text-stone-700 truncate">{aiMission?.title ?? todayMission?.text ?? ''}</p>
+                    </div>
+                    {/* チャット本体 */}
+                    <div className="flex-1 overflow-y-auto px-4 pt-4">
+                      <CognitiveChatSession
+                        missionTitle={aiMission?.title ?? todayMission?.text ?? ''}
+                        missionWhy={aiMission?.why ?? todayMission?.why ?? ''}
+                        componentId={todayComponentId ?? ''}
+                        day={dayCount}
+                        userId={userId}
+                        onComplete={async (summary: string) => {
+                          const sb = getSupabase();
+                          if (sb && userId) {
+                            const today = logicalDate();
+                            const { error } = await sb.from('daily_logs').upsert({
+                              user_id: userId,
+                              date: today,
+                              mission_id: dayCount,
+                              component_id: todayComponentId,
+                              done: true,
+                              count: 1,
+                              before_score: 0,
+                              after_score: 0,
+                              memo: summary,
+                            }, { onConflict: 'user_id,date' });
+                            if (error) {
+                              console.error('cognitive session save error:', error.message, error.code, error.details, error.hint);
+                            } else {
+                              await loadStats(userId);
+                            }
+                          } else {
+                            console.error('cognitive session save skipped: sb=', !!getSupabase(), 'userId=', userId);
+                          }
+                          setTodayLog({ done: true, count: 1 });
+                          setChatModalOpen(false);
+                          setRecordStep('done');
+                        }}
+                        onSkip={() => { setChatModalOpen(false); handleRecord(false); }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </>
             ) : (
               /* Cognitive mission (ライト): 自分で書き出す */
               <div className="space-y-5">
