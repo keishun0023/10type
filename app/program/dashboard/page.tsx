@@ -33,6 +33,16 @@ const DefenseBarChart = dynamic(() => import('@/components/DefenseBarChart'), { 
 
 type Tab = 'home' | 'mission' | 'record' | 'review' | 'report' | 'profile';
 type RecordStep = 'question' | 'detail' | 'done';
+type DailyLog = {
+  date: string;
+  mission_id: number;
+  component_id: string | null;
+  done: boolean;
+  count: number;
+  before_score: number;
+  after_score: number;
+  memo: string;
+};
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -69,6 +79,9 @@ export default function DashboardPage() {
   const [defenseScores, setDefenseScores] = useState<Record<DefenseAxis, number> | null>(null);
   const [programConfig, setProgramConfig] = useState<ProgramConfig | null>(null);
   const [generatedPlan, setGeneratedPlan] = useState<GeneratedPlan | null>(null);
+  const [logs, setLogs] = useState<DailyLog[]>([]);
+  const [expandedLog, setExpandedLog] = useState<number | null>(null);
+  const [expandedReview, setExpandedReview] = useState<number | null>(null);
 
   // profile edit state
   const [profileData, setProfileData] = useState<{
@@ -260,6 +273,7 @@ export default function DashboardPage() {
     const today = new Date().toISOString().split('T')[0];
     const { data: logs } = await sb.from('daily_logs').select('*').eq('user_id', uid).order('date', { ascending: false });
     if (!logs) return;
+    setLogs(logs as DailyLog[]);
     const todayLogData = logs.find(l => l.date === today);
     if (todayLogData) setTodayLog({ done: todayLogData.done, count: todayLogData.count });
     const total = logs.filter(l => l.done).reduce((sum, l) => sum + (l.count || 0), 0);
@@ -679,39 +693,140 @@ export default function DashboardPage() {
         )}
 
 
-        {tab === 'review' && (
-          <div className="space-y-5 pt-2">
-            <h2 className="text-lg font-bold text-stone-900">今週のあなた</h2>
-            <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-4">
-              <div className="space-y-3">
-                {currentFocusLabel && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-stone-500">今取り組んでいること</span>
-                    <span className="font-bold text-purple-500">{currentFocusLabel}</span>
+        {tab === 'review' && (() => {
+          const doneLogs = logs.filter(l => l.done);
+          const missions = generatedPlan?.missions ?? [];
+          const missionByDay = new Map(missions.map(m => [m.day, m]));
+
+          // 恐れ軸別・認知行動別の集計（全期間累計）
+          const fearCounts: Record<string, number> = {};
+          let cognitiveCount = 0;
+          let actionCount = 0;
+          doneLogs.forEach(l => {
+            const comp = l.component_id ? PROGRAM_COMPONENTS[l.component_id as keyof typeof PROGRAM_COMPONENTS] : null;
+            if (comp) {
+              fearCounts[comp.fearAxis] = (fearCounts[comp.fearAxis] || 0) + 1;
+              if (comp.kind === 'action') actionCount++; else cognitiveCount++;
+            }
+          });
+
+          // 取り組んだミッションを新しい順に
+          const enriched = doneLogs.map(l => {
+            const m = missionByDay.get(l.mission_id);
+            const comp = l.component_id ? PROGRAM_COMPONENTS[l.component_id as keyof typeof PROGRAM_COMPONENTS] : null;
+            return {
+              day: l.mission_id,
+              date: l.date,
+              title: m?.title ?? '取り組んだミッション',
+              fearLabel: comp ? FEAR_AXIS_LABEL[comp.fearAxis] : null,
+              kind: comp?.kind ?? null,
+              memo: l.memo,
+              before: l.before_score,
+              after: l.after_score,
+              count: l.count,
+            };
+          });
+
+          return (
+            <div className="space-y-5 pt-2">
+              <h2 className="text-lg font-bold text-stone-900">振り返り</h2>
+
+              {/* 定量サマリー */}
+              <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-4">
+                <p className="text-xs text-stone-400 font-medium">これまでの積み上げ</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-purple-50 rounded-2xl p-3 text-center">
+                    <p className="text-2xl font-bold text-purple-500">{doneLogs.length}<span className="text-xs text-stone-400 font-normal ml-0.5">回</span></p>
+                    <p className="text-[11px] text-stone-400 mt-0.5">取り組んだミッション</p>
+                  </div>
+                  <div className="bg-orange-50 rounded-2xl p-3 text-center">
+                    <p className="text-2xl font-bold text-orange-500">🔥 {streak}<span className="text-xs text-stone-400 font-normal ml-0.5">日</span></p>
+                    <p className="text-[11px] text-stone-400 mt-0.5">連続達成</p>
+                  </div>
+                </div>
+
+                {/* 認知・行動別 */}
+                <div className="flex gap-3">
+                  <div className="flex-1 bg-stone-50 rounded-2xl p-3 text-center">
+                    <p className="text-lg font-bold text-stone-700">{cognitiveCount}<span className="text-xs text-stone-400 font-normal ml-0.5">回</span></p>
+                    <p className="text-[11px] text-stone-400 mt-0.5">認知</p>
+                  </div>
+                  <div className="flex-1 bg-stone-50 rounded-2xl p-3 text-center">
+                    <p className="text-lg font-bold text-stone-700">{actionCount}<span className="text-xs text-stone-400 font-normal ml-0.5">回</span></p>
+                    <p className="text-[11px] text-stone-400 mt-0.5">行動</p>
+                  </div>
+                </div>
+
+                {/* 恐れ軸別 */}
+                {Object.keys(fearCounts).length > 0 && (
+                  <div className="border-t border-stone-100 pt-4 space-y-2">
+                    <p className="text-xs text-stone-400 font-medium">どの恐れに取り組んだか</p>
+                    {FEAR_AXIS_DESC.map(f => (
+                      <div key={f.axis} className="flex justify-between text-sm">
+                        <span className="text-stone-500">{FEAR_AXIS_LABEL[f.axis]}</span>
+                        <span className="font-bold text-purple-500">{fearCounts[f.axis] || 0}回</span>
+                      </div>
+                    ))}
                   </div>
                 )}
-                <div className="flex justify-between text-sm">
-                  <span className="text-stone-500">{vizLabel}</span>
-                  <span className="font-bold text-purple-500">{totalCount}回</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-stone-500">連続記録</span>
-                  <span className="font-bold text-orange-500">🔥 {streak}日</span>
-                </div>
               </div>
-              <div className="border-t border-stone-100 pt-4">
-                <p className="text-xs text-stone-400 leading-relaxed">
-                  少しずつ積み上がっています。来週は、少しだけ難易度を上げてみましょう。
-                </p>
-              </div>
+
+              {/* 各ミッションで得られた内容 */}
+              <h3 className="text-sm font-bold text-stone-700 pt-1">取り組みの記録</h3>
+              {enriched.length ? (
+                enriched.map(e => {
+                  const isOpen = expandedLog === e.day;
+                  return (
+                    <div key={`${e.day}-${e.date}`} className="bg-white rounded-3xl border border-stone-100 overflow-hidden">
+                      <button
+                        onClick={() => setExpandedLog(isOpen ? null : e.day)}
+                        className="w-full p-4 flex items-start gap-3 text-left"
+                      >
+                        <span className="flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-100 text-stone-500 mt-0.5">Day {e.day}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-stone-800 leading-snug">{e.title}</p>
+                          <div className="flex flex-wrap gap-1.5 mt-1.5">
+                            {e.fearLabel && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-100 text-stone-500">{e.fearLabel}</span>}
+                            {e.kind && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-500">{e.kind === 'action' ? '行動' : '認知'}</span>}
+                          </div>
+                        </div>
+                        <span className={`text-stone-300 transition-transform mt-1 ${isOpen ? 'rotate-90' : ''}`}>▶</span>
+                      </button>
+                      {isOpen && (
+                        <div className="px-4 pb-4 space-y-3 border-t border-stone-50">
+                          {e.memo ? (
+                            <div className="bg-purple-50 rounded-2xl p-3 mt-3">
+                              <p className="text-[11px] text-purple-500 font-bold mb-1">得られた気づき</p>
+                              <p className="text-sm text-stone-700 leading-relaxed">{e.memo}</p>
+                            </div>
+                          ) : (
+                            <p className="text-xs text-stone-400 mt-3">この日はメモがありません。</p>
+                          )}
+                          {(e.before > 0 || e.after > 0) && (
+                            <div className="flex gap-4 text-xs text-stone-500">
+                              <span>取り組む前：<span className="font-bold text-stone-600">{e.before}</span></span>
+                              <span>取り組んだ後：<span className="font-bold text-teal-600">{e.after}</span></span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="bg-white rounded-3xl p-5 border border-stone-100">
+                  <p className="text-sm text-stone-400">まだ記録がありません。最初のミッションに取り組んでみましょう。</p>
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {tab === 'report' && (() => {
           const reportContent = REPORT_CONTENT[typeId];
           const report = generatedPlan?.report;
           const missions = generatedPlan?.missions ?? [];
+          const logsByDay = new Map(logs.filter(l => l.done).map(l => [l.mission_id, l]));
           // 30日ミッションを週ごとに分割
           const weeks: { label: string; days: typeof missions }[] = [];
           if (missions.length) {
@@ -912,6 +1027,10 @@ export default function DashboardPage() {
                             const isToday = g.days.includes(dayCount);
                             const comp = PROGRAM_COMPONENTS[g.componentId as keyof typeof PROGRAM_COMPONENTS];
                             const fearLabel = comp ? FEAR_AXIS_LABEL[comp.fearAxis] : null;
+                            // このグループ内で取り組み済みの日（記録あり）を探す
+                            const loggedDay = g.days.find(d => logsByDay.has(d));
+                            const log = loggedDay != null ? logsByDay.get(loggedDay) : null;
+                            const isOpen = loggedDay != null && expandedReview === loggedDay;
                             return (
                               <div key={g.dayLabel} className={`rounded-2xl p-2.5 -mx-1 space-y-2 ${isToday ? 'bg-purple-50 ring-1 ring-purple-200' : ''}`}>
                                 <div className="flex gap-3">
@@ -930,6 +1049,35 @@ export default function DashboardPage() {
                                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-500">{g.kind === 'action' ? '行動' : '認知'}</span>
                                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-200 text-stone-500">Lv {g.lv}</span>
                                 </div>
+                                {log && (
+                                  <div className="pl-[68px]">
+                                    <button
+                                      onClick={() => setExpandedReview(isOpen ? null : loggedDay!)}
+                                      className="flex items-center gap-1 text-[11px] font-bold text-purple-500 hover:text-purple-600"
+                                    >
+                                      <span className={`transition-transform ${isOpen ? 'rotate-90' : ''}`}>▶</span>
+                                      振り返る
+                                    </button>
+                                    {isOpen && (
+                                      <div className="mt-2 space-y-2">
+                                        {log.memo ? (
+                                          <div className="bg-purple-50 rounded-2xl p-3">
+                                            <p className="text-[11px] text-purple-500 font-bold mb-1">得られた気づき</p>
+                                            <p className="text-sm text-stone-700 leading-relaxed">{log.memo}</p>
+                                          </div>
+                                        ) : (
+                                          <p className="text-xs text-stone-400">この日はメモがありません。</p>
+                                        )}
+                                        {(log.before_score > 0 || log.after_score > 0) && (
+                                          <div className="flex gap-4 text-xs text-stone-500">
+                                            <span>前：<span className="font-bold text-stone-600">{log.before_score}</span></span>
+                                            <span>後：<span className="font-bold text-teal-600">{log.after_score}</span></span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             );
                           });
