@@ -652,7 +652,7 @@ export default function DashboardPage() {
                     <div className="absolute top-0 bottom-0 left-[35%] w-[25%] bg-gradient-to-r from-white to-transparent" />
                     {/* テキストエリア：上部ラベル＋中央テキスト＋下部バッジ、ボタンと被らない高さ */}
                     <div className="relative flex flex-col h-full w-[58%] p-5">
-                      <p className="text-xs text-purple-500 font-bold flex items-center gap-1.5 mb-2 flex-shrink-0">
+                      <p className="text-sm text-purple-500 font-bold flex items-center gap-1.5 mb-2 flex-shrink-0">
                         <span className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden flex-shrink-0">
                           <img src="/images/icon-day.png" alt="" className="w-4 h-4 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                         </span>
