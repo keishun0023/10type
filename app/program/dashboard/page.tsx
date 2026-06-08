@@ -77,6 +77,8 @@ export default function DashboardPage() {
   const [streak, setStreak] = useState(0);
   const [dayCount, setDayCount] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [cogCount, setCogCount] = useState(0);
+  const [actionCount, setActionCount] = useState(0);
   const [todayLog, setTodayLog] = useState<{ done: boolean; count: number } | null>(null);
   const [recordStep, setRecordStep] = useState<RecordStep>('question');
   const [chatModalOpen, setChatModalOpen] = useState(false);
@@ -293,6 +295,11 @@ export default function DashboardPage() {
     if (todayLogData) setTodayLog({ done: todayLogData.done, count: todayLogData.count });
     const total = logs.filter(l => l.done).reduce((sum, l) => sum + (l.count || 0), 0);
     setTotalCount(total);
+    const doneLogs = logs.filter(l => l.done);
+    const cog = doneLogs.filter(l => l.component_id && String(l.component_id).includes('COG')).length;
+    const act = doneLogs.filter(l => l.component_id && String(l.component_id).includes('ACT')).length;
+    setCogCount(cog);
+    setActionCount(act);
     setDayCount(logs.length + 1);
     let s = 0;
     const sortedDates = logs.map(l => l.date).sort().reverse();
