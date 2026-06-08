@@ -187,7 +187,7 @@ function ProgramPageInner() {
     setLoadingStep(0);
   }
 
-  async function handleSelectPlan(plan: 'light' | 'standard') {
+  async function handleSelectPlan(plan: 'light' | 'standard' | 'premium') {
     setIsLoading(true);
     try {
       const changeOrientation: ChangeOrientation =
@@ -377,26 +377,50 @@ function ProgramPageInner() {
   }
 
   if (screen === 'loading') {
+    const ITEM_HEIGHT = 19;
+
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-5" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
-        <div className="w-full max-w-sm space-y-8">
-          <div className="flex justify-center">
-            <div className="w-12 h-12 rounded-full border-4 border-purple-200 border-t-purple-500 animate-spin" />
-          </div>
-          <div className="space-y-2.5">
-            {loadingMessages.map((msg, i) => {
-              if (i > loadingStep) return null;
-              const isCurrent = i === loadingStep;
-              return (
-                <div key={i} className={`flex items-center gap-3 transition-all ${isCurrent ? 'opacity-100' : 'opacity-40'}`}>
-                  <div className={`w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold ${isCurrent ? 'border-2 border-purple-400 bg-white' : 'bg-purple-400'}`}>
-                    {!isCurrent && <span className="text-white">✓</span>}
+        <div className="w-full max-w-sm flex flex-col items-center gap-10">
+          <div className="w-10 h-10 rounded-full border-4 border-purple-200 border-t-purple-500 animate-spin" />
+
+          {/* リール: overflow hidden で3行分だけ見せる */}
+          <div className="w-full overflow-hidden" style={{ height: ITEM_HEIGHT * 3 }}>
+            <div
+              className="flex flex-col items-center"
+              style={{
+                transform: `translateY(${-loadingStep * ITEM_HEIGHT + ITEM_HEIGHT}px)`,
+                transition: 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
+            >
+              {loadingMessages.map((msg, i) => {
+                const isCurrent = i === loadingStep;
+                const isPast = i < loadingStep;
+                return (
+                  <div
+                    key={i}
+                    className="flex items-center justify-center text-center"
+                    style={{
+                      height: ITEM_HEIGHT,
+                      transition: 'opacity 0.6s, color 0.6s',
+                      opacity: Math.abs(i - loadingStep) <= 1 ? 1 : 0,
+                    }}
+                  >
+                    <p className={
+                      isCurrent
+                        ? 'text-base font-bold text-purple-600'
+                        : isPast
+                          ? 'text-sm text-stone-300'
+                          : 'text-sm text-stone-300'
+                    }>
+                      {isPast ? `✓ ${msg}` : msg}
+                    </p>
                   </div>
-                  <p className={`text-sm ${isCurrent ? 'text-purple-600 font-medium' : 'text-stone-400'}`}>{msg}</p>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
+
           <p className="text-xs text-stone-300 text-center">あなた専用に作っています。少しお待ちください。</p>
         </div>
       </div>
@@ -507,16 +531,28 @@ function ProgramPageInner() {
               <div className="space-y-4">
                 <div>
                   <p className="font-bold text-stone-900">スタンダードプラン</p>
-                  <p className="text-xs text-stone-500 mt-1">毎日のミッション提示＋変化の可視化＋記録機能</p>
+                  <p className="text-xs text-stone-500 mt-1">AIと一緒に進める</p>
                 </div>
-                <ul className="space-y-2 text-sm text-stone-600">
-                  <li className="flex gap-2"><span className="text-purple-400">✓</span>毎日のミッション自動提示（30日分）</li>
-                  <li className="flex gap-2"><span className="text-purple-400">✓</span>変化の可視化グラフ</li>
-                  <li className="flex gap-2"><span className="text-purple-400">✓</span>記録・振り返り機能</li>
-                  <li className="flex gap-2"><span className="text-purple-400">✓</span>プログラム閲覧</li>
+                <ul className="space-y-2.5 text-sm font-bold text-stone-700">
+                  <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>あなた専用の30日プラン（診断結果から個別生成）</li>
+                  <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>毎日のミッション</li>
+                  <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>取り組みの記録（回数・連続日数）</li>
+                  <li className="flex flex-col gap-1">
+                    <span className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>AI対話セッション</span>
+                    <span className="text-xs font-normal text-stone-500 pl-6 leading-relaxed">不安になった出来事をAIと対話。事実と思い込みのズレに気づき、考え方のクセを一緒にほぐす</span>
+                  </li>
+                  <li className="flex flex-col gap-1">
+                    <span className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>AIの変化フィードバック</span>
+                    <span className="text-xs font-normal text-stone-500 pl-6 leading-relaxed">取り組み前後の不安の変化をAIが読み取り、あなたの進歩を言葉にして返す</span>
+                  </li>
+                  <li className="flex flex-col gap-1">
+                    <span className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>振り返り（詳細）</span>
+                    <span className="text-xs font-normal text-stone-500 pl-6 leading-relaxed">恐れ軸別・認知/行動別の統計と気づきの蓄積。変化がグラフと言葉の両方で見える</span>
+                  </li>
+                  <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>30日後の継続アクセス</li>
                 </ul>
                 <div className="flex items-end gap-1">
-                  <span className="text-3xl font-bold text-stone-900">¥2,980</span>
+                  <span className="text-3xl font-bold text-stone-900">¥4,980</span>
                   <span className="text-stone-400 text-sm mb-1">買い切り</span>
                 </div>
                 <button
@@ -530,19 +566,55 @@ function ProgramPageInner() {
               </div>
             </div>
 
+            {/* プレミアム */}
+            <div className="bg-white rounded-3xl p-6 border border-stone-200">
+              <div className="space-y-4">
+                <div>
+                  <p className="font-bold text-stone-900">プレミアムプラン</p>
+                  <p className="text-xs text-stone-500 mt-1">とことん向き合う</p>
+                </div>
+                <ul className="space-y-2.5 text-sm font-bold text-stone-700">
+                  <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>あなた専用の30日プラン＋毎日のミッション</li>
+                  <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>AI対話セッション・AIの変化フィードバック</li>
+                  <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>振り返り（詳細）・30日後の継続アクセス</li>
+                  <li className="flex flex-col gap-1">
+                    <span className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>月次の総括フィードバック</span>
+                    <span className="text-xs font-normal text-stone-500 pl-6 leading-relaxed">1ヶ月の歩みをAIが総括し、次の一歩を提案</span>
+                  </li>
+                  <li className="flex flex-col gap-1">
+                    <span className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>サブスク優待</span>
+                    <span className="text-xs font-normal text-stone-500 pl-6 leading-relaxed">31日目以降も続けたい人向けの継続プランを優待価格で</span>
+                  </li>
+                </ul>
+                <div className="flex items-end gap-1">
+                  <span className="text-3xl font-bold text-stone-900">¥9,800</span>
+                  <span className="text-stone-400 text-sm mb-1">買い切り</span>
+                </div>
+                <button
+                  onClick={() => handleSelectPlan('premium')}
+                  disabled={isLoading}
+                  className="w-full py-4 rounded-full font-bold text-stone-700 border-2 border-stone-300 hover:border-purple-300 transition-all active:scale-[0.98] disabled:opacity-50"
+                >
+                  {isLoading ? '処理中...' : 'プレミアムで始める'}
+                </button>
+              </div>
+            </div>
+
             {/* ライト */}
             <div className="bg-white rounded-3xl p-6 border border-stone-200">
               <div className="space-y-4">
                 <div>
                   <p className="font-bold text-stone-900">ライトプラン</p>
-                  <p className="text-xs text-stone-500 mt-1">プログラム閲覧＋記録機能</p>
+                  <p className="text-xs text-stone-500 mt-1">自分のペースで進める</p>
                 </div>
-                <ul className="space-y-2 text-sm text-stone-600">
-                  <li className="flex gap-2"><span className="text-stone-300">✓</span>記録機能</li>
-                  <li className="flex gap-2"><span className="text-stone-300">✓</span>プログラム閲覧</li>
+                <ul className="space-y-2.5 text-sm text-stone-600">
+                  <li className="flex gap-2"><span className="text-stone-300 mt-0.5">✓</span>あなた専用の30日プラン（診断結果から個別生成）</li>
+                  <li className="flex gap-2"><span className="text-stone-300 mt-0.5">✓</span>毎日のミッション</li>
+                  <li className="flex gap-2"><span className="text-stone-300 mt-0.5">✓</span>取り組みの記録（回数・連続日数）</li>
+                  <li className="flex gap-2 text-stone-400"><span className="text-stone-300 mt-0.5">−</span>AIサポートは含まれません</li>
                 </ul>
                 <div className="flex items-end gap-1">
-                  <span className="text-3xl font-bold text-stone-900">¥1,980</span>
+                  <span className="text-3xl font-bold text-stone-900">¥2,980</span>
                   <span className="text-stone-400 text-sm mb-1">買い切り</span>
                 </div>
                 <button
