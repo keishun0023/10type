@@ -968,7 +968,7 @@ export default function DashboardPage() {
                   <p className="text-2xl font-bold text-stone-900">足あと</p>
                 </div>
                 <div className="w-10 h-10 flex items-center justify-center mt-1">
-                  <span className="text-2xl">🤍</span>
+                  <img src="/intro-service-icon.png" alt="" className="w-8 h-8 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                 </div>
               </div>
 
