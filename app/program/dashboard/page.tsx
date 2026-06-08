@@ -759,7 +759,15 @@ export default function DashboardPage() {
 
         {tab === 'mission' && todayMission && (
           <div className="space-y-5 pt-2">
-            <h2 className="text-lg font-bold text-stone-700">今日のミッション</h2>
+            <div className="flex justify-between items-start pt-6 pb-1">
+              <div>
+                <p className="text-xs text-purple-400 font-medium">今日取り組むこと</p>
+                <p className="text-2xl font-bold text-stone-700">今日の一歩</p>
+              </div>
+              <div className="w-10 h-10 flex items-center justify-center mt-1">
+                <img src="/intro-service-icon.png" alt="" className="w-8 h-8 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              </div>
+            </div>
 
             {/* Badges */}
             {todayComponentId && (
@@ -1210,9 +1218,14 @@ export default function DashboardPage() {
           }
           return (
             <div className="space-y-5 pt-2">
-              <div className="text-center space-y-1 pt-1">
-                <h2 className="text-xl font-bold text-stone-700">あなたについて</h2>
-                <p className="text-xs text-stone-400">現在の心の形と、これからの道のり</p>
+              <div className="flex justify-between items-start pt-6 pb-1">
+                <div>
+                  <p className="text-xs text-purple-400 font-medium">現在の心の形と、これからの道のり</p>
+                  <p className="text-2xl font-bold text-stone-700">自分の地図</p>
+                </div>
+                <div className="w-10 h-10 flex items-center justify-center mt-1">
+                  <img src="/intro-service-icon.png" alt="" className="w-8 h-8 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                </div>
               </div>
 
               <div className="bg-purple-50/40 rounded-3xl p-5 shadow-sm space-y-2">
