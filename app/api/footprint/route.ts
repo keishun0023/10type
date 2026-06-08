@@ -114,7 +114,7 @@ ${logSummary || 'まだ記録がありません'}
     }];
 
     const [hero, beforeNow, timelineRaw, next] = await Promise.all([
-      callClaudeMessages({ system: SYSTEM, messages: heroMessages, maxTokens: 256 }),
+      callClaudeMessages({ system: SYSTEM, messages: heroMessages, maxTokens: 128 }),
       callClaudeMessages({ system: SYSTEM, messages: beforeNowMessages, maxTokens: 400 }),
       callClaudeMessages({ system: SYSTEM, messages: timelineMessages, maxTokens: 400 }),
       callClaudeMessages({ system: SYSTEM, messages: nextMessages, maxTokens: 128 }),

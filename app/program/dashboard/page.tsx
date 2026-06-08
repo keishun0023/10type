@@ -186,6 +186,25 @@ export default function DashboardPage() {
     if (t && valid.includes(t as Tab)) setTab(t as Tab);
   }, []);
 
+  useEffect(() => {
+    if (tab !== 'review' || footprintData || footprintLoading) return;
+    const doneLogs = logs.filter(l => l.done);
+    if (doneLogs.length === 0) return;
+    const missions = generatedPlan?.missions ?? [];
+    const missionByDay = new Map(missions.map(m => [m.day, m]));
+    const enriched = doneLogs.map(l => {
+      const m = missionByDay.get(l.mission_id);
+      const comp = l.component_id ? PROGRAM_COMPONENTS[l.component_id as keyof typeof PROGRAM_COMPONENTS] : null;
+      return { day: l.mission_id, title: m?.title ?? '取り組んだミッション', kind: comp?.kind ?? null, date: l.date, memo: l.memo };
+    });
+    setFootprintLoading(true);
+    fetch('/api/footprint', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ focusLabel: currentFocusLabel ?? '不安', cogCount, actionCount, dayCount: doneLogs.length, logs: enriched }),
+    }).then(r => r.json()).then(data => { if (!data.error) setFootprintData(data); }).finally(() => setFootprintLoading(false));
+  }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setLoginStatus('loading');
@@ -978,29 +997,22 @@ export default function DashboardPage() {
 
               {/* ① これまでのあなた（ヒーローカード） */}
               <div className="bg-white rounded-3xl overflow-hidden border border-stone-100 shadow-sm">
-                <div className="p-5 relative min-h-[160px]">
+                <div className="p-5 relative min-h-[140px]">
                   <p className="text-xs text-purple-500 font-bold flex items-center gap-1 mb-3">
                     <img src="/images/icon-leaf.png" alt="" className="w-4 h-4 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /> これまでのあなた
                   </p>
                   {footprintData ? (
                     <>
-                      <p className="text-base font-bold text-stone-800 leading-relaxed pr-24">
+                      <p className="text-sm text-stone-800 leading-relaxed pr-24">
                         {footprintData.hero}
                       </p>
                       <p className="text-xs text-stone-400 mt-3">ここから、少しずつ変わってきました</p>
                     </>
-                  ) : footprintLoading ? (
+                  ) : (
                     <div className="flex items-center gap-2 text-sm text-stone-400 pr-24">
                       <span className="inline-block w-4 h-4 border-2 border-purple-200 border-t-purple-500 rounded-full animate-spin" />
                       変化を読み取っています...
                     </div>
-                  ) : (
-                    <button
-                      onClick={loadFootprint}
-                      className="text-sm text-purple-500 font-bold underline underline-offset-2"
-                    >
-                      あなたの変化を見る
-                    </button>
                   )}
                   <img
                     src="/images/footprint-hero.png"
@@ -1021,18 +1033,18 @@ export default function DashboardPage() {
                     </p>
                     <div className="bg-purple-50 rounded-2xl p-4 space-y-2">
                       <div className="flex items-center gap-2 mb-1">
-                        <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden"><img src="/images/icon-cloud.png" alt="" className="w-5 h-5 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /></div>
+                        <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden flex-shrink-0"><img src="/images/icon-cloud.png" alt="" className="w-7 h-7 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /></div>
                         <p className="text-xs font-bold text-stone-500">はじめの頃</p>
                       </div>
-                      {before.map((b, i) => <p key={i} className="text-sm text-stone-600 pl-10">・{b}</p>)}
+                      {before.map((b, i) => <p key={i} className="text-xs text-stone-600 pl-12">・{b}</p>)}
                     </div>
                     <div className="text-center text-purple-400 text-lg">↓</div>
                     <div className="bg-purple-50 rounded-2xl p-4 space-y-2">
                       <div className="flex items-center gap-2 mb-1">
-                        <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden"><img src="/images/icon-sprout.png" alt="" className="w-5 h-5 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /></div>
+                        <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden flex-shrink-0"><img src="/images/icon-sprout.png" alt="" className="w-7 h-7 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /></div>
                         <p className="text-xs font-bold text-purple-500">今のあなた</p>
                       </div>
-                      {now.map((n, i) => <p key={i} className="text-sm text-stone-700 pl-10">・{n}</p>)}
+                      {now.map((n, i) => <p key={i} className="text-xs text-stone-700 pl-12">・{n}</p>)}
                     </div>
                   </div>
                 );
@@ -1047,21 +1059,21 @@ export default function DashboardPage() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between py-3 border-b border-stone-50">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden"><img src="/images/icon-write.png" alt="" className="w-5 h-5 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /></div>
+                      <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden"><img src="/images/icon-write.png" alt="" className="w-7 h-7 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /></div>
                       <span className="text-sm text-stone-600">書き出せた回数</span>
                     </div>
                     <span className="text-lg font-bold text-purple-500">0 → {cogCount}</span>
                   </div>
                   <div className="flex items-center justify-between py-3 border-b border-stone-50">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden"><img src="/images/icon-heart.png" alt="" className="w-5 h-5 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /></div>
+                      <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden"><img src="/images/icon-heart.png" alt="" className="w-7 h-7 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /></div>
                       <span className="text-sm text-stone-600">試してみた回数</span>
                     </div>
                     <span className="text-lg font-bold text-purple-500">0 → {actionCount}</span>
                   </div>
                   <div className="flex items-center justify-between py-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden"><img src="/images/icon-calendar.png" alt="" className="w-5 h-5 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /></div>
+                      <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden"><img src="/images/icon-calendar.png" alt="" className="w-7 h-7 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /></div>
                       <span className="text-sm text-stone-600">向き合った日</span>
                     </div>
                     <span className="text-lg font-bold text-purple-500">{doneLogs.length} <span className="text-sm font-normal text-stone-400">日</span></span>
@@ -1079,8 +1091,8 @@ export default function DashboardPage() {
                     {footprintData.timeline.map((t, i) => (
                       <div key={t.day} className="flex gap-3 items-start">
                         <div className="flex flex-col items-center">
-                          <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                            <img src="/images/icon-day.png" alt="" className="w-4 h-4 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                          <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                            <img src="/images/icon-day.png" alt="" className="w-7 h-7 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                           </div>
                           {i < footprintData.timeline.length - 1 && (
                             <div className="w-px h-8 border-l-2 border-dashed border-purple-100 my-1" />
