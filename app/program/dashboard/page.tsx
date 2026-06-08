@@ -1035,30 +1035,36 @@ export default function DashboardPage() {
               </div>
 
               {/* ① これまでのあなた（ヒーローカード） */}
-              <div className="bg-white rounded-3xl overflow-hidden border border-stone-100 shadow-sm">
-                <div className="p-5 relative min-h-[140px]">
-                  <p className="text-xs text-purple-500 font-bold flex items-center gap-1 mb-3">
-                    <img src="/images/icon-leaf.png" alt="" className="w-4 h-4 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /> これまでのあなた
-                  </p>
-                  {footprintData ? (
-                    <>
-                      <p className="text-sm text-stone-800 leading-relaxed pr-24">
-                        {footprintData.hero}
-                      </p>
-                      <p className="text-xs text-stone-400 mt-3">ここから、少しずつ変わってきました</p>
-                    </>
-                  ) : (
-                    <div className="flex items-center gap-2 text-sm text-stone-400 pr-24">
-                      <span className="inline-block w-4 h-4 border-2 border-purple-200 border-t-purple-500 rounded-full animate-spin" />
-                      変化を読み取っています...
-                    </div>
-                  )}
+              <div className="-mx-3 bg-white rounded-3xl overflow-hidden border border-stone-100 shadow-sm">
+                <div className="relative min-h-[180px]">
+                  {/* ヒーロー画像（右半分・フル高さ） */}
                   <img
                     src={`/images/footprint-hero-${footprintHeroIdx}.png`}
                     alt=""
-                    className="absolute right-0 top-2 h-32 object-contain"
+                    className="absolute right-0 top-0 h-full w-3/5 object-cover object-center"
                     onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
                   />
+                  {/* 左から白グラデオーバーレイ */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-white via-white/90 to-transparent" />
+                  {/* テキスト */}
+                  <div className="relative p-5 w-4/5">
+                    <p className="text-xs text-purple-500 font-bold flex items-center gap-1 mb-3">
+                      <img src="/images/icon-leaf.png" alt="" className="w-4 h-4 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /> これまでのあなた
+                    </p>
+                    {footprintData ? (
+                      <>
+                        <p className="text-sm text-stone-800 leading-relaxed">
+                          {footprintData.hero}
+                        </p>
+                        <p className="text-xs text-stone-400 mt-3">ここから、少しずつ変わってきました</p>
+                      </>
+                    ) : (
+                      <div className="flex items-center gap-2 text-sm text-stone-400">
+                        <span className="inline-block w-4 h-4 border-2 border-purple-200 border-t-purple-500 rounded-full animate-spin" />
+                        変化を読み取っています...
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
