@@ -1630,7 +1630,7 @@ export default function DashboardPage() {
             <button
               key={item.key}
               onClick={() => setTab(item.key)}
-              className={`flex flex-col items-center gap-1 w-14 transition-colors ${active ? '' : 'text-stone-400'}`} style={active ? { color: '#545454' } : {}}
+              className={`flex flex-col items-center gap-1 w-14 transition-colors ${active ? 'text-purple-500' : ''}`} style={active ? {} : { color: '#545454' }}
             >
               <span className="relative flex items-center justify-center w-7 h-7">
                 <img
