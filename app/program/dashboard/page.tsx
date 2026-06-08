@@ -1071,7 +1071,7 @@ export default function DashboardPage() {
                     </p>
                     <div className="bg-purple-50 rounded-2xl p-3">
                       <div className="flex items-center gap-2 mb-2">
-                        <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden flex-shrink-0"><img src="/images/icon-cloud.png" alt="" className="w-8 h-8 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /></div>
+                        <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden flex-shrink-0"><img src="/images/icon-cloud.png" alt="" className="w-[22px] h-[22px] object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /></div>
                         <p className="text-xs font-bold text-stone-500">はじめの頃</p>
                       </div>
                       <div className="space-y-1 pl-1">
@@ -1081,7 +1081,7 @@ export default function DashboardPage() {
                     <div className="text-center text-purple-400">↓</div>
                     <div className="bg-purple-50 rounded-2xl p-3">
                       <div className="flex items-center gap-2 mb-2">
-                        <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden flex-shrink-0"><img src="/images/icon-sprout.png" alt="" className="w-8 h-8 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /></div>
+                        <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden flex-shrink-0"><img src="/images/icon-sprout.png" alt="" className="w-[22px] h-[22px] object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /></div>
                         <p className="text-xs font-bold text-purple-500">今のあなた</p>
                       </div>
                       <div className="space-y-1 pl-1">
@@ -1103,21 +1103,21 @@ export default function DashboardPage() {
                 <div className="space-y-1">
                   <div className="flex items-center justify-between py-2.5 border-b border-stone-50">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden flex-shrink-0"><img src="/images/icon-write.png" alt="" className="w-8 h-8 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /></div>
+                      <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden flex-shrink-0"><img src="/images/icon-write.png" alt="" className="w-[22px] h-[22px] object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /></div>
                       <span className="text-sm text-stone-600">書き出せた回数</span>
                     </div>
                     <span className="text-lg font-bold text-purple-500 whitespace-nowrap">0 → {cogCount}</span>
                   </div>
                   <div className="flex items-center justify-between py-2.5 border-b border-stone-50">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden flex-shrink-0"><img src="/images/icon-heart.png" alt="" className="w-8 h-8 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /></div>
+                      <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden flex-shrink-0"><img src="/images/icon-heart.png" alt="" className="w-[22px] h-[22px] object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /></div>
                       <span className="text-sm text-stone-600">試してみた回数</span>
                     </div>
                     <span className="text-lg font-bold text-purple-500 whitespace-nowrap">0 → {actionCount}</span>
                   </div>
                   <div className="flex items-center justify-between py-2.5">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden flex-shrink-0"><img src="/images/icon-calendar.png" alt="" className="w-8 h-8 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /></div>
+                      <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden flex-shrink-0"><img src="/images/icon-calendar.png" alt="" className="w-[22px] h-[22px] object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /></div>
                       <span className="text-sm text-stone-600">向き合った日</span>
                     </div>
                     <span className="text-lg font-bold text-purple-500 whitespace-nowrap">{doneLogs.length} <span className="text-sm font-normal text-stone-400">日</span></span>
@@ -1135,8 +1135,8 @@ export default function DashboardPage() {
                     {footprintData.timeline.map((t, i) => (
                       <div key={t.day} className="flex gap-3 items-start">
                         <div className="flex flex-col items-center">
-                          <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                            <img src="/images/icon-day.png" alt="" className="w-8 h-8 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                          <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                            <img src="/images/icon-day.png" alt="" className="w-[22px] h-[22px] object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                           </div>
                           {i < footprintData.timeline.length - 1 && (
                             <div className="w-px h-8 border-l-2 border-dashed border-purple-100 my-1" />
