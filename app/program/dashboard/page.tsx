@@ -613,16 +613,20 @@ export default function DashboardPage() {
             <div className="bg-white rounded-3xl p-5 border border-stone-100 shadow-sm space-y-3">
               <p className="text-sm font-bold text-stone-700">30日の道のり</p>
               <div className="flex items-center">
-                {Array.from({ length: 30 }).map((_, i) => {
-                  const done = i < dayCount - 1;
-                  const isLast = i === 29;
-                  return (
-                    <div key={i} className="flex items-center" style={{ flex: isLast ? '0 0 auto' : 1 }}>
-                      <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 transition-colors ${done ? 'bg-purple-500' : 'bg-stone-200'}`} />
-                      {!isLast && <div className={`h-0.5 w-full transition-colors ${done && i < dayCount - 2 ? 'bg-purple-400' : 'bg-stone-200'}`} />}
-                    </div>
-                  );
-                })}
+                {(() => {
+                  const DOTS = 15;
+                  const filledDots = Math.round((dayCount - 1) / 30 * DOTS);
+                  return Array.from({ length: DOTS }).map((_, i) => {
+                    const filled = i < filledDots;
+                    const isLast = i === DOTS - 1;
+                    return (
+                      <div key={i} className="flex items-center" style={{ flex: isLast ? '0 0 auto' : 1 }}>
+                        <div className={`w-3 h-3 rounded-full flex-shrink-0 transition-colors ${filled ? 'bg-purple-500' : 'bg-stone-200'}`} />
+                        {!isLast && <div className={`h-0.5 w-full transition-colors ${filled && i < filledDots - 1 ? 'bg-purple-400' : 'bg-stone-200'}`} />}
+                      </div>
+                    );
+                  });
+                })()}
               </div>
               <div className="flex items-center justify-between">
                 <p className="text-2xl font-bold text-purple-500">
