@@ -1215,7 +1215,7 @@ export default function DashboardPage() {
                 <p className="text-xs text-stone-400">現在の心の形と、これからの道のり</p>
               </div>
 
-              <div className="bg-purple-50 rounded-3xl p-5 shadow-sm space-y-2">
+              <div className="bg-purple-50/40 rounded-3xl p-5 shadow-sm space-y-2">
                 <p className="text-xs text-purple-400 font-medium">この分析について</p>
                 <p className="text-sm text-stone-700 leading-relaxed">CBT（認知行動療法）とACTの考え方をもとに、あなたが「どんな場面でしんどくなりやすいか」「その時どう対処しがちか」を2つの軸で整理しています。スコアに良い悪いはなく、あなたのパターンを知ることが出発点です。</p>
               </div>
