@@ -30,12 +30,6 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <img
-          src="/intro-service-icon.png"
-          alt=""
-          className="fixed top-3 right-3 w-8 h-8 object-contain z-50 pointer-events-none"
-          onError={undefined}
-        />
         {children}
         <Script id="meta-pixel" strategy="afterInteractive">
           {`
