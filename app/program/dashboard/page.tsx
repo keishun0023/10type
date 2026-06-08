@@ -494,7 +494,7 @@ export default function DashboardPage() {
           {loginView === 'login' && (<>
             <div className="text-center space-y-2">
               <p className="text-2xl">🔒</p>
-              <h1 className="text-xl font-bold text-stone-900">ログイン</h1>
+              <h1 className="text-xl font-bold text-stone-700">ログイン</h1>
               <p className="text-sm text-stone-500">ダッシュボードにアクセスするにはログインが必要です</p>
             </div>
 
@@ -548,7 +548,7 @@ export default function DashboardPage() {
           {loginView === 'reset' && (<>
             <div className="text-center space-y-2">
               <p className="text-2xl">📧</p>
-              <h1 className="text-xl font-bold text-stone-900">パスワードをリセット</h1>
+              <h1 className="text-xl font-bold text-stone-700">パスワードをリセット</h1>
               <p className="text-sm text-stone-500">登録したメールアドレスに再設定用のリンクを送ります</p>
             </div>
 
@@ -592,7 +592,7 @@ export default function DashboardPage() {
             <div className="text-center space-y-6">
               <p className="text-4xl">✅</p>
               <div className="space-y-2">
-                <h1 className="text-xl font-bold text-stone-900">メールを送信しました</h1>
+                <h1 className="text-xl font-bold text-stone-700">メールを送信しました</h1>
                 <p className="text-sm text-stone-500 leading-relaxed">
                   <span className="font-medium text-stone-700">{resetEmail}</span> に<br />
                   パスワード再設定用のリンクを送りました。<br />
@@ -623,7 +623,7 @@ export default function DashboardPage() {
             <div className="flex justify-between items-start pt-8 pb-1 px-2">
               <div>
                 <p className="text-xs text-purple-400 font-medium">おかえりなさい</p>
-                <p className="text-2xl font-bold text-stone-900">{username}さん</p>
+                <p className="text-2xl font-bold text-stone-700">{username}さん</p>
               </div>
               <div className="w-10 h-10 flex items-center justify-center mt-1">
                 <img src="/intro-service-icon.png" alt="" className="w-8 h-8 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
@@ -658,7 +658,7 @@ export default function DashboardPage() {
                         </span>
                         今日の一歩
                       </p>
-                      <p className={`${textSize} font-bold text-stone-900 leading-snug flex-1 overflow-hidden`}>
+                      <p className={`${textSize} font-bold text-stone-700 leading-snug flex-1 overflow-hidden`}>
                         {missionText || 'ミッションを読み込み中...'}
                       </p>
                       {/* バッジ：ボタン（h-10 + bottom-4 = 56px）と被らないよう pb-16 */}
@@ -759,7 +759,7 @@ export default function DashboardPage() {
 
         {tab === 'mission' && todayMission && (
           <div className="space-y-5 pt-2">
-            <h2 className="text-lg font-bold text-stone-900">今日のミッション</h2>
+            <h2 className="text-lg font-bold text-stone-700">今日のミッション</h2>
 
             {/* Badges */}
             {todayComponentId && (
@@ -1042,7 +1042,7 @@ export default function DashboardPage() {
               <div className="flex justify-between items-start pt-6 pb-1">
                 <div>
                   <p className="text-xs text-purple-400 font-medium">ここまでのあなた</p>
-                  <p className="text-2xl font-bold text-stone-900">足あと</p>
+                  <p className="text-2xl font-bold text-stone-700">足あと</p>
                 </div>
                 <div className="w-10 h-10 flex items-center justify-center mt-1">
                   <img src="/intro-service-icon.png" alt="" className="w-8 h-8 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
@@ -1211,7 +1211,7 @@ export default function DashboardPage() {
           return (
             <div className="space-y-5 pt-2">
               <div className="text-center space-y-1 pt-1">
-                <h2 className="text-xl font-bold text-stone-900">あなたについて</h2>
+                <h2 className="text-xl font-bold text-stone-700">あなたについて</h2>
                 <p className="text-xs text-stone-400">現在の心の形と、これからの道のり</p>
               </div>
 
@@ -1519,7 +1519,7 @@ export default function DashboardPage() {
 
         {tab === 'profile' && (
           <div className="space-y-5 pt-2">
-            <h2 className="text-lg font-bold text-stone-900">プロフィール</h2>
+            <h2 className="text-lg font-bold text-stone-700">プロフィール</h2>
 
             {profileData ? (
               <form onSubmit={handleSaveProfile} className="space-y-4">
