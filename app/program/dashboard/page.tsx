@@ -623,7 +623,7 @@ export default function DashboardPage() {
             <div className="flex justify-between items-start pt-8 pb-1 px-2">
               <div>
                 <p className="text-xs text-purple-400 font-medium">おかえりなさい</p>
-                <p className="text-2xl font-bold text-stone-700">{username}さん</p>
+                <p className="text-2xl font-bold text-stone-900">{username}さん</p>
               </div>
               <div className="w-10 h-10 flex items-center justify-center mt-1">
                 <img src="/intro-service-icon.png" alt="" className="w-8 h-8 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
@@ -684,7 +684,7 @@ export default function DashboardPage() {
 
             {/* 30日の道のり */}
             <div className="bg-white rounded-3xl p-5 border border-stone-100 shadow-sm space-y-3">
-              <p className="text-sm font-bold text-stone-700">30日の道のり</p>
+              <p className="text-sm font-bold text-stone-900">30日の道のり</p>
               <div className="flex items-center">
                 {(() => {
                   const DOTS = 15;
@@ -762,7 +762,7 @@ export default function DashboardPage() {
             <div className="flex justify-between items-start pt-6 pb-1">
               <div>
                 <p className="text-xs text-purple-400 font-medium">今日取り組むこと</p>
-                <p className="text-2xl font-bold text-stone-700">今日の一歩</p>
+                <p className="text-2xl font-bold text-stone-900">今日の一歩</p>
               </div>
               <div className="w-10 h-10 flex items-center justify-center mt-1">
                 <img src="/intro-service-icon.png" alt="" className="w-8 h-8 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
@@ -1050,7 +1050,7 @@ export default function DashboardPage() {
               <div className="flex justify-between items-start pt-6 pb-1">
                 <div>
                   <p className="text-xs text-purple-400 font-medium">ここまでのあなた</p>
-                  <p className="text-2xl font-bold text-stone-700">足あと</p>
+                  <p className="text-2xl font-bold text-stone-900">足あと</p>
                 </div>
                 <div className="w-10 h-10 flex items-center justify-center mt-1">
                   <img src="/intro-service-icon.png" alt="" className="w-8 h-8 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
@@ -1221,7 +1221,7 @@ export default function DashboardPage() {
               <div className="flex justify-between items-start pt-6 pb-1">
                 <div>
                   <p className="text-xs text-purple-400 font-medium">現在の心の形と、これからの道のり</p>
-                  <p className="text-2xl font-bold text-stone-700">自分の地図</p>
+                  <p className="text-2xl font-bold text-stone-900">自分の地図</p>
                 </div>
                 <div className="w-10 h-10 flex items-center justify-center mt-1">
                   <img src="/intro-service-icon.png" alt="" className="w-8 h-8 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
