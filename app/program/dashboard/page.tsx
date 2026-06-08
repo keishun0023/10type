@@ -1056,7 +1056,7 @@ export default function DashboardPage() {
                   <img
                     src={`/images/footprint-hero-${footprintHeroIdx}.png`}
                     alt=""
-                    className="absolute right-0 bottom-0 h-32 object-contain"
+                    className="absolute right-0 top-2 h-32 object-contain"
                     onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
                   />
                 </div>
