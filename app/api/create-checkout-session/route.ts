@@ -44,7 +44,17 @@ export async function POST(req: NextRequest) {
       }],
       mode: 'payment',
       ...(email ? { customer_email: email } : {}),
-      metadata: { plan, typeId, onboarding: JSON.stringify(onboarding), session: diagSession || '' },
+      // Stripe metadata は1値あたり500文字上限。長文の自由記述（difficultFreeText/difficultDetail）は
+      // ここには載せない（フルの onboarding は diagnostics テーブルに保存済みで、register-user はそこから読む）。
+      metadata: {
+        plan,
+        typeId,
+        onboarding: JSON.stringify((() => {
+          const { difficultFreeText: _ft, difficultDetail: _dd, ...slim } = onboarding ?? {};
+          return slim;
+        })()),
+        session: diagSession || '',
+      },
       success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/program/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/program`,
     });
