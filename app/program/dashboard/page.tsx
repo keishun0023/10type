@@ -682,12 +682,22 @@ export default function DashboardPage() {
             ) : todayKind === 'action' ? (
               /* Action mission recording form */
               <div className="space-y-5">
-                <div className="space-y-2">
-                  <p className="text-sm text-stone-600">何回できましたか？</p>
-                  <div className="flex items-center gap-4">
-                    <button onClick={() => setRecordCount(Math.max(1, recordCount - 1))} className="w-10 h-10 rounded-full bg-stone-100 text-xl font-bold">−</button>
-                    <span className="text-2xl font-bold text-stone-800 w-8 text-center">{recordCount}</span>
-                    <button onClick={() => setRecordCount(recordCount + 1)} className="w-10 h-10 rounded-full bg-stone-100 text-xl font-bold">＋</button>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-stone-600">どれくらいできましたか？</p>
+                    <span className="text-2xl font-bold text-purple-600">{recordCount}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    step={10}
+                    value={recordCount}
+                    onChange={e => setRecordCount(Number(e.target.value))}
+                    className="w-full accent-purple-500"
+                  />
+                  <div className="flex justify-between text-xs text-stone-300">
+                    <span>0%</span><span>50%</span><span>100%</span>
                   </div>
                 </div>
                 <div className="space-y-2">
