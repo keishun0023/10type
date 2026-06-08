@@ -967,7 +967,7 @@ export default function DashboardPage() {
               <div className="bg-white rounded-3xl overflow-hidden border border-stone-100 shadow-sm">
                 <div className="p-5 relative min-h-[160px]">
                   <p className="text-xs text-purple-500 font-bold flex items-center gap-1 mb-3">
-                    <span>🌱</span> これまでのあなた
+                    <img src="/images/icon-leaf.png" alt="" className="w-4 h-4 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /> これまでのあなた
                   </p>
                   {footprintData ? (
                     <>
@@ -1004,11 +1004,11 @@ export default function DashboardPage() {
                 return (
                   <div className="bg-white rounded-3xl p-5 border border-stone-100 shadow-sm space-y-4">
                     <p className="text-sm font-bold text-purple-500 flex items-center gap-1.5">
-                      <span>⚖️</span> はじめの頃 → 今のあなた
+                      <img src="/images/icon-balance.png" alt="" className="w-4 h-4 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /> はじめの頃 → 今のあなた
                     </p>
                     <div className="bg-purple-50 rounded-2xl p-4 space-y-2">
                       <div className="flex items-center gap-2 mb-1">
-                        <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-sm">☁️</div>
+                        <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden"><img src="/images/icon-cloud.png" alt="" className="w-5 h-5 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /></div>
                         <p className="text-xs font-bold text-stone-500">はじめの頃</p>
                       </div>
                       {before.map((b, i) => <p key={i} className="text-sm text-stone-600 pl-10">・{b}</p>)}
@@ -1016,7 +1016,7 @@ export default function DashboardPage() {
                     <div className="text-center text-purple-400 text-lg">↓</div>
                     <div className="bg-purple-50 rounded-2xl p-4 space-y-2">
                       <div className="flex items-center gap-2 mb-1">
-                        <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-sm">🌱</div>
+                        <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden"><img src="/images/icon-sprout.png" alt="" className="w-5 h-5 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /></div>
                         <p className="text-xs font-bold text-purple-500">今のあなた</p>
                       </div>
                       {now.map((n, i) => <p key={i} className="text-sm text-stone-700 pl-10">・{n}</p>)}
@@ -1028,27 +1028,27 @@ export default function DashboardPage() {
               {/* ③ 変化のハイライト */}
               <div className="bg-white rounded-3xl p-5 border border-stone-100 shadow-sm space-y-3">
                 <p className="text-sm font-bold text-purple-500 flex items-center gap-1.5">
-                  <span>✦</span> 変化のハイライト
+                  <img src="/images/icon-sparkle.png" alt="" className="w-4 h-4 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /> 変化のハイライト
                   <span className="text-[10px] font-normal text-stone-400 ml-1">小さな変化が、ちゃんと積み重なっています</span>
                 </p>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between py-3 border-b border-stone-50">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-sm">📝</div>
+                      <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden"><img src="/images/icon-write.png" alt="" className="w-5 h-5 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /></div>
                       <span className="text-sm text-stone-600">書き出せた回数</span>
                     </div>
                     <span className="text-lg font-bold text-purple-500">0 → {cogCount}</span>
                   </div>
                   <div className="flex items-center justify-between py-3 border-b border-stone-50">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-sm">🤍</div>
+                      <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden"><img src="/images/icon-heart.png" alt="" className="w-5 h-5 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /></div>
                       <span className="text-sm text-stone-600">試してみた回数</span>
                     </div>
                     <span className="text-lg font-bold text-purple-500">0 → {actionCount}</span>
                   </div>
                   <div className="flex items-center justify-between py-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-sm">📅</div>
+                      <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden"><img src="/images/icon-calendar.png" alt="" className="w-5 h-5 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /></div>
                       <span className="text-sm text-stone-600">向き合った日</span>
                     </div>
                     <span className="text-lg font-bold text-purple-500">{doneLogs.length} <span className="text-sm font-normal text-stone-400">日</span></span>
@@ -1060,14 +1060,14 @@ export default function DashboardPage() {
               {footprintData && footprintData.timeline.length > 0 && (
                 <div className="bg-white rounded-3xl p-5 border border-stone-100 shadow-sm space-y-4">
                   <p className="text-sm font-bold text-purple-500 flex items-center gap-1.5">
-                    <span>↻</span> ここまでの道のり
+                    <img src="/images/icon-path.png" alt="" className="w-4 h-4 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /> ここまでの道のり
                   </p>
                   <div className="space-y-0">
                     {footprintData.timeline.map((t, i) => (
                       <div key={t.day} className="flex gap-3 items-start">
                         <div className="flex flex-col items-center">
-                          <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
-                            <span className="text-xs">🌱</span>
+                          <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                            <img src="/images/icon-day.png" alt="" className="w-4 h-4 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                           </div>
                           {i < footprintData.timeline.length - 1 && (
                             <div className="w-px h-8 border-l-2 border-dashed border-purple-100 my-1" />
