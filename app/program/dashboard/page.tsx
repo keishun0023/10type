@@ -96,6 +96,13 @@ export default function DashboardPage() {
   const [paidPlan, setPaidPlan] = useState('');
   const [actionFeedback, setActionFeedback] = useState('');
   const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [footprintData, setFootprintData] = useState<{
+    hero: string;
+    beforeNow: string;
+    timeline: { day: number; label: string }[];
+    next: string;
+  } | null>(null);
+  const [footprintLoading, setFootprintLoading] = useState(false);
 
   // profile edit state
   const [profileData, setProfileData] = useState<{
@@ -898,125 +905,197 @@ export default function DashboardPage() {
           const doneLogs = logs.filter(l => l.done);
           const missions = generatedPlan?.missions ?? [];
           const missionByDay = new Map(missions.map(m => [m.day, m]));
-
-          // 恐れ軸別・認知行動別の集計（全期間累計）
-          const fearCounts: Record<string, number> = {};
-          let cognitiveCount = 0;
-          let actionCount = 0;
-          doneLogs.forEach(l => {
-            const comp = l.component_id ? PROGRAM_COMPONENTS[l.component_id as keyof typeof PROGRAM_COMPONENTS] : null;
-            if (comp) {
-              fearCounts[comp.fearAxis] = (fearCounts[comp.fearAxis] || 0) + 1;
-              if (comp.kind === 'action') actionCount++; else cognitiveCount++;
-            }
-          });
-
-          // 取り組んだミッションを新しい順に
           const enriched = doneLogs.map(l => {
             const m = missionByDay.get(l.mission_id);
             const comp = l.component_id ? PROGRAM_COMPONENTS[l.component_id as keyof typeof PROGRAM_COMPONENTS] : null;
             return {
               day: l.mission_id,
-              date: l.date,
               title: m?.title ?? '取り組んだミッション',
-              fearLabel: comp ? FEAR_AXIS_LABEL[comp.fearAxis] : null,
               kind: comp?.kind ?? null,
               memo: l.memo,
-              before: l.before_score,
-              after: l.after_score,
-              count: l.count,
             };
           });
 
+          async function loadFootprint() {
+            if (footprintLoading || footprintData) return;
+            setFootprintLoading(true);
+            try {
+              const res = await fetch('/api/footprint', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  focusLabel: currentFocusLabel ?? '不安',
+                  cogCount,
+                  actionCount,
+                  dayCount: doneLogs.length,
+                  logs: enriched,
+                }),
+              });
+              const data = await res.json();
+              if (!data.error) setFootprintData(data);
+            } finally {
+              setFootprintLoading(false);
+            }
+          }
+
+          // Before/Nowのテキストをパース
+          function parseBeforeNow(text: string) {
+            const beforeMatch = text.match(/はじめの頃\s*([\s\S]*?)(?=今のあなた|$)/);
+            const nowMatch = text.match(/今のあなた\s*([\s\S]*?)$/);
+            const parse = (s?: string) =>
+              (s ?? '').split('\n').map(l => l.replace(/^[・\-]\s*/, '').trim()).filter(Boolean);
+            return {
+              before: parse(beforeMatch?.[1]),
+              now: parse(nowMatch?.[1]),
+            };
+          }
+
           return (
-            <div className="space-y-5 pt-2">
-              <h2 className="text-lg font-bold text-stone-900">振り返り</h2>
+            <div className="space-y-5 pt-2 pb-4">
+              {/* ヘッダー */}
+              <div className="flex justify-between items-start pt-6 pb-1">
+                <div>
+                  <p className="text-xs text-purple-400 font-medium">ここまでのあなた</p>
+                  <p className="text-2xl font-bold text-stone-900">足あと</p>
+                </div>
+                <div className="w-10 h-10 flex items-center justify-center mt-1">
+                  <span className="text-2xl">🤍</span>
+                </div>
+              </div>
 
-              {/* 定量サマリー */}
-              <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-4">
-                <p className="text-xs text-stone-400 font-medium">これまでの積み上げ</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-purple-50 rounded-2xl p-3 text-center">
-                    <p className="text-2xl font-bold text-purple-500">{doneLogs.length}<span className="text-xs text-stone-400 font-normal ml-0.5">回</span></p>
-                    <p className="text-[11px] text-stone-400 mt-0.5">取り組んだミッション</p>
+              {/* ① これまでのあなた（ヒーローカード） */}
+              <div className="bg-white rounded-3xl overflow-hidden border border-stone-100 shadow-sm">
+                <div className="p-5 relative min-h-[160px]">
+                  <p className="text-xs text-purple-500 font-bold flex items-center gap-1 mb-3">
+                    <span>🌱</span> これまでのあなた
+                  </p>
+                  {footprintData ? (
+                    <>
+                      <p className="text-base font-bold text-stone-800 leading-relaxed pr-24">
+                        {footprintData.hero}
+                      </p>
+                      <p className="text-xs text-stone-400 mt-3">ここから、少しずつ変わってきました</p>
+                    </>
+                  ) : footprintLoading ? (
+                    <div className="flex items-center gap-2 text-sm text-stone-400 pr-24">
+                      <span className="inline-block w-4 h-4 border-2 border-purple-200 border-t-purple-500 rounded-full animate-spin" />
+                      変化を読み取っています...
+                    </div>
+                  ) : (
+                    <button
+                      onClick={loadFootprint}
+                      className="text-sm text-purple-500 font-bold underline underline-offset-2"
+                    >
+                      あなたの変化を見る
+                    </button>
+                  )}
+                  <img
+                    src="/images/footprint-hero.png"
+                    alt=""
+                    className="absolute right-0 bottom-0 h-32 object-contain"
+                    onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  />
+                </div>
+              </div>
+
+              {/* ② Before/Now 比較 */}
+              {footprintData && (() => {
+                const { before, now } = parseBeforeNow(footprintData.beforeNow);
+                return (
+                  <div className="bg-white rounded-3xl p-5 border border-stone-100 shadow-sm space-y-4">
+                    <p className="text-sm font-bold text-purple-500 flex items-center gap-1.5">
+                      <span>⚖️</span> はじめの頃 → 今のあなた
+                    </p>
+                    <div className="bg-purple-50 rounded-2xl p-4 space-y-2">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-sm">☁️</div>
+                        <p className="text-xs font-bold text-stone-500">はじめの頃</p>
+                      </div>
+                      {before.map((b, i) => <p key={i} className="text-sm text-stone-600 pl-10">・{b}</p>)}
+                    </div>
+                    <div className="text-center text-purple-400 text-lg">↓</div>
+                    <div className="bg-purple-50 rounded-2xl p-4 space-y-2">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-sm">🌱</div>
+                        <p className="text-xs font-bold text-purple-500">今のあなた</p>
+                      </div>
+                      {now.map((n, i) => <p key={i} className="text-sm text-stone-700 pl-10">・{n}</p>)}
+                    </div>
                   </div>
-                  <div className="bg-orange-50 rounded-2xl p-3 text-center">
-                    <p className="text-2xl font-bold text-orange-500">🔥 {streak}<span className="text-xs text-stone-400 font-normal ml-0.5">日</span></p>
-                    <p className="text-[11px] text-stone-400 mt-0.5">連続達成</p>
+                );
+              })()}
+
+              {/* ③ 変化のハイライト */}
+              <div className="bg-white rounded-3xl p-5 border border-stone-100 shadow-sm space-y-3">
+                <p className="text-sm font-bold text-purple-500 flex items-center gap-1.5">
+                  <span>✦</span> 変化のハイライト
+                  <span className="text-[10px] font-normal text-stone-400 ml-1">小さな変化が、ちゃんと積み重なっています</span>
+                </p>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between py-3 border-b border-stone-50">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-sm">📝</div>
+                      <span className="text-sm text-stone-600">書き出せた回数</span>
+                    </div>
+                    <span className="text-lg font-bold text-purple-500">0 → {cogCount}</span>
+                  </div>
+                  <div className="flex items-center justify-between py-3 border-b border-stone-50">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-sm">🤍</div>
+                      <span className="text-sm text-stone-600">試してみた回数</span>
+                    </div>
+                    <span className="text-lg font-bold text-purple-500">0 → {actionCount}</span>
+                  </div>
+                  <div className="flex items-center justify-between py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-sm">📅</div>
+                      <span className="text-sm text-stone-600">向き合った日</span>
+                    </div>
+                    <span className="text-lg font-bold text-purple-500">{doneLogs.length} <span className="text-sm font-normal text-stone-400">日</span></span>
                   </div>
                 </div>
+              </div>
 
-                {/* 認知・行動別 */}
-                <div className="flex gap-3">
-                  <div className="flex-1 bg-stone-50 rounded-2xl p-3 text-center">
-                    <p className="text-lg font-bold text-stone-700">{cognitiveCount}<span className="text-xs text-stone-400 font-normal ml-0.5">回</span></p>
-                    <p className="text-[11px] text-stone-400 mt-0.5">認知</p>
-                  </div>
-                  <div className="flex-1 bg-stone-50 rounded-2xl p-3 text-center">
-                    <p className="text-lg font-bold text-stone-700">{actionCount}<span className="text-xs text-stone-400 font-normal ml-0.5">回</span></p>
-                    <p className="text-[11px] text-stone-400 mt-0.5">行動</p>
-                  </div>
-                </div>
-
-                {/* 恐れ軸別 */}
-                {Object.keys(fearCounts).length > 0 && (
-                  <div className="border-t border-stone-100 pt-4 space-y-2">
-                    <p className="text-xs text-stone-400 font-medium">どの恐れに取り組んだか</p>
-                    {FEAR_AXIS_DESC.map(f => (
-                      <div key={f.axis} className="flex justify-between text-sm">
-                        <span className="text-stone-500">{FEAR_AXIS_LABEL[f.axis]}</span>
-                        <span className="font-bold text-purple-500">{fearCounts[f.axis] || 0}回</span>
+              {/* ④ ここまでの道のり */}
+              {footprintData && footprintData.timeline.length > 0 && (
+                <div className="bg-white rounded-3xl p-5 border border-stone-100 shadow-sm space-y-4">
+                  <p className="text-sm font-bold text-purple-500 flex items-center gap-1.5">
+                    <span>↻</span> ここまでの道のり
+                  </p>
+                  <div className="space-y-0">
+                    {footprintData.timeline.map((t, i) => (
+                      <div key={t.day} className="flex gap-3 items-start">
+                        <div className="flex flex-col items-center">
+                          <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                            <span className="text-xs">🌱</span>
+                          </div>
+                          {i < footprintData.timeline.length - 1 && (
+                            <div className="w-px h-8 border-l-2 border-dashed border-purple-100 my-1" />
+                          )}
+                        </div>
+                        <div className="pb-4">
+                          <span className="text-xs font-bold text-purple-400">Day {t.day}</span>
+                          <p className="text-sm text-stone-700 mt-0.5">{t.label}</p>
+                        </div>
                       </div>
                     ))}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
-              {/* 各ミッションで得られた内容 */}
-              <h3 className="text-sm font-bold text-stone-700 pt-1">取り組みの記録</h3>
-              {enriched.length ? (
-                enriched.map(e => {
-                  const isOpen = expandedLog === e.day;
-                  return (
-                    <div key={`${e.day}-${e.date}`} className="bg-white rounded-3xl border border-stone-100 overflow-hidden">
-                      <button
-                        onClick={() => setExpandedLog(isOpen ? null : e.day)}
-                        className="w-full p-4 flex items-start gap-3 text-left"
-                      >
-                        <span className="flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-100 text-stone-500 mt-0.5">Day {e.day}</span>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-stone-800 leading-snug">{e.title}</p>
-                          <div className="flex flex-wrap gap-1.5 mt-1.5">
-                            {e.fearLabel && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-100 text-stone-500">{e.fearLabel}</span>}
-                            {e.kind && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-500">{e.kind === 'action' ? '行動' : '認知'}</span>}
-                          </div>
-                        </div>
-                        <span className={`text-stone-300 transition-transform mt-1 ${isOpen ? 'rotate-90' : ''}`}>▶</span>
-                      </button>
-                      {isOpen && (
-                        <div className="px-4 pb-4 space-y-3 border-t border-stone-50">
-                          {e.memo ? (
-                            <div className="bg-purple-50 rounded-2xl p-3 mt-3">
-                              <p className="text-[11px] text-purple-500 font-bold mb-1">得られた気づき</p>
-                              <p className="text-sm text-stone-700 leading-relaxed">{e.memo}</p>
-                            </div>
-                          ) : (
-                            <p className="text-xs text-stone-400 mt-3">この日はメモがありません。</p>
-                          )}
-                          {(e.before > 0 || e.after > 0) && (
-                            <div className="flex gap-4 text-xs text-stone-500">
-                              <span>取り組む前：<span className="font-bold text-stone-600">{e.before}</span></span>
-                              <span>取り組んだ後：<span className="font-bold text-teal-600">{e.after}</span></span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="bg-white rounded-3xl p-5 border border-stone-100">
-                  <p className="text-sm text-stone-400">まだ記録がありません。最初のミッションに取り組んでみましょう。</p>
+              {/* ⑤ 次の一歩 */}
+              {footprintData && (
+                <div className="border-t border-stone-100 pt-4 pb-2 text-center space-y-1">
+                  <p className="text-sm text-stone-600 leading-relaxed">{footprintData.next}</p>
+                  <span className="text-purple-400 text-sm">🌿</span>
+                </div>
+              )}
+
+              {/* データなし */}
+              {doneLogs.length === 0 && (
+                <div className="bg-white rounded-3xl p-6 border border-stone-100 text-center space-y-2">
+                  <p className="text-stone-400 text-sm">まだ記録がありません。</p>
+                  <p className="text-stone-300 text-xs">最初の一歩を踏み出してみましょう。</p>
                 </div>
               )}
             </div>
