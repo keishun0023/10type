@@ -96,6 +96,8 @@ export default function DashboardPage() {
   const [paidPlan, setPaidPlan] = useState('');
   const [actionFeedback, setActionFeedback] = useState('');
   const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [hints, setHints] = useState<string[] | null>(null);
+  const [hintsLoading, setHintsLoading] = useState(false);
   const [footprintHeroIdx] = useState(() => Math.floor(Math.random() * 5) + 1);
   const [footprintData, setFootprintData] = useState<{
     hero: string;
@@ -186,6 +188,33 @@ export default function DashboardPage() {
     const valid: Tab[] = ['home', 'mission', 'record', 'review', 'report', 'profile'];
     if (t && valid.includes(t as Tab)) setTab(t as Tab);
   }, []);
+
+  // 認知ミッション（スタンダード以上）を開いたら、考えるヒントを生成。
+  // localStorage(ユーザー×dayCount)にキャッシュし、同じ日・同じ端末では再生成しない。
+  useEffect(() => {
+    if (tab !== 'mission' || todayKind !== 'cognitive' || !hasAISupport) return;
+    if (!userId || !aiMission?.title) return;
+    const key = `hints_${userId}_${dayCount}`;
+    const cached = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
+    if (cached) { setHints(JSON.parse(cached)); return; }
+    setHints(null);
+    setHintsLoading(true);
+    fetch('/api/mission-hints', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: aiMission.title, why: aiMission.why, kind: todayKind }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data.hints) && data.hints.length > 0) {
+          setHints(data.hints);
+          localStorage.setItem(key, JSON.stringify(data.hints));
+        }
+      })
+      .catch(() => {})
+      .finally(() => setHintsLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, dayCount, userId, todayKind, hasAISupport]);
 
   // 足あと生成・DB保存
   async function generateAndSaveFootprint(currentDoneLogs: DailyLog[], currentUserId: string) {
@@ -909,6 +938,8 @@ export default function DashboardPage() {
                         componentId={todayComponentId ?? ''}
                         day={dayCount}
                         userId={userId}
+                        hints={hints}
+                        hintsLoading={hintsLoading}
                         onComplete={async (summary: string) => {
                           const sb = getSupabase();
                           if (sb && userId) {

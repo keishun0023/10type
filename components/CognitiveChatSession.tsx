@@ -10,6 +10,8 @@ type Props = {
   componentId: string;
   day: number;
   userId: string;
+  hints?: string[] | null;
+  hintsLoading?: boolean;
   onComplete: (summary: string) => void;
   onSkip: () => void;
 };
@@ -17,6 +19,8 @@ type Props = {
 export default function CognitiveChatSession({
   missionTitle,
   missionWhy,
+  hints,
+  hintsLoading,
   onComplete,
   onSkip,
 }: Props) {
@@ -116,6 +120,29 @@ export default function CognitiveChatSession({
       <div className="bg-stone-50 rounded-2xl px-4 py-3 mb-4 border border-stone-100">
         <p className="text-xs text-stone-500 leading-relaxed">✦ AIと一緒に深めましょう。今日、気になった場面があったら思い出してここに話しかけてみてください。AIがいくつか質問しながら一緒に整理して、気づきをまとめます。</p>
       </div>
+
+      {/* 考えるヒント（とっかかり） */}
+      {(hintsLoading || (hints && hints.length > 0)) && (
+        <div className="bg-amber-50 rounded-2xl px-4 py-3 mb-4 border border-amber-100">
+          <p className="text-xs font-bold text-amber-700 mb-2">💡 考えるヒント</p>
+          {hintsLoading ? (
+            <div className="space-y-2">
+              <div className="h-3 bg-amber-100 rounded animate-pulse" />
+              <div className="h-3 bg-amber-100 rounded animate-pulse w-4/5" />
+              <div className="h-3 bg-amber-100 rounded animate-pulse w-3/5" />
+            </div>
+          ) : (
+            <ul className="space-y-1.5">
+              {hints!.map((h, i) => (
+                <li key={i} className="text-xs text-stone-600 leading-relaxed flex gap-1.5">
+                  <span className="text-amber-400 flex-shrink-0">・</span>
+                  <span>{h}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       {/* チャットエリア */}
       <div className="flex-1 space-y-3 overflow-y-auto pb-4">
