@@ -639,15 +639,15 @@ export default function DashboardPage() {
                   className="absolute right-0 top-0 h-full w-3/5 object-cover object-center"
                   onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-white via-white/90 to-transparent" />
-                <div className="relative p-5 w-4/5">
+                <div className="absolute inset-0 bg-gradient-to-r from-white from-50% via-white/80 to-transparent" />
+                <div className="relative p-5 w-[58%]">
                   <p className="text-xs text-purple-500 font-bold flex items-center gap-1.5 mb-3">
                     <span className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden flex-shrink-0">
                       <img src="/images/icon-day.png" alt="" className="w-4 h-4 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                     </span>
                     今日の一歩
                   </p>
-                  <p className="text-base font-bold text-stone-900 leading-snug">
+                  <p className="text-sm font-bold text-stone-900 leading-snug">
                     {todayMission?.text ?? 'ミッションを読み込み中...'}
                   </p>
                   <p className="text-xs text-stone-400 mt-2">今日やることは、これだけで大丈夫です</p>
