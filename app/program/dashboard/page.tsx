@@ -560,32 +560,35 @@ export default function DashboardPage() {
     <div className="min-h-screen pb-24" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #fafaf8 40%)' }}>
       <div className="max-w-sm mx-auto px-5 space-y-5">
         {tab === 'home' && (
-          <>
+          <div className="-mx-5 px-3 space-y-4">
             {/* ヘッダー */}
-            <div className="flex justify-between items-start pt-8 pb-1">
+            <div className="flex justify-between items-start pt-8 pb-1 px-2">
               <div>
                 <p className="text-xs text-purple-400 font-medium">おかえりなさい</p>
                 <p className="text-2xl font-bold text-stone-900">{username}さん</p>
               </div>
               <div className="w-10 h-10 flex items-center justify-center mt-1">
-                <span className="text-2xl">🤍</span>
+                <img src="/intro-service-icon.png" alt="" className="w-8 h-8 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
               </div>
             </div>
 
             {/* 今日の一歩カード */}
             <div className="bg-white rounded-3xl overflow-hidden border border-stone-100 shadow-sm">
-              <div className="p-5 relative min-h-[160px]">
-                <p className="text-xs text-purple-500 font-bold flex items-center gap-1 mb-3">
-                  <span>🌱</span> 今日の一歩
+              <div className="p-5 relative min-h-[170px]">
+                <p className="text-xs text-purple-500 font-bold flex items-center gap-1.5 mb-3">
+                  <span className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                    <img src="/images/icon-day.png" alt="" className="w-4 h-4 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  </span>
+                  今日の一歩
                 </p>
-                <p className="text-xl font-bold text-stone-900 leading-snug pr-28">
+                <p className="text-base font-bold text-stone-900 leading-snug pr-32">
                   {todayMission?.text ?? 'ミッションを読み込み中...'}
                 </p>
-                <p className="text-xs text-stone-400 mt-2 pr-28">今日やることは、これだけで大丈夫です</p>
+                <p className="text-xs text-stone-400 mt-2 pr-32">今日やることは、これだけで大丈夫です</p>
                 <img
                   src="/images/mission-hero.png"
                   alt=""
-                  className="absolute right-0 bottom-0 h-36 object-contain"
+                  className="absolute right-0 top-0 h-44 object-contain object-top"
                   onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
                 />
               </div>
@@ -609,15 +612,17 @@ export default function DashboardPage() {
             {/* 30日の道のり */}
             <div className="bg-white rounded-3xl p-5 border border-stone-100 shadow-sm space-y-3">
               <p className="text-sm font-bold text-stone-700">30日の道のり</p>
-              <div className="flex gap-1.5 flex-wrap">
-                {Array.from({ length: 30 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className={`w-[calc((100%-11*6px)/12)] h-2 rounded-full transition-colors ${
-                      i < dayCount - 1 ? 'bg-purple-500' : 'bg-stone-100'
-                    }`}
-                  />
-                ))}
+              <div className="flex items-center">
+                {Array.from({ length: 30 }).map((_, i) => {
+                  const done = i < dayCount - 1;
+                  const isLast = i === 29;
+                  return (
+                    <div key={i} className="flex items-center" style={{ flex: isLast ? '0 0 auto' : 1 }}>
+                      <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 transition-colors ${done ? 'bg-purple-500' : 'bg-stone-200'}`} />
+                      {!isLast && <div className={`h-0.5 w-full transition-colors ${done && i < dayCount - 2 ? 'bg-purple-400' : 'bg-stone-200'}`} />}
+                    </div>
+                  );
+                })}
               </div>
               <div className="flex items-center justify-between">
                 <p className="text-2xl font-bold text-purple-500">
@@ -633,7 +638,7 @@ export default function DashboardPage() {
                 <div className="flex gap-4 items-center mb-4">
                   <div className="w-16 h-16 rounded-full bg-purple-50 flex items-center justify-center flex-shrink-0 overflow-hidden">
                     <img
-                      src="/images/theme-icon.png"
+                      src={`/images/fear-${programConfig?.currentFocus?.toLowerCase() ?? 'theme'}.png`}
                       alt=""
                       className="w-full h-full object-cover"
                       onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
@@ -652,14 +657,18 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex gap-3">
                   <div className="flex-1 bg-purple-50 rounded-2xl p-3 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-sm">🌱</div>
+                    <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                      <img src="/images/icon-write.png" alt="" className="w-5 h-5 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    </div>
                     <div>
                       <p className="text-[10px] text-stone-400">気づく</p>
                       <p className="text-lg font-bold text-stone-800">{cogCount}<span className="text-xs font-normal text-stone-400 ml-0.5">回</span></p>
                     </div>
                   </div>
                   <div className="flex-1 bg-purple-50 rounded-2xl p-3 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-sm">🤍</div>
+                    <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                      <img src="/images/icon-heart.png" alt="" className="w-5 h-5 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    </div>
                     <div>
                       <p className="text-[10px] text-stone-400">試す</p>
                       <p className="text-lg font-bold text-stone-800">{actionCount}<span className="text-xs font-normal text-stone-400 ml-0.5">回</span></p>
@@ -668,7 +677,7 @@ export default function DashboardPage() {
                 </div>
               </div>
             )}
-          </>
+          </div>
         )}
 
         {tab === 'mission' && todayMission && (
