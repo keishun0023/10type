@@ -1,5 +1,5 @@
 import { FearAxis, DefenseAxis } from '@/data/questions';
-import { ProgramConfig, PROGRAM_COMPONENTS } from '@/data/program';
+import { ProgramConfig, PROGRAM_COMPONENTS, ComponentId } from '@/data/program';
 import { TYPES } from '@/data/types';
 import { REPORT_CONTENT } from '@/data/report';
 
@@ -192,13 +192,33 @@ ${scheduleLines}
   return { system: SYSTEM, user };
 }
 
-// ── フル（課金後）：ようこそガイド＋残りのミッション。土台（userInsight/report）は踏襲 ──
-export function buildFullPrompt(input: FullPromptInput): { system: string; user: string } {
+// ── フル（課金後）：部品（恐れ×kind）ごとに、その部品が担当する全日をまとめて生成 ──
+// 1回の生成を単一の部品（＝単一kind）に絞ることで、認知の日に行動文が混ざるのを構造的に防ぎ、
+// Lv1→5のひと続きの流れを作り、隣の恐れ軸に引きずられないようにする。
+export type ComponentMissionsInput = FullPromptInput & {
+  componentId: ComponentId;
+};
+
+export function buildComponentMissionsPrompt(input: ComponentMissionsInput): { system: string; user: string } {
   const ctx = userContextBlock(input);
-  const scheduleLines = scheduleBlock(input.schedule);
+  const comp = PROGRAM_COMPONENTS[input.componentId];
+  const isAction = comp.kind === 'action';
+  const kindLabel = isAction
+    ? '行動実験（現実世界で実際に何かをやってみる）'
+    : '考え方の整理（書き出す・問い直す・思い出すなどの内省ワーク）';
+  const kindRule = isAction
+    ? '- これは【行動】の部品です。すべてのミッションは、現実の場面で実際に行動を起こす内容にしてください。「書き出すだけ」「頭の中で考えるだけ」で完結させてはいけません。'
+    : '- これは【認知】の部品です。すべてのミッションは、頭の中の整理・書き出し・捉え直し・思い出しなどの内省ワークにしてください。誰かに伝える・実際にやってみる等、外に向けて行動させる指示は絶対に入れないでください。';
+
+  const dayLines = input.schedule
+    .map(d => {
+      const heavy = d.heavy ? '【じっくり取り組む日】' : '';
+      return `Day ${d.day} [Lv${d.lv}]${heavy}\n  骨格: ${d.skeletonTitle}\n  なぜ: ${d.skeletonWhy}`;
+    })
+    .join('\n');
+
   const days = input.schedule.map(d => d.day);
-  const firstDay = days[0];
-  const lastDay = days[days.length - 1];
+  const dayListStr = days.join(', ');
 
   const user = `# ユーザー情報
 
@@ -215,26 +235,32 @@ ${input.userInsight || '（未設定）'}
 - 強みの捉え直し: ${input.report.strengthReframe}
 - これからの方向性: ${input.report.direction}
 
-## 作成するスケジュール（Day ${firstDay}〜${lastDay} の骨格）
-${scheduleLines}
+## 今回つくる部品（この1部品だけに集中する）
+${input.componentId}：${FEAR_LABEL[comp.fearAxis]} × ${kindLabel}
+アプローチ: ${comp.approach}
+
+## この部品が担当する日（全${input.schedule.length}日分）
+${dayLines}
 
 # あなたのタスク
 
-上の userInsight とレポートを土台に、課金直後に見せる「ようこそガイド」と、Day ${firstDay}〜${lastDay} のミッションを作ってください。土台と矛盾しないこと、本人の書いた具体的な場面名をそのまま繰り返さないことを守ってください。
+この1つの部品「${FEAR_LABEL[comp.fearAxis]} × ${isAction ? '行動' : '認知'}」だけに絞って、上記の各日のミッションをまとめて作ってください。Lvが上がるごとに少しずつ難度・深さが増す、ひと続きの流れになるようにします。
 
 以下のJSON形式で**JSONのみ**を出力してください：
 
 {
   "missions": [
-    { "day": ${firstDay}, "title": "その日の具体的なミッション文", "why": "なぜこれをやるのかを温かく1〜2文で" }
-    // Day ${firstDay} から Day ${lastDay} まで全て。上のスケジュールの骨格・Lv・行動/認知の種別を必ず守り、文面だけを本人向けに具体化する。
+    { "day": ${days[0]}, "title": "その日の具体的なミッション文", "why": "なぜこれをやるのかを温かく1〜2文で" }
+    // 上記の日付（${dayListStr}）すべて分
   ]
 }
 
 注意：
-- missions は必ず Day ${firstDay}〜${lastDay} の全${input.schedule.length}件。day番号はスケジュールと一致させる。
-- 各ミッションは骨格の意図（行動実験 or 考え方の整理、Lv）を守る。勝手に別のことをさせない。
-- 【じっくり取り組む日】は、腰を据えて考える重めの認知ワークにする。`;
+${kindRule}
+- missions は必ず上記の日付（${dayListStr}）の全${input.schedule.length}件。day番号はスケジュールと一致させる。
+- 各日のミッションは互いに重複させず、別々の切り口にする（同じ文・酷似した文を禁止）。
+- 骨格の意図とLvを守り、文面だけを本人向けに具体化する。本人が書いた具体的な場面名はそのままコピーしない。
+- 【じっくり取り組む日】は、腰を据えて取り組む重めの内省ワークにする。`;
 
   return { system: SYSTEM, user };
 }

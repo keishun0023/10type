@@ -1,9 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { buildProgramConfig, distressStringToNumber } from '@/lib/blending';
 import { buildSchedule, scheduleSkeleton } from '@/lib/schedule';
-import { buildPreviewPrompt, buildFullPrompt } from '@/lib/prompt';
+import { buildPreviewPrompt, buildComponentMissionsPrompt } from '@/lib/prompt';
 import { callClaude, parseJSONFromText, isAIConfigured } from '@/lib/ai';
-import { ChangeOrientation, GeneratedPlan, GeneratedMission, ScheduledDay } from '@/data/program';
+import { ChangeOrientation, ComponentId, GeneratedPlan, GeneratedMission, ScheduledDay } from '@/data/program';
 import { FearAxis, DefenseAxis } from '@/data/questions';
 
 // プレビュー（課金前）で先に作るミッション数。残りは課金後のフルで作る。
@@ -132,7 +132,10 @@ export async function generatePlan(opts: GeneratePlanOpts): Promise<GeneratedPla
     });
   }
 
-  // ── フル生成（プレビューの土台を踏襲。残りの日数のみAIに作らせる）──
+  // ── フル生成（部品＝恐れ×kind ごとに、その部品が担当する全日をまとめて生成）──
+  // 30日を日付順に通しで作るのではなく、部品単位（単一kind）でまとめて作ることで、
+  // 認知の日に行動文が混ざる・隣の日のコピーが起きる、という生成ブレを構造的に防ぐ。
+  // プレビューの仮ミッションも含め、全30日を作り直す。
   async function runFull(base: GeneratedPlan): Promise<GeneratedPlan> {
     if (!isAIConfigured()) {
       return persist({
@@ -143,21 +146,38 @@ export async function generatePlan(opts: GeneratePlanOpts): Promise<GeneratedPla
         phase: 'full',
       });
     }
-    // 残り（プレビューで未生成の日）だけをAIに依頼
-    const remaining = skeleton.filter(s => s.day > PREVIEW_MISSION_DAYS);
-    const { system, user } = buildFullPrompt({
-      typeId: typeId || 'distancer',
-      fearScores: fearScores!,
-      defenseScores,
-      config: safeConfig,
-      onboarding,
-      schedule: remaining,
-      userInsight: base.userInsight ?? '',
-      report: base.report,
-    });
-    const raw = await callClaude({ system, user, maxTokens: 8000, temperature: 0.7 });
-    const ai = parseJSONFromText<FullAI>(raw);
-    const aiByDay = new Map((ai.missions ?? []).map(m => [m.day, m]));
+
+    // 30日の地図を部品ごとにまとめる
+    const byComponent = new Map<ComponentId, typeof skeleton>();
+    for (const s of skeleton) {
+      const arr = byComponent.get(s.componentId) ?? [];
+      arr.push(s);
+      byComponent.set(s.componentId, arr);
+    }
+
+    // 部品ごとに並列でAI生成（各バッチは単一kind）
+    const results = await Promise.all(
+      [...byComponent.entries()].map(async ([componentId, days]) => {
+        const { system, user } = buildComponentMissionsPrompt({
+          typeId: typeId || 'distancer',
+          fearScores: fearScores!,
+          defenseScores,
+          config: safeConfig,
+          onboarding,
+          schedule: days,
+          userInsight: base.userInsight ?? '',
+          report: base.report,
+          componentId,
+        });
+        const raw = await callClaude({ system, user, maxTokens: 4000, temperature: 0.7 });
+        const ai = parseJSONFromText<FullAI>(raw);
+        return ai.missions ?? [];
+      })
+    );
+
+    const aiByDay = new Map<number, { day: number; title: string; why: string }>();
+    for (const arr of results) for (const m of arr) aiByDay.set(m.day, m);
+
     return persist({
       userInsight: base.userInsight ?? '',
       report: base.report,
