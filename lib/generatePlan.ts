@@ -57,10 +57,13 @@ export async function generatePlan(opts: GeneratePlanOpts): Promise<GeneratedPla
   if (!fearScores && phase === 'preview') throw new Error('diagnostics not found');
 
   // 配合エンジン（決定論）。フルはexistingPlanにconfigが入っていればそれを再利用。
-  const orientation: ChangeOrientation =
-    onboarding?.changeOrientation === 'change' || onboarding?.changeOrientation === 'accept'
-      ? (onboarding.changeOrientation as ChangeOrientation)
-      : 'unknown';
+  const ORIENTATION_MAP: Record<string, ChangeOrientation> = {
+    'change': 'change',
+    'accept': 'accept',
+    '変わりたい・できるようになりたい': 'change',
+    '今の自分を受け入れて、楽になりたい': 'accept',
+  };
+  const orientation: ChangeOrientation = ORIENTATION_MAP[onboarding?.changeOrientation ?? ''] ?? 'unknown';
   const config = existingPlan?.config ?? (fearScores ? buildProgramConfig({
     userId: '',
     fearScores,
