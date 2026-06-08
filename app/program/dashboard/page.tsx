@@ -1111,6 +1111,15 @@ export default function DashboardPage() {
                 </div>
               </div>
 
+              {/* ミッション未完了の場合はウェルカムメッセージだけ表示 */}
+              {doneLogs.length === 0 ? (
+                <div className="bg-white rounded-3xl p-6 border border-stone-100 shadow-sm text-center space-y-3">
+                  <p className="text-3xl">🌱</p>
+                  <p className="text-sm font-bold text-stone-700">ここにあなたの足あとが残ります</p>
+                  <p className="text-xs text-stone-400 leading-relaxed">今日の一歩に取り組むと、<br />どんな変化があったか振り返れるようになります。</p>
+                </div>
+              ) : (<>
+
               {/* ① これまでのあなた（ヒーローカード） */}
               <div className="-mx-3 bg-white rounded-3xl overflow-hidden border border-stone-100 shadow-sm">
                 <div className="relative min-h-[180px]">
@@ -1244,13 +1253,7 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {/* データなし */}
-              {doneLogs.length === 0 && (
-                <div className="bg-white rounded-3xl p-6 border border-stone-100 text-center space-y-2">
-                  <p className="text-stone-400 text-sm">まだ記録がありません。</p>
-                  <p className="text-stone-300 text-xs">最初の一歩を踏み出してみましょう。</p>
-                </div>
-              )}
+            </>)}
             </div>
           );
         })()}
