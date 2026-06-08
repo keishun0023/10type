@@ -631,8 +631,11 @@ export default function DashboardPage() {
             </div>
 
             {/* 今日の一歩カード */}
-            <div className="bg-white rounded-3xl overflow-hidden border border-stone-100 shadow-sm">
-              <div className="relative min-h-[190px]">
+            <button
+              onClick={() => setTab('mission')}
+              className="w-full bg-white rounded-3xl overflow-hidden border border-stone-100 shadow-sm text-left"
+            >
+              <div className="relative min-h-[230px]">
                 <img
                   src="/images/mission-hero.png"
                   alt=""
@@ -647,27 +650,22 @@ export default function DashboardPage() {
                     </span>
                     今日の一歩
                   </p>
-                  <p className="text-sm font-bold text-stone-900 leading-snug">
+                  <p className="text-base font-bold text-stone-900 leading-snug">
                     {todayMission?.text ?? 'ミッションを読み込み中...'}
                   </p>
-                  <p className="text-xs text-stone-400 mt-2">今日やることは、これだけで大丈夫です</p>
+                </div>
+                {/* 右下の丸ボタン */}
+                <div
+                  className="absolute bottom-4 right-4 w-10 h-10 rounded-full flex items-center justify-center shadow-md"
+                  style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}
+                >
+                  {todayLog?.done
+                    ? <span className="text-white text-sm font-bold">✓</span>
+                    : <span className="text-white text-base font-bold pl-0.5">▶</span>
+                  }
                 </div>
               </div>
-            </div>
-            {/* ボタン（カード外） */}
-            {todayLog?.done ? (
-              <div className="w-full py-3 rounded-full text-sm font-bold text-center bg-green-50 text-green-600 border border-green-100">
-                ✓ 今日は完了済み
-              </div>
-            ) : (
-              <button
-                onClick={() => setTab('mission')}
-                className="w-full py-4 rounded-full text-sm font-bold text-white flex items-center justify-center gap-2"
-                style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}
-              >
-                今日の一歩を見る <span>›</span>
-              </button>
-            )}
+            </button>
 
             {/* 30日の道のり */}
             <div className="bg-white rounded-3xl p-5 border border-stone-100 shadow-sm space-y-3">
