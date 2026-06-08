@@ -631,41 +631,56 @@ export default function DashboardPage() {
             </div>
 
             {/* 今日の一歩カード */}
-            <button
-              onClick={() => setTab('mission')}
-              className="w-full bg-white rounded-3xl overflow-hidden border border-stone-100 shadow-sm text-left"
-            >
-              <div className="relative min-h-[230px]">
-                <img
-                  src="/images/mission-hero.png"
-                  alt=""
-                  className="absolute right-0 top-0 h-full w-3/5 object-cover object-center"
-                  onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                />
-                <div className="absolute top-0 bottom-0 left-[35%] w-[25%] bg-gradient-to-r from-white to-transparent" />
-                <div className="relative p-5 w-[58%]">
-                  <p className="text-xs text-purple-500 font-bold flex items-center gap-1.5 mb-3">
-                    <span className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden flex-shrink-0">
-                      <img src="/images/icon-day.png" alt="" className="w-4 h-4 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                    </span>
-                    今日の一歩
-                  </p>
-                  <p className="text-base font-bold text-stone-900 leading-snug">
-                    {todayMission?.text ?? 'ミッションを読み込み中...'}
-                  </p>
-                </div>
-                {/* 右下の丸ボタン */}
-                <div
-                  className="absolute bottom-4 right-4 w-10 h-10 rounded-full flex items-center justify-center shadow-md"
-                  style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}
+            {(() => {
+              const missionText = todayMission?.text ?? '';
+              const textSize = missionText.length > 45 ? 'text-sm' : missionText.length > 28 ? 'text-base' : 'text-lg';
+              const fearAxisKey = todayComponentId ? PROGRAM_COMPONENTS[todayComponentId as keyof typeof PROGRAM_COMPONENTS]?.fearAxis : null;
+              const fearLabel = fearAxisKey ? FEAR_AXIS_LABEL[fearAxisKey] : null;
+              const kindLabel = todayKind === 'action' ? '行動' : todayKind ? '認知' : null;
+              return (
+                <button
+                  onClick={() => setTab('mission')}
+                  className="w-full bg-white rounded-3xl overflow-hidden border border-stone-100 shadow-sm text-left"
                 >
-                  {todayLog?.done
-                    ? <span className="text-white text-sm font-bold">✓</span>
-                    : <span className="text-white text-base font-bold pl-0.5">▶</span>
-                  }
-                </div>
-              </div>
-            </button>
+                  <div className="relative h-[230px]">
+                    <img
+                      src="/images/mission-hero.png"
+                      alt=""
+                      className="absolute right-0 top-0 h-full w-3/5 object-cover object-center"
+                      onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                    <div className="absolute top-0 bottom-0 left-[35%] w-[25%] bg-gradient-to-r from-white to-transparent" />
+                    {/* テキストエリア：上部ラベル＋中央テキスト＋下部バッジ、ボタンと被らない高さ */}
+                    <div className="relative flex flex-col h-full w-[58%] p-5">
+                      <p className="text-xs text-purple-500 font-bold flex items-center gap-1.5 mb-2 flex-shrink-0">
+                        <span className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                          <img src="/images/icon-day.png" alt="" className="w-4 h-4 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                        </span>
+                        今日の一歩
+                      </p>
+                      <p className={`${textSize} font-bold text-stone-900 leading-snug flex-1 overflow-hidden`}>
+                        {missionText || 'ミッションを読み込み中...'}
+                      </p>
+                      {/* バッジ：ボタン（h-10 + bottom-4 = 56px）と被らないよう pb-16 */}
+                      <div className="flex gap-1.5 flex-wrap pb-1 flex-shrink-0">
+                        {kindLabel && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-600">{kindLabel}</span>}
+                        {fearLabel && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-100 text-stone-500">{fearLabel}</span>}
+                      </div>
+                    </div>
+                    {/* 右下の丸ボタン */}
+                    <div
+                      className="absolute bottom-4 right-4 w-10 h-10 rounded-full flex items-center justify-center shadow-md flex-shrink-0"
+                      style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}
+                    >
+                      {todayLog?.done
+                        ? <span className="text-white text-sm font-bold">✓</span>
+                        : <span className="text-white text-base font-bold pl-0.5">▶</span>
+                      }
+                    </div>
+                  </div>
+                </button>
+              );
+            })()}
 
             {/* 30日の道のり */}
             <div className="bg-white rounded-3xl p-5 border border-stone-100 shadow-sm space-y-3">
