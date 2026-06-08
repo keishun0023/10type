@@ -632,40 +632,42 @@ export default function DashboardPage() {
 
             {/* 今日の一歩カード */}
             <div className="bg-white rounded-3xl overflow-hidden border border-stone-100 shadow-sm">
-              <div className="p-5 relative min-h-[170px]">
-                <p className="text-xs text-purple-500 font-bold flex items-center gap-1.5 mb-3">
-                  <span className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden flex-shrink-0">
-                    <img src="/images/icon-day.png" alt="" className="w-4 h-4 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                  </span>
-                  今日の一歩
-                </p>
-                <p className="text-base font-bold text-stone-900 leading-snug pr-32">
-                  {todayMission?.text ?? 'ミッションを読み込み中...'}
-                </p>
-                <p className="text-xs text-stone-400 mt-2 pr-32">今日やることは、これだけで大丈夫です</p>
+              <div className="relative min-h-[190px]">
                 <img
                   src="/images/mission-hero.png"
                   alt=""
-                  className="absolute right-0 top-0 h-44 object-contain object-top"
+                  className="absolute right-0 top-0 h-full w-3/5 object-cover object-center"
                   onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
                 />
-              </div>
-              <div className="px-4 pb-4">
-                {todayLog?.done ? (
-                  <div className="w-full py-3 rounded-full text-sm font-bold text-center bg-green-50 text-green-600 border border-green-100">
-                    ✓ 今日は完了済み
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setTab('mission')}
-                    className="w-full py-4 rounded-full text-sm font-bold text-white flex items-center justify-center gap-2"
-                    style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}
-                  >
-                    今日の一歩を見る <span>›</span>
-                  </button>
-                )}
+                <div className="absolute inset-0 bg-gradient-to-r from-white via-white/90 to-transparent" />
+                <div className="relative p-5 w-4/5">
+                  <p className="text-xs text-purple-500 font-bold flex items-center gap-1.5 mb-3">
+                    <span className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                      <img src="/images/icon-day.png" alt="" className="w-4 h-4 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    </span>
+                    今日の一歩
+                  </p>
+                  <p className="text-base font-bold text-stone-900 leading-snug">
+                    {todayMission?.text ?? 'ミッションを読み込み中...'}
+                  </p>
+                  <p className="text-xs text-stone-400 mt-2">今日やることは、これだけで大丈夫です</p>
+                </div>
               </div>
             </div>
+            {/* ボタン（カード外） */}
+            {todayLog?.done ? (
+              <div className="w-full py-3 rounded-full text-sm font-bold text-center bg-green-50 text-green-600 border border-green-100">
+                ✓ 今日は完了済み
+              </div>
+            ) : (
+              <button
+                onClick={() => setTab('mission')}
+                className="w-full py-4 rounded-full text-sm font-bold text-white flex items-center justify-center gap-2"
+                style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}
+              >
+                今日の一歩を見る <span>›</span>
+              </button>
+            )}
 
             {/* 30日の道のり */}
             <div className="bg-white rounded-3xl p-5 border border-stone-100 shadow-sm space-y-3">
