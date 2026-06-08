@@ -1645,7 +1645,7 @@ export default function DashboardPage() {
                   className={`absolute w-full h-full object-contain transition-opacity ${active ? 'opacity-100' : 'opacity-0'}`}
                 />
               </span>
-              <span className="text-[10px] font-medium leading-tight">{item.label}</span>
+              <span className="text-[9px] font-medium leading-tight">{item.label}</span>
             </button>
           );
         })}
