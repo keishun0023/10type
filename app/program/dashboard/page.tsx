@@ -1097,7 +1097,7 @@ export default function DashboardPage() {
               <div className="bg-white rounded-3xl p-5 border border-stone-100 shadow-sm space-y-3">
                 <div>
                   <p className="text-sm font-bold text-purple-500 flex items-center gap-1.5">
-                    <img src="/images/icon-sparkle.png" alt="" className="w-[10px] h-[10px] object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /> 変化のハイライト
+                    <img src="/images/icon-sparkle.png" alt="" className="w-6 h-6 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /> 変化のハイライト
                   </p>
                   <p className="text-[10px] text-stone-400 mt-0.5 pl-6">小さな変化が、ちゃんと積み重なっています</p>
                 </div>
@@ -1130,7 +1130,7 @@ export default function DashboardPage() {
               {footprintData && footprintData.timeline.length > 0 && (
                 <div className="bg-white rounded-3xl p-5 border border-stone-100 shadow-sm space-y-4">
                   <p className="text-sm font-bold text-purple-500 flex items-center gap-1.5">
-                    <img src="/images/icon-path.png" alt="" className="w-[10px] h-[10px] object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /> ここまでの道のり
+                    <img src="/images/icon-path.png" alt="" className="w-6 h-6 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /> ここまでの道のり
                   </p>
                   <div className="space-y-0">
                     {footprintData.timeline.map((t, i) => (
