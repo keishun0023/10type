@@ -550,78 +550,117 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 pb-24">
-      {/* ヘッダー */}
-      <div className="px-5 pt-8 pb-4" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #fafafa 100%)' }}>
-        <div className="max-w-sm mx-auto flex justify-between items-center">
-          <div>
-            <p className="text-xs text-stone-400">おかえりなさい</p>
-            <p className="font-bold text-stone-800">{username}さん</p>
-          </div>
-          {streak > 0 && (
-            <div className="flex items-center gap-1 bg-orange-50 px-3 py-1.5 rounded-full">
-              <span>🔥</span>
-              <span className="text-sm font-bold text-orange-500">{streak}日連続</span>
-            </div>
-          )}
-        </div>
-      </div>
-
+    <div className="min-h-screen pb-24" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #fafaf8 40%)' }}>
       <div className="max-w-sm mx-auto px-5 space-y-5">
         {tab === 'home' && (
           <>
-            {/* 現在地 */}
+            {/* ヘッダー */}
+            <div className="flex justify-between items-start pt-8 pb-1">
+              <div>
+                <p className="text-xs text-purple-400 font-medium">おかえりなさい</p>
+                <p className="text-2xl font-bold text-stone-900">{username}さん</p>
+              </div>
+              <div className="w-10 h-10 flex items-center justify-center mt-1">
+                <span className="text-2xl">🤍</span>
+              </div>
+            </div>
+
+            {/* 今日の一歩カード */}
+            <div className="bg-white rounded-3xl overflow-hidden border border-stone-100 shadow-sm">
+              <div className="p-5 relative min-h-[160px]">
+                <p className="text-xs text-purple-500 font-bold flex items-center gap-1 mb-3">
+                  <span>🌱</span> 今日の一歩
+                </p>
+                <p className="text-xl font-bold text-stone-900 leading-snug pr-28">
+                  {todayMission?.text ?? 'ミッションを読み込み中...'}
+                </p>
+                <p className="text-xs text-stone-400 mt-2 pr-28">今日やることは、これだけで大丈夫です</p>
+                <img
+                  src="/images/mission-hero.png"
+                  alt=""
+                  className="absolute right-0 bottom-0 h-36 object-contain"
+                  onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+              </div>
+              <div className="px-4 pb-4">
+                {todayLog?.done ? (
+                  <div className="w-full py-3 rounded-full text-sm font-bold text-center bg-green-50 text-green-600 border border-green-100">
+                    ✓ 今日は完了済み
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setTab('mission')}
+                    className="w-full py-4 rounded-full text-sm font-bold text-white flex items-center justify-center gap-2"
+                    style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}
+                  >
+                    今日の一歩を見る <span>›</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* 30日の道のり */}
+            <div className="bg-white rounded-3xl p-5 border border-stone-100 shadow-sm space-y-3">
+              <p className="text-sm font-bold text-stone-700">30日の道のり</p>
+              <div className="flex gap-1.5 flex-wrap">
+                {Array.from({ length: 30 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-[calc((100%-11*6px)/12)] h-2 rounded-full transition-colors ${
+                      i < dayCount - 1 ? 'bg-purple-500' : 'bg-stone-100'
+                    }`}
+                  />
+                ))}
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-2xl font-bold text-purple-500">
+                  {dayCount - 1}<span className="text-sm text-stone-400 font-normal ml-1">/ 30日</span>
+                </p>
+                <span className="text-purple-300 text-2xl">♡</span>
+              </div>
+            </div>
+
+            {/* テーマカード */}
             {currentFocusLabel && (
-              <div className="bg-purple-50 rounded-3xl p-4 border border-purple-100 flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-purple-400 font-medium">今取り組んでいること</p>
-                  <p className="text-sm font-bold text-purple-700 mt-0.5">{currentFocusLabel}</p>
-                  {currentKindLabel && (
-                    <p className="text-xs text-purple-400 mt-0.5">{currentKindLabel}を中心に</p>
-                  )}
+              <div className="bg-white rounded-3xl p-5 border border-stone-100 shadow-sm">
+                <div className="flex gap-4 items-center mb-4">
+                  <div className="w-16 h-16 rounded-full bg-purple-50 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    <img
+                      src="/images/theme-icon.png"
+                      alt=""
+                      className="w-full h-full object-cover"
+                      onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                  </div>
+                  <div>
+                    <p className="text-xs text-stone-400 font-medium mb-0.5">最近向き合っているテーマ</p>
+                    <p className="text-lg font-bold text-stone-800">{currentFocusLabel}</p>
+                    <p className="text-xs text-stone-500 leading-relaxed mt-0.5">
+                      {currentFocusLabel === '評価への恐れ' && '人にどう見られるかが気になる場面で出やすいテーマです。'}
+                      {currentFocusLabel === '先への不安' && '予定が決まらない時や、相手の反応が読めない時に出やすいテーマです。'}
+                      {currentFocusLabel === '完璧への囚われ' && 'ミスや中途半端さが気になって動けなくなる場面で出やすいテーマです。'}
+                      {currentFocusLabel === '関係への恐れ' && '大切な人との距離感や繋がりが不安になる場面で出やすいテーマです。'}
+                    </p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-xs text-stone-400">{dayCount - 1} / 30日</p>
-                  <div className="w-16 bg-purple-200 rounded-full h-1.5 mt-1">
-                    <div className="bg-purple-500 h-1.5 rounded-full" style={{ width: `${progress * 100}%` }} />
+                <div className="flex gap-3">
+                  <div className="flex-1 bg-purple-50 rounded-2xl p-3 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-sm">🌱</div>
+                    <div>
+                      <p className="text-[10px] text-stone-400">気づく</p>
+                      <p className="text-lg font-bold text-stone-800">{cogCount}<span className="text-xs font-normal text-stone-400 ml-0.5">回</span></p>
+                    </div>
+                  </div>
+                  <div className="flex-1 bg-purple-50 rounded-2xl p-3 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-sm">🤍</div>
+                    <div>
+                      <p className="text-[10px] text-stone-400">試す</p>
+                      <p className="text-lg font-bold text-stone-800">{actionCount}<span className="text-xs font-normal text-stone-400 ml-0.5">回</span></p>
+                    </div>
                   </div>
                 </div>
               </div>
             )}
-
-            <div className="bg-white rounded-3xl p-5 border border-purple-100 space-y-3">
-              <p className="text-xs text-purple-400 font-medium">今日のミッション</p>
-              <p className="text-sm font-bold text-stone-800 leading-relaxed">{todayMission?.text}</p>
-              {todayLog ? (
-                <div className="flex items-center gap-2 text-sm text-green-600">
-                  <span>✓</span><span>{todayLog.done ? `完了 (${todayLog.count}回)` : '今日はパス'}</span>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setTab('mission')}
-                  className="w-full py-3 rounded-full text-sm font-bold text-white"
-                  style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}
-                >
-                  今日のミッションを見る
-                </button>
-              )}
-            </div>
-
-            {!currentFocusLabel && (
-              <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-3">
-                <p className="text-xs text-stone-400 font-medium">30日プログラム</p>
-                <div className="w-full bg-stone-100 rounded-full h-2">
-                  <div className="bg-purple-400 h-2 rounded-full transition-all" style={{ width: `${progress * 100}%` }} />
-                </div>
-                <p className="text-sm text-stone-600">{dayCount - 1} / 30日</p>
-              </div>
-            )}
-
-            <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-2">
-              <p className="text-xs text-stone-400 font-medium">積み上げ</p>
-              <p className="text-sm text-stone-600">{vizLabel}</p>
-              <p className="text-2xl font-bold text-purple-500">{totalCount}<span className="text-sm text-stone-400 font-normal ml-1">回</span></p>
-            </div>
           </>
         )}
 
@@ -1411,9 +1450,9 @@ export default function DashboardPage() {
       <nav className="fixed bottom-0 left-0 w-full bg-white border-t border-stone-100 flex justify-around items-center h-16 px-1">
         {([
           { key: 'home', label: 'ホーム' },
-          { key: 'mission', label: 'ミッション' },
-          { key: 'review', label: '振り返り' },
-          { key: 'report', label: 'あなたについて' },
+          { key: 'mission', label: '今日の一歩' },
+          { key: 'review', label: '足あと' },
+          { key: 'report', label: '自分の地図' },
           { key: 'profile', label: 'プロフィール' },
         ] as { key: Tab; label: string }[]).map(item => {
           const active = tab === item.key;
