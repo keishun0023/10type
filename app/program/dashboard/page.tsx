@@ -96,6 +96,7 @@ export default function DashboardPage() {
   const [paidPlan, setPaidPlan] = useState('');
   const [actionFeedback, setActionFeedback] = useState('');
   const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [footprintHeroIdx] = useState(() => Math.floor(Math.random() * 5) + 1);
   const [footprintData, setFootprintData] = useState<{
     hero: string;
     beforeNow: string;
@@ -1053,7 +1054,7 @@ export default function DashboardPage() {
                     </div>
                   )}
                   <img
-                    src="/images/footprint-hero.png"
+                    src={`/images/footprint-hero-${footprintHeroIdx}.png`}
                     alt=""
                     className="absolute right-0 bottom-0 h-32 object-contain"
                     onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
