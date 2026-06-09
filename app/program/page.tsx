@@ -534,7 +534,7 @@ function ProgramPageInner() {
                   <p className="text-xs text-stone-500 mt-1">AIと一緒に進める</p>
                 </div>
                 <ul className="space-y-2.5 text-sm font-bold text-stone-700">
-                  <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>あなた専用の30日プラン（診断結果から個別生成）</li>
+                  <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>あなた専用の個別プラン（診断結果から生成）</li>
                   <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>毎日のミッション</li>
                   <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>取り組みの記録（回数・連続日数）</li>
                   <li className="flex flex-col gap-1">
@@ -549,12 +549,11 @@ function ProgramPageInner() {
                     <span className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>振り返り（詳細）</span>
                     <span className="text-xs font-normal text-stone-500 pl-6 leading-relaxed">恐れ軸別・認知/行動別の統計と気づきの蓄積。変化がグラフと言葉の両方で見える</span>
                   </li>
-                  <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>30日後の継続アクセス</li>
+                  <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>3ヶ月間ずっと使える</li>
                 </ul>
-                <div className="flex items-end gap-2">
-                  <span className="text-sm text-stone-400 line-through mb-1">¥4,980</span>
+                <div className="flex items-end gap-1">
                   <span className="text-3xl font-bold text-stone-900">¥3,980</span>
-                  <span className="bg-red-100 text-red-500 text-xs font-bold px-2 py-0.5 rounded-full mb-1.5">20%OFF</span>
+                  <span className="text-stone-400 text-sm mb-1">／ 3ヶ月</span>
                 </div>
                 <button
                   onClick={() => handleSelectPlan('standard')}
@@ -575,22 +574,20 @@ function ProgramPageInner() {
                   <p className="text-xs text-stone-500 mt-1">とことん向き合う</p>
                 </div>
                 <ul className="space-y-2.5 text-sm font-bold text-stone-700">
-                  <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>あなた専用の30日プラン＋毎日のミッション</li>
-                  <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>AI対話セッション・AIの変化フィードバック</li>
-                  <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>振り返り（詳細）・30日後の継続アクセス</li>
+                  <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>スタンダードの機能すべて</li>
+                  <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>半年間ずっと使える</li>
+                  <li className="flex flex-col gap-1">
+                    <span className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>いつでもAI相談（無制限）</span>
+                    <span className="text-xs font-normal text-stone-500 pl-6 leading-relaxed">あなたの記録をふまえて、何でもいつでもAIに相談できる</span>
+                  </li>
                   <li className="flex flex-col gap-1">
                     <span className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>月次の総括フィードバック</span>
                     <span className="text-xs font-normal text-stone-500 pl-6 leading-relaxed">1ヶ月の歩みをAIが総括し、次の一歩を提案</span>
                   </li>
-                  <li className="flex flex-col gap-1">
-                    <span className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>サブスク優待</span>
-                    <span className="text-xs font-normal text-stone-500 pl-6 leading-relaxed">31日目以降も続けたい人向けの継続プランを優待価格で</span>
-                  </li>
                 </ul>
-                <div className="flex items-end gap-2">
-                  <span className="text-sm text-stone-400 line-through mb-1">¥9,980</span>
+                <div className="flex items-end gap-1">
                   <span className="text-3xl font-bold text-stone-900">¥8,980</span>
-                  <span className="bg-red-100 text-red-500 text-xs font-bold px-2 py-0.5 rounded-full mb-1.5">10%OFF</span>
+                  <span className="text-stone-400 text-sm mb-1">／ 半年</span>
                 </div>
                 <button
                   onClick={() => handleSelectPlan('premium')}
@@ -610,14 +607,14 @@ function ProgramPageInner() {
                   <p className="text-xs text-stone-500 mt-1">自分のペースで進める</p>
                 </div>
                 <ul className="space-y-2.5 text-sm text-stone-600">
-                  <li className="flex gap-2"><span className="text-stone-300 mt-0.5">✓</span>あなた専用の30日プラン（診断結果から個別生成）</li>
-                  <li className="flex gap-2"><span className="text-stone-300 mt-0.5">✓</span>毎日のミッション</li>
-                  <li className="flex gap-2"><span className="text-stone-300 mt-0.5">✓</span>取り組みの記録（回数・連続日数）</li>
-                  <li className="flex gap-2 text-stone-400"><span className="text-stone-300 mt-0.5">−</span>AIサポートは含まれません</li>
+                  <li className="flex gap-2"><span className="text-stone-300 mt-0.5">✓</span>詳細レポート（あなたの分析）</li>
+                  <li className="flex gap-2"><span className="text-stone-300 mt-0.5">✓</span>あなた専用の個別プラン（自分の地図）</li>
+                  <li className="flex gap-2"><span className="text-stone-300 mt-0.5">✓</span>ミッションの確認</li>
+                  <li className="flex gap-2 text-stone-400"><span className="text-stone-300 mt-0.5">−</span>ミッションの実行・記録・AIサポートは含まれません</li>
                 </ul>
                 <div className="flex items-end gap-1">
                   <span className="text-3xl font-bold text-stone-900">¥980</span>
-                  <span className="text-stone-400 text-sm mb-1">買い切り</span>
+                  <span className="text-stone-400 text-sm mb-1">／ 1ヶ月</span>
                 </div>
                 <button
                   onClick={() => handleSelectPlan('light')}

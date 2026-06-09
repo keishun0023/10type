@@ -5,18 +5,18 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-05
 
 const PLANS = {
   light: {
-    name: 'ライトプラン',
-    description: '自分のペースで進める（個別プラン＋記録）',
+    name: 'ライトプラン（1ヶ月）',
+    description: '詳細レポート＋個別プランを見る（1ヶ月アクセス）',
     amount: 980,
   },
   standard: {
-    name: 'スタンダードプラン',
-    description: 'AIと一緒に進める（AI対話＋変化FB＋詳細振り返り）',
+    name: 'スタンダードプラン（3ヶ月）',
+    description: 'AIと一緒に進める（AI対話＋ヒント＋足あと＋変化FB／3ヶ月アクセス）',
     amount: 3980,
   },
   premium: {
-    name: 'プレミアムプラン',
-    description: 'とことん向き合う（月次総括＋AI相談）',
+    name: 'プレミアムプラン（半年）',
+    description: 'とことん向き合う（いつでもAI相談＋月次総括／半年アクセス）',
     amount: 8980,
   },
 };
