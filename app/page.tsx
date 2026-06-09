@@ -53,10 +53,6 @@ export default function Home() {
             <img src="/intro-btn-lines.png" alt="" className="w-8 object-contain scale-x-[-1]" />
           </div>
 
-          <p className="text-xs text-stone-400 text-center mb-6">
-            ※診断は無料です。詳細レポートとプログラムは有料です。
-          </p>
-
           {/* 特徴3つ */}
           <div className="w-full grid grid-cols-3 gap-3 mb-6">
             {[
