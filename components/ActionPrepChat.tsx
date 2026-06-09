@@ -115,6 +115,12 @@ export default function ActionPrepChat({ missionTitle, missionWhy, onCommit, onC
         <p className="text-sm font-bold text-stone-700 truncate">挑む前に、状況を整理</p>
       </div>
 
+      {/* お題（全画面で隠れないよう上部に固定表示） */}
+      <div className="px-4 py-3 bg-purple-50 border-b border-purple-100">
+        <p className="text-[11px] text-purple-400 font-medium mb-0.5">今日の一歩</p>
+        <p className="text-sm font-bold text-stone-700 leading-snug">{missionTitle}</p>
+      </div>
+
       <div className="flex-1 overflow-y-auto px-4 pt-4 pb-4">
         {messages.length === 0 && (
           <div className="bg-stone-50 rounded-2xl px-4 py-4 mb-4 border border-stone-100">
