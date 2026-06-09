@@ -23,7 +23,7 @@ const PLANS = {
 
 export async function POST(req: NextRequest) {
   try {
-    const { plan, email, typeId, onboarding, session: diagSession } = await req.json();
+    const { plan, email, typeId, onboarding, session: diagSession, upgrade } = await req.json();
 
     const planData = PLANS[plan as keyof typeof PLANS];
     if (!planData) return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
@@ -55,8 +55,11 @@ export async function POST(req: NextRequest) {
         })()),
         session: diagSession || '',
       },
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/program/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/program`,
+      // アップグレード（既存ユーザーのプラン変更）は登録画面を通さず専用ページへ
+      success_url: upgrade
+        ? `${process.env.NEXT_PUBLIC_BASE_URL}/program/upgrade-success?session_id={CHECKOUT_SESSION_ID}`
+        : `${process.env.NEXT_PUBLIC_BASE_URL}/program/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/program/dashboard`,
     });
 
     return NextResponse.json({ url: session.url });

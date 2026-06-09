@@ -259,7 +259,7 @@ export default function DashboardPage() {
       const res = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan, email: userEmail, typeId, session: diagSession, onboarding: {} }),
+        body: JSON.stringify({ plan, email: userEmail, typeId, session: diagSession, onboarding: {}, upgrade: true }),
       });
       const data = await res.json();
       if (data.url) { window.location.href = data.url; return; }
