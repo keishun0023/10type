@@ -11,6 +11,7 @@ import { PROGRAM_COMPONENTS } from '@/data/program';
 import dynamic from 'next/dynamic';
 import CognitiveChatSession from '@/components/CognitiveChatSession';
 import ConsultChat from '@/components/ConsultChat';
+import ActionPrepChat from '@/components/ActionPrepChat';
 
 const FEAR_AXIS_LABEL: Record<string, string> = {
   F_REL: '関係喪失', F_EVAL: '評価', F_IMP: '不完全性', F_CTRL: '制御不能',
@@ -109,6 +110,15 @@ export default function DashboardPage() {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [consultOpen, setConsultOpen] = useState(false);
+  // 行動実験（事前→事後）
+  const [actionExp, setActionExp] = useState<{
+    pre_summary: string; pre_anxiety: number; status: string;
+  } | null>(null);
+  const [actionExpLoading, setActionExpLoading] = useState(false);
+  const [actionPrepOpen, setActionPrepOpen] = useState(false);
+  const [postFormOpen, setPostFormOpen] = useState(false);
+  const [postAnxiety, setPostAnxiety] = useState(3);
+  const [postNotes, setPostNotes] = useState('');
   const [monthlyOpen, setMonthlyOpen] = useState(false);
   const [monthlyLoading, setMonthlyLoading] = useState(false);
   const [monthlySummary, setMonthlySummary] = useState<{
@@ -335,6 +345,55 @@ export default function DashboardPage() {
       .finally(() => setHintsLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, dayCount, userId, todayKind, hasAISupport]);
+
+  // 行動ミッションを開いたら、その回の行動実験（事前/事後）の状態を読み込む
+  useEffect(() => {
+    if (tab !== 'mission' || todayKind !== 'action' || !userId) return;
+    const sb = getSupabase();
+    if (!sb) return;
+    setActionExpLoading(true);
+    setActionExp(null);
+    sb.from('action_experiments')
+      .select('pre_summary, pre_anxiety, status')
+      .eq('user_id', userId)
+      .eq('mission_id', dayCount)
+      .maybeSingle()
+      .then(({ data }) => { if (data) setActionExp(data as { pre_summary: string; pre_anxiety: number; status: string }); })
+      .then(() => setActionExpLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, dayCount, userId, todayKind]);
+
+  // 事前：宣言と不安度を保存（daily_logsは作らない＝dayCountは進まない）
+  async function commitActionPrep(summary: string, anxiety: number) {
+    const sb = getSupabase();
+    if (!sb || !userId) return;
+    await sb.from('action_experiments').upsert({
+      user_id: userId,
+      mission_id: dayCount,
+      pre_summary: summary,
+      pre_anxiety: anxiety,
+      status: 'prep',
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id,mission_id' });
+    setActionExp({ pre_summary: summary, pre_anxiety: anxiety, status: 'prep' });
+    setActionPrepOpen(false);
+  }
+
+  // 事後：実際どうだったかを記録して完了（ここで初めてdaily_logsに書く＝dayCountが進む）
+  async function completeActionExp() {
+    const sb = getSupabase();
+    if (!sb || !userId || !actionExp) return;
+    await sb.from('action_experiments').update({
+      post_anxiety: postAnxiety,
+      post_notes: postNotes,
+      status: 'done',
+      updated_at: new Date().toISOString(),
+    }).eq('user_id', userId).eq('mission_id', dayCount);
+    await saveLog(true, 1, actionExp.pre_anxiety, postAnxiety, postNotes);
+    setTodayLog({ done: true, count: 1 });
+    setRecordStep('done');
+    await loadStats(userId);
+  }
 
   // 足あと生成・DB保存
   async function generateAndSaveFootprint(currentDoneLogs: DailyLog[], currentUserId: string) {
@@ -1065,55 +1124,81 @@ export default function DashboardPage() {
                 <p className="text-sm font-bold text-stone-500">今日はパス済み</p>
               </div>
             ) : todayKind === 'action' ? (
-              /* Action mission recording form */
-              <div className="space-y-5">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-stone-600">どれくらいできましたか？</p>
-                    <span className="text-2xl font-bold text-purple-600">{recordCount}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    step={10}
-                    value={recordCount}
-                    onChange={e => setRecordCount(Number(e.target.value))}
-                    className="w-full accent-purple-500"
-                  />
-                  <div className="flex justify-between text-xs text-stone-300">
-                    <span>0%</span><span>50%</span><span>100%</span>
-                  </div>
+              /* Action mission: 行動実験（事前→事後） */
+              actionExpLoading ? (
+                <div className="flex justify-center py-10">
+                  <div className="w-7 h-7 rounded-full border-4 border-purple-200 border-t-purple-500 animate-spin" />
                 </div>
-                <div className="space-y-2">
-                  <p className="text-sm text-stone-600">やる前の不安度</p>
-                  <div className="flex gap-2">
-                    {[1,2,3,4,5].map(n => (
-                      <button key={n} onClick={() => setBeforeScore(n)} className={`flex-1 h-8 rounded-full text-sm font-bold transition-colors ${beforeScore >= n ? 'bg-purple-400 text-white' : 'bg-stone-100 text-stone-400'}`}>●</button>
-                    ))}
+              ) : !actionExp ? (
+                /* フェーズ1：挑む前 */
+                <div className="space-y-5">
+                  <div className="bg-purple-50 rounded-3xl p-5 border border-purple-100 space-y-2">
+                    <p className="text-sm font-bold text-stone-700">挑む前に、状況を整理しましょう</p>
+                    <p className="text-xs text-stone-500 leading-relaxed">
+                      AIと一緒に「今日どの場面でやるか」「何が不安か」を言葉にしてから挑みます。終えたら戻ってきて、実際どうだったかを記録します。
+                    </p>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <p className="text-sm text-stone-600">実際はどうでしたか？</p>
-                  <div className="flex gap-2">
-                    {[1,2,3,4,5].map(n => (
-                      <button key={n} onClick={() => setAfterScore(n)} className={`flex-1 h-8 rounded-full text-sm font-bold transition-colors ${afterScore >= n ? 'bg-teal-400 text-white' : 'bg-stone-100 text-stone-400'}`}>●</button>
-                    ))}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <p className="text-sm text-stone-600">ひとことメモ（任意）</p>
-                  <input type="text" value={memo} onChange={e => setMemo(e.target.value)} placeholder="今日気づいたこと..." className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm focus:outline-none focus:border-purple-400" />
-                </div>
-                <div className="flex gap-3">
-                  <button onClick={handleDetailRecord} className="flex-1 py-4 rounded-full font-bold text-white text-sm" style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}>
-                    記録する
+                  <button
+                    onClick={() => setActionPrepOpen(true)}
+                    className="w-full py-4 rounded-full font-bold text-white text-sm flex items-center justify-center gap-2"
+                    style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}
+                  >
+                    <span>💬</span> 状況を整理して挑む
                   </button>
-                  <button onClick={() => handleRecord(false)} className="flex-1 py-4 rounded-full font-bold text-stone-500 text-sm">
+                  <button onClick={() => handleRecord(false)} className="w-full text-xs text-stone-400 hover:text-stone-600 transition-colors">
                     今日は機会がなかった
                   </button>
                 </div>
-              </div>
+              ) : !postFormOpen ? (
+                /* 挑戦中：今日を過ごして戻ってくるまで */
+                <div className="space-y-5">
+                  <div className="bg-purple-50 rounded-3xl p-5 border border-purple-100 space-y-2">
+                    <p className="text-xs text-purple-500 font-bold">挑む前のあなたの宣言</p>
+                    <p className="text-sm text-stone-700 leading-relaxed">{actionExp.pre_summary}</p>
+                    <p className="text-xs text-stone-400">挑む前の不安度：{actionExp.pre_anxiety} / 5</p>
+                  </div>
+                  <p className="text-sm text-stone-500 text-center leading-relaxed">
+                    この宣言を胸に、今日を過ごしてみましょう。<br />終えたら、実際どうだったかを記録します。
+                  </p>
+                  <button
+                    onClick={() => setPostFormOpen(true)}
+                    className="w-full py-4 rounded-full font-bold text-white text-sm"
+                    style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}
+                  >
+                    実際どうだったか記録する
+                  </button>
+                </div>
+              ) : (
+                /* フェーズ2：戻ってきて事後記録 */
+                <div className="space-y-5">
+                  <div className="bg-purple-50 rounded-3xl p-5 border border-purple-100 space-y-2">
+                    <p className="text-xs text-purple-500 font-bold">挑む前のあなたの宣言</p>
+                    <p className="text-sm text-stone-700 leading-relaxed">{actionExp.pre_summary}</p>
+                    <p className="text-xs text-stone-400">挑む前の不安度：{actionExp.pre_anxiety} / 5</p>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-bold text-stone-700">実際、どうでしたか？</p>
+                    <textarea
+                      value={postNotes}
+                      onChange={e => setPostNotes(e.target.value)}
+                      rows={4}
+                      placeholder="やってみて起きたこと、感じたことを書いてみましょう..."
+                      className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm focus:outline-none focus:border-purple-400 resize-none leading-relaxed"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm text-stone-600">いまの不安度（やってみた後）</p>
+                    <div className="flex gap-2">
+                      {[1,2,3,4,5].map(n => (
+                        <button key={n} onClick={() => setPostAnxiety(n)} className={`flex-1 h-8 rounded-full text-sm font-bold transition-colors ${postAnxiety >= n ? 'bg-teal-400 text-white' : 'bg-stone-100 text-stone-400'}`}>●</button>
+                      ))}
+                    </div>
+                  </div>
+                  <button onClick={completeActionExp} className="w-full py-4 rounded-full font-bold text-white text-sm" style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}>
+                    記録する
+                  </button>
+                </div>
+              )
             ) : hasAISupport ? (
               /* Cognitive mission (スタンダード以上): AI chat session */
               <>
@@ -1953,6 +2038,16 @@ export default function DashboardPage() {
       {/* AI相談（プレミアム） */}
       {consultOpen && (
         <ConsultChat context={buildConsultContext()} onClose={() => setConsultOpen(false)} />
+      )}
+
+      {/* 行動ミッション：挑む前のAI対話 */}
+      {actionPrepOpen && (
+        <ActionPrepChat
+          missionTitle={aiMission?.title ?? todayMission?.text ?? ''}
+          missionWhy={aiMission?.why ?? todayMission?.why ?? ''}
+          onCommit={commitActionPrep}
+          onClose={() => setActionPrepOpen(false)}
+        />
       )}
 
       {/* 月次総括（プレミアム） */}
