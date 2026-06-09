@@ -109,6 +109,11 @@ export default function DashboardPage() {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [consultOpen, setConsultOpen] = useState(false);
+  const [monthlyOpen, setMonthlyOpen] = useState(false);
+  const [monthlyLoading, setMonthlyLoading] = useState(false);
+  const [monthlySummary, setMonthlySummary] = useState<{
+    headline: string; changes: string; patterns: string; encouragement: string; nextFocus: string;
+  } | null>(null);
   const [actionFeedback, setActionFeedback] = useState('');
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [hints, setHints] = useState<string[] | null>(null);
@@ -176,6 +181,42 @@ export default function DashboardPage() {
   function openConsult() {
     if (!isPremium) { setUpsellPlan('premium'); return; }
     setConsultOpen(true);
+  }
+
+  // 月次総括（プレミアム）。未加入ならアップセル。月ごとにlocalStorageキャッシュ
+  function openMonthly() {
+    if (!isPremium) { setUpsellPlan('premium'); return; }
+    setMonthlyOpen(true);
+    if (monthlySummary || monthlyLoading || !userId) return;
+    const month = new Date().toISOString().slice(0, 7); // YYYY-MM
+    const key = `monthly_${userId}_${month}`;
+    const cached = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
+    if (cached) { setMonthlySummary(JSON.parse(cached)); return; }
+    setMonthlyLoading(true);
+    const ctx = buildConsultContext();
+    const doneLogs = logs.filter(l => l.done);
+    const missionByDay = new Map((generatedPlan?.missions ?? []).map(m => [m.day, m]));
+    const logPayload = doneLogs.slice(0, 30).map(l => {
+      const m = missionByDay.get(l.mission_id);
+      return { title: m?.title ?? '取り組んだこと', memo: l.memo ?? '', kind: m?.kind ?? null };
+    });
+    fetch('/api/monthly-summary', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        typeName: ctx.typeName, fearSummary: ctx.fearSummary, currentFocus: ctx.currentFocus,
+        doneCount: doneLogs.length, cogCount, actionCount, logs: logPayload,
+      }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.summary) {
+          setMonthlySummary(data.summary);
+          localStorage.setItem(key, JSON.stringify(data.summary));
+        }
+      })
+      .catch(() => {})
+      .finally(() => setMonthlyLoading(false));
   }
 
   // 相談に渡す背景情報を、手元のデータから組み立てる
@@ -927,6 +968,26 @@ export default function DashboardPage() {
                 </p>
                 <p className="text-xs text-stone-500 leading-relaxed mt-0.5">
                   あなたの記録をふまえて、いつでも何でも相談できます。
+                </p>
+              </div>
+              <span className="text-stone-300 text-lg flex-shrink-0">›</span>
+            </button>
+
+            {/* 今月のふりかえり（プレミアム） */}
+            <button
+              onClick={openMonthly}
+              className="w-full bg-white rounded-3xl p-5 border border-stone-100 shadow-sm flex items-center gap-4 text-left"
+            >
+              <div className="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center flex-shrink-0 text-2xl">
+                📊
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-stone-800 flex items-center gap-1.5">
+                  今月のふりかえり
+                  {!isPremium && <span className="text-[10px]">🔒</span>}
+                </p>
+                <p className="text-xs text-stone-500 leading-relaxed mt-0.5">
+                  この1ヶ月の歩みを、AIがまとめて振り返ります。
                 </p>
               </div>
               <span className="text-stone-300 text-lg flex-shrink-0">›</span>
@@ -1892,6 +1953,48 @@ export default function DashboardPage() {
       {/* AI相談（プレミアム） */}
       {consultOpen && (
         <ConsultChat context={buildConsultContext()} onClose={() => setConsultOpen(false)} />
+      )}
+
+      {/* 月次総括（プレミアム） */}
+      {monthlyOpen && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-white">
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-stone-100">
+            <button onClick={() => setMonthlyOpen(false)} className="w-9 h-9 flex items-center justify-center rounded-full bg-stone-100 text-stone-500 text-lg">✕</button>
+            <p className="text-sm font-bold text-stone-700">今月のふりかえり</p>
+          </div>
+          <div className="flex-1 overflow-y-auto px-5 py-6 space-y-5">
+            {monthlyLoading || !monthlySummary ? (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-sm text-stone-400">
+                  <span className="inline-block w-4 h-4 border-2 border-purple-200 border-t-purple-500 rounded-full animate-spin" />
+                  この1ヶ月を読み取っています...
+                </div>
+                <div className="h-3 bg-stone-100 rounded animate-pulse" />
+                <div className="h-3 bg-stone-100 rounded animate-pulse w-4/5" />
+                <div className="h-3 bg-stone-100 rounded animate-pulse w-3/5" />
+              </div>
+            ) : (
+              <>
+                <div className="bg-purple-50 rounded-3xl p-5 border border-purple-100">
+                  <p className="text-base font-bold text-stone-800 leading-relaxed">{monthlySummary.headline}</p>
+                </div>
+                {[
+                  { label: '見えてきた変化', icon: '🌱', body: monthlySummary.changes },
+                  { label: 'あなたのパターン', icon: '🔍', body: monthlySummary.patterns },
+                  { label: 'ここまでの歩み', icon: '💗', body: monthlySummary.encouragement },
+                  { label: '来月に向けて', icon: '🌿', body: monthlySummary.nextFocus },
+                ].filter(s => s.body).map((s, i) => (
+                  <div key={i} className="bg-white rounded-3xl p-5 border border-stone-100 shadow-sm space-y-2">
+                    <p className="text-sm font-bold text-purple-500 flex items-center gap-1.5">
+                      <span>{s.icon}</span> {s.label}
+                    </p>
+                    <p className="text-sm text-stone-600 leading-relaxed">{s.body}</p>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        </div>
       )}
 
       {/* 退会確認モーダル */}
