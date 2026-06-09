@@ -94,6 +94,10 @@ export default function DashboardPage() {
   const [expandedLog, setExpandedLog] = useState<number | null>(null);
   const [expandedReview, setExpandedReview] = useState<number | null>(null);
   const [paidPlan, setPaidPlan] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  const [diagSession, setDiagSession] = useState('');
+  const [upsellPlan, setUpsellPlan] = useState<'standard' | 'premium' | null>(null);
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
   const [actionFeedback, setActionFeedback] = useState('');
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [hints, setHints] = useState<string[] | null>(null);
@@ -146,6 +150,34 @@ export default function DashboardPage() {
   const currentKindLabel = todayKind ? KIND_LABEL[todayKind] : null;
   // スタンダード以上はAIサポートあり（ライトは自分で取り組む）
   const hasAISupport = paidPlan === 'standard' || paidPlan === 'premium';
+  const isPremium = paidPlan === 'premium';
+  // 今日の一歩・足あとはスタンダード以上で解禁
+  const lockedTabs: Tab[] = ['mission', 'review'];
+  const isTabLocked = (key: Tab) => lockedTabs.includes(key) && !hasAISupport;
+
+  // ナビ/カードからのタブ遷移。ロック中ならアップセルを開く
+  function goToTab(key: Tab) {
+    if (isTabLocked(key)) { setUpsellPlan('standard'); return; }
+    setTab(key);
+  }
+
+  // プラン変更（アップグレード）：Stripeチェックアウトへ
+  async function handleUpgrade(plan: 'standard' | 'premium') {
+    setUpgradeLoading(true);
+    try {
+      const res = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan, email: userEmail, typeId, session: diagSession, onboarding: {} }),
+      });
+      const data = await res.json();
+      if (data.url) { window.location.href = data.url; return; }
+      alert(data.error || '決済の準備に失敗しました。もう一度お試しください。');
+    } catch {
+      alert('通信エラーが発生しました。もう一度お試しください。');
+    }
+    setUpgradeLoading(false);
+  }
 
   useEffect(() => {
     const sb = getSupabase();
@@ -181,6 +213,12 @@ export default function DashboardPage() {
       setAuthChecked(true);
     });
   }, []);
+
+  // プラン情報ロード後、ロック中のタブが開いていたらホームに戻す（URL直叩き等の保険）
+  useEffect(() => {
+    if (paidPlan && isTabLocked(tab)) setTab('home');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paidPlan, tab]);
 
   // URLの ?tab= で初期タブを指定（ようこそガイドから「あなたについて」へ飛ばす用）
   useEffect(() => {
@@ -319,6 +357,8 @@ export default function DashboardPage() {
     setUsername(name);
     localStorage.setItem('kokolift_username', name);
     setPaidPlan(data.paid_plan || '');
+    setUserEmail(data.email || '');
+    setDiagSession(data.diag_session || '');
     setTypeId(data.type_id || 'distancer');
     localStorage.setItem('kokolift_type_id', data.type_id || 'distancer');
     if (!data.welcome_completed && data.generated_plan) {
@@ -668,7 +708,7 @@ export default function DashboardPage() {
               const kindLabel = todayKind === 'action' ? '行動' : todayKind ? '認知' : null;
               return (
                 <button
-                  onClick={() => setTab('mission')}
+                  onClick={() => goToTab('mission')}
                   className="w-full bg-white rounded-3xl overflow-hidden border border-stone-100 shadow-sm text-left"
                 >
                   <div className="relative h-[230px]">
@@ -1686,6 +1726,63 @@ export default function DashboardPage() {
         )}
       </div>
 
+      {/* アップセルモーダル */}
+      {upsellPlan && (() => {
+        const isStd = upsellPlan === 'standard';
+        const price = isStd ? '3,980' : '8,980';
+        const planName = isStd ? 'スタンダード' : 'プレミアム';
+        const features = isStd
+          ? [
+              { icon: '🎯', title: '今日の一歩', desc: 'あなた専用のミッションに、毎日取り組める' },
+              { icon: '💬', title: 'AIと対話・考えるヒント', desc: '迷ったときも、AIが一緒に整理してくれる' },
+              { icon: '🌱', title: '足あと', desc: 'はじめの頃と今の変化が、見える形に残る' },
+            ]
+          : [
+              { icon: '📊', title: '月次総括レポート', desc: '1ヶ月の歩みをAIがまとめて振り返る' },
+              { icon: '♾️', title: 'いつでもAI相談', desc: 'あなたの記録をふまえて、何でも相談できる' },
+            ];
+        return (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setUpsellPlan(null)}>
+            <div className="w-full max-w-md bg-white rounded-t-3xl p-6 pb-8 space-y-5 animate-[slideUp_0.2s_ease-out]" onClick={e => e.stopPropagation()}>
+              <div className="flex justify-center">
+                <span className="w-10 h-1 rounded-full bg-stone-200" />
+              </div>
+              <div className="text-center space-y-1">
+                <p className="text-xs text-purple-400 font-bold">{planName}プラン</p>
+                <h2 className="text-xl font-bold text-stone-800">{isStd ? '「実際に取り組む」を解禁' : 'もっと深く、向き合う'}</h2>
+                <p className="text-xs text-stone-400">{isStd ? '自分を知るだけでなく、変わっていくために' : 'いつでも頼れる、あなたのパートナー'}</p>
+              </div>
+              <div className="space-y-3">
+                {features.map((f, i) => (
+                  <div key={i} className="flex gap-3 items-start bg-purple-50/50 rounded-2xl p-4">
+                    <span className="text-xl flex-shrink-0">{f.icon}</span>
+                    <div>
+                      <p className="text-sm font-bold text-stone-700">{f.title}</p>
+                      <p className="text-xs text-stone-500 leading-relaxed">{f.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="text-center">
+                <span className="text-2xl font-bold text-stone-800">¥{price}</span>
+                <span className="text-sm text-stone-400"> / 月</span>
+              </div>
+              <button
+                onClick={() => handleUpgrade(upsellPlan)}
+                disabled={upgradeLoading}
+                className="w-full py-4 rounded-full font-bold text-white text-sm disabled:opacity-50"
+                style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}
+              >
+                {upgradeLoading ? '準備しています...' : `${planName}にアップグレード`}
+              </button>
+              <button onClick={() => setUpsellPlan(null)} className="w-full text-xs text-stone-400">
+                あとで
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ボトムナビ */}
       <nav className="fixed bottom-0 left-0 w-full bg-white border-t border-stone-100 flex justify-around items-center h-16 px-1">
         {([
@@ -1696,17 +1793,18 @@ export default function DashboardPage() {
           { key: 'profile', label: 'プロフィール' },
         ] as { key: Tab; label: string }[]).map(item => {
           const active = tab === item.key;
+          const locked = isTabLocked(item.key);
           return (
             <button
               key={item.key}
-              onClick={() => setTab(item.key)}
+              onClick={() => goToTab(item.key)}
               className={`flex flex-col items-center gap-1 w-14 transition-colors ${active ? 'text-purple-500' : ''}`} style={active ? {} : { color: '#545454' }}
             >
               <span className="relative flex items-center justify-center w-7 h-7">
                 <img
                   src={`/icons/${item.key}.png`}
                   alt={item.label}
-                  className={`w-full h-full object-contain transition-opacity ${active ? 'opacity-0' : 'opacity-100'}`}
+                  className={`w-full h-full object-contain transition-opacity ${active ? 'opacity-0' : 'opacity-100'} ${locked ? 'opacity-40' : ''}`}
                 />
                 <img
                   src={`/icons/${item.key}-active.png`}
@@ -1714,6 +1812,9 @@ export default function DashboardPage() {
                   aria-hidden
                   className={`absolute w-full h-full object-contain transition-opacity ${active ? 'opacity-100' : 'opacity-0'}`}
                 />
+                {locked && (
+                  <span className="absolute -top-1 -right-1 text-[10px] leading-none bg-white rounded-full">🔒</span>
+                )}
               </span>
               <span className="text-[9px] font-medium leading-tight">{item.label}</span>
             </button>
