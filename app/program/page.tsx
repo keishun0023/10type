@@ -551,9 +551,10 @@ function ProgramPageInner() {
                   </li>
                   <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>30日後の継続アクセス</li>
                 </ul>
-                <div className="flex items-end gap-1">
-                  <span className="text-3xl font-bold text-stone-900">¥4,980</span>
-                  <span className="text-stone-400 text-sm mb-1">買い切り</span>
+                <div className="flex items-end gap-2">
+                  <span className="text-sm text-stone-400 line-through mb-1">¥4,980</span>
+                  <span className="text-3xl font-bold text-stone-900">¥3,980</span>
+                  <span className="bg-red-100 text-red-500 text-xs font-bold px-2 py-0.5 rounded-full mb-1.5">20%OFF</span>
                 </div>
                 <button
                   onClick={() => handleSelectPlan('standard')}
@@ -586,9 +587,10 @@ function ProgramPageInner() {
                     <span className="text-xs font-normal text-stone-500 pl-6 leading-relaxed">31日目以降も続けたい人向けの継続プランを優待価格で</span>
                   </li>
                 </ul>
-                <div className="flex items-end gap-1">
-                  <span className="text-3xl font-bold text-stone-900">¥9,800</span>
-                  <span className="text-stone-400 text-sm mb-1">買い切り</span>
+                <div className="flex items-end gap-2">
+                  <span className="text-sm text-stone-400 line-through mb-1">¥9,980</span>
+                  <span className="text-3xl font-bold text-stone-900">¥8,980</span>
+                  <span className="bg-red-100 text-red-500 text-xs font-bold px-2 py-0.5 rounded-full mb-1.5">10%OFF</span>
                 </div>
                 <button
                   onClick={() => handleSelectPlan('premium')}
@@ -614,7 +616,7 @@ function ProgramPageInner() {
                   <li className="flex gap-2 text-stone-400"><span className="text-stone-300 mt-0.5">−</span>AIサポートは含まれません</li>
                 </ul>
                 <div className="flex items-end gap-1">
-                  <span className="text-3xl font-bold text-stone-900">¥2,980</span>
+                  <span className="text-3xl font-bold text-stone-900">¥980</span>
                   <span className="text-stone-400 text-sm mb-1">買い切り</span>
                 </div>
                 <button

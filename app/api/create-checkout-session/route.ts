@@ -7,17 +7,17 @@ const PLANS = {
   light: {
     name: 'ライトプラン',
     description: '自分のペースで進める（個別プラン＋記録）',
-    amount: 2980,
+    amount: 980,
   },
   standard: {
     name: 'スタンダードプラン',
     description: 'AIと一緒に進める（AI対話＋変化FB＋詳細振り返り）',
-    amount: 4980,
+    amount: 3980,
   },
   premium: {
     name: 'プレミアムプラン',
-    description: 'とことん向き合う（月次総括＋サブスク優待）',
-    amount: 9800,
+    description: 'とことん向き合う（月次総括＋AI相談）',
+    amount: 8980,
   },
 };
 

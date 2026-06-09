@@ -2023,6 +2023,8 @@ export default function DashboardPage() {
       {upsellPlan && (() => {
         const isStd = upsellPlan === 'standard';
         const price = isStd ? '3,980' : '8,980';
+        const origPrice = isStd ? '4,980' : '9,980';
+        const offPct = isStd ? '20' : '10';
         const planName = isStd ? 'スタンダード' : 'プレミアム';
         const features = isStd
           ? [
@@ -2056,9 +2058,10 @@ export default function DashboardPage() {
                   </div>
                 ))}
               </div>
-              <div className="text-center">
+              <div className="flex items-end justify-center gap-2">
+                <span className="text-sm text-stone-400 line-through mb-1">¥{origPrice}</span>
                 <span className="text-2xl font-bold text-stone-800">¥{price}</span>
-                <span className="text-sm text-stone-400"> / 月</span>
+                <span className="bg-red-100 text-red-500 text-xs font-bold px-2 py-0.5 rounded-full mb-1">{offPct}%OFF</span>
               </div>
               <button
                 onClick={() => handleUpgrade(upsellPlan)}
