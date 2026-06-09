@@ -12,6 +12,7 @@ import dynamic from 'next/dynamic';
 import CognitiveChatSession from '@/components/CognitiveChatSession';
 import ConsultChat from '@/components/ConsultChat';
 import ActionPrepChat from '@/components/ActionPrepChat';
+import ActionReflectChat from '@/components/ActionReflectChat';
 
 const FEAR_AXIS_LABEL: Record<string, string> = {
   F_REL: '関係喪失', F_EVAL: '評価', F_IMP: '不完全性', F_CTRL: '制御不能',
@@ -116,9 +117,7 @@ export default function DashboardPage() {
   } | null>(null);
   const [actionExpLoading, setActionExpLoading] = useState(false);
   const [actionPrepOpen, setActionPrepOpen] = useState(false);
-  const [postFormOpen, setPostFormOpen] = useState(false);
-  const [postAnxiety, setPostAnxiety] = useState(3);
-  const [postNotes, setPostNotes] = useState('');
+  const [actionReflectOpen, setActionReflectOpen] = useState(false);
   const [monthlyOpen, setMonthlyOpen] = useState(false);
   const [monthlyLoading, setMonthlyLoading] = useState(false);
   const [monthlySummary, setMonthlySummary] = useState<{
@@ -379,17 +378,18 @@ export default function DashboardPage() {
     setActionPrepOpen(false);
   }
 
-  // 事後：実際どうだったかを記録して完了（ここで初めてdaily_logsに書く＝dayCountが進む）
-  async function completeActionExp() {
+  // 事後：振り返りの気づきと不安度を記録して完了（ここで初めてdaily_logsに書く＝dayCountが進む）
+  async function completeActionExp(notes: string, anxiety: number) {
     const sb = getSupabase();
     if (!sb || !userId || !actionExp) return;
     await sb.from('action_experiments').update({
-      post_anxiety: postAnxiety,
-      post_notes: postNotes,
+      post_anxiety: anxiety,
+      post_notes: notes,
       status: 'done',
       updated_at: new Date().toISOString(),
     }).eq('user_id', userId).eq('mission_id', dayCount);
-    await saveLog(true, 1, actionExp.pre_anxiety, postAnxiety, postNotes);
+    await saveLog(true, 1, actionExp.pre_anxiety, anxiety, notes);
+    setActionReflectOpen(false);
     setTodayLog({ done: true, count: 1 });
     setRecordStep('done');
     await loadStats(userId);
@@ -1149,8 +1149,8 @@ export default function DashboardPage() {
                     今日は機会がなかった
                   </button>
                 </div>
-              ) : !postFormOpen ? (
-                /* 挑戦中：今日を過ごして戻ってくるまで */
+              ) : (
+                /* 挑戦中：今日を過ごして戻ってきたら振り返り */
                 <div className="space-y-5">
                   <div className="bg-purple-50 rounded-3xl p-5 border border-purple-100 space-y-2">
                     <p className="text-xs text-purple-500 font-bold">挑む前のあなたの宣言</p>
@@ -1158,44 +1158,14 @@ export default function DashboardPage() {
                     <p className="text-xs text-stone-400">挑む前の不安度：{actionExp.pre_anxiety} / 5</p>
                   </div>
                   <p className="text-sm text-stone-500 text-center leading-relaxed">
-                    この宣言を胸に、今日を過ごしてみましょう。<br />終えたら、実際どうだったかを記録します。
+                    この宣言を胸に、今日を過ごしてみましょう。<br />終えたら、AIと一緒に振り返ります。
                   </p>
                   <button
-                    onClick={() => setPostFormOpen(true)}
-                    className="w-full py-4 rounded-full font-bold text-white text-sm"
+                    onClick={() => setActionReflectOpen(true)}
+                    className="w-full py-4 rounded-full font-bold text-white text-sm flex items-center justify-center gap-2"
                     style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}
                   >
-                    実際どうだったか記録する
-                  </button>
-                </div>
-              ) : (
-                /* フェーズ2：戻ってきて事後記録 */
-                <div className="space-y-5">
-                  <div className="bg-purple-50 rounded-3xl p-5 border border-purple-100 space-y-2">
-                    <p className="text-xs text-purple-500 font-bold">挑む前のあなたの宣言</p>
-                    <p className="text-sm text-stone-700 leading-relaxed">{actionExp.pre_summary}</p>
-                    <p className="text-xs text-stone-400">挑む前の不安度：{actionExp.pre_anxiety} / 5</p>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-sm font-bold text-stone-700">実際、どうでしたか？</p>
-                    <textarea
-                      value={postNotes}
-                      onChange={e => setPostNotes(e.target.value)}
-                      rows={4}
-                      placeholder="やってみて起きたこと、感じたことを書いてみましょう..."
-                      className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm focus:outline-none focus:border-purple-400 resize-none leading-relaxed"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-sm text-stone-600">いまの不安度（やってみた後）</p>
-                    <div className="flex gap-2">
-                      {[1,2,3,4,5].map(n => (
-                        <button key={n} onClick={() => setPostAnxiety(n)} className={`flex-1 h-8 rounded-full text-sm font-bold transition-colors ${postAnxiety >= n ? 'bg-teal-400 text-white' : 'bg-stone-100 text-stone-400'}`}>●</button>
-                      ))}
-                    </div>
-                  </div>
-                  <button onClick={completeActionExp} className="w-full py-4 rounded-full font-bold text-white text-sm" style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}>
-                    記録する
+                    <span>💬</span> 振り返る（実際どうだったか）
                   </button>
                 </div>
               )
@@ -2047,6 +2017,17 @@ export default function DashboardPage() {
           missionWhy={aiMission?.why ?? todayMission?.why ?? ''}
           onCommit={commitActionPrep}
           onClose={() => setActionPrepOpen(false)}
+        />
+      )}
+
+      {/* 行動ミッション：挑んだ後の振り返りAI対話 */}
+      {actionReflectOpen && actionExp && (
+        <ActionReflectChat
+          missionTitle={aiMission?.title ?? todayMission?.text ?? ''}
+          preSummary={actionExp.pre_summary}
+          preAnxiety={actionExp.pre_anxiety}
+          onComplete={completeActionExp}
+          onClose={() => setActionReflectOpen(false)}
         />
       )}
 

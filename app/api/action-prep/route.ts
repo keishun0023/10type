@@ -36,15 +36,63 @@ function buildSummarizeSystem(): string {
 - 要約だけを出力し、前置き・後書きは不要。`;
 }
 
+// 事後の振り返り：予測（事前宣言）と現実のギャップを一緒に確認し、安心に変える
+function buildReflectSystem(missionTitle: string, preSummary: string, preAnxiety: number): string {
+  return `あなたはCBT（認知行動療法）の行動実験をサポートする伴走者です。ユーザーは今日この行動に挑みました：「${missionTitle}」。
+
+挑む前、ユーザーはこう予測していました：
+「${preSummary}」（そのときの不安度：${preAnxiety}/5）
+
+【あなたの仕事】
+挑んだ後の「実際どうだったか」を聞き、事前の予測と現実のギャップを一緒に確かめます。
+- まず実際に起きたこと・感じたことを聞く。
+- 予測（こわかった展開）と現実を並べて、「思っていたより◯◯だったんですね」とギャップを言葉にする。
+- 予測ほど悪くならなかったなら、それを本人が「だから大丈夫かも」と感じられるよう、事実ベースで穏やかに確認する。
+- もし予測通り嫌なことが起きた場合も、責めず、そこから何が分かったかを一緒に見る。次に活かせる視点を添える。
+
+【厳守する原則】
+- 1回の返答は2〜3文。質問は一度に一つ。
+- 「すごい」「勇気がある」などの過剰な称賛はしない。同じ目線で。
+- 断定しない・煽らない・医療用語を使わない。
+- 2〜3往復したら「今日の気づきをまとめましょうか？」と提案する。`;
+}
+
+function buildReflectSummarizeSystem(): string {
+  return `あなたはCBTの行動実験の伴走者です。会話を読んで、ユーザーが今日の行動から得た「気づき」を2〜3文でまとめてください。
+- 事前の予測と、実際どうだったかのギャップに触れる。
+- 「〜だと思っていたが、実際は〜だった」「〜に気づいた」のように、本人の体験を尊重した表現で。
+- 断定や過剰な称賛はしない。まとめだけを出力し、前置き・後書きは不要。`;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { action, missionTitle = '', missionWhy = '', messages = [] } = body as {
+    const { action, missionTitle = '', missionWhy = '', messages = [], preSummary = '', preAnxiety = 0 } = body as {
       action: string;
       missionTitle?: string;
       missionWhy?: string;
       messages?: Message[];
+      preSummary?: string;
+      preAnxiety?: number;
     };
+
+    if (action === 'reflect') {
+      const system = buildReflectSystem(missionTitle, preSummary, preAnxiety);
+      const reply = await callClaudeMessages({ system, messages, maxTokens: 512 });
+      return NextResponse.json({ message: reply });
+    }
+
+    if (action === 'reflect-summarize') {
+      const system = buildReflectSummarizeSystem();
+      const summaryMessages: Message[] = [
+        {
+          role: 'user',
+          content: `事前の予測：「${preSummary}」\n\n以下は行動後の振り返りの会話です。\n\n${messages.map(m => `${m.role === 'user' ? 'ユーザー' : 'AI'}: ${m.content}`).join('\n')}\n\n今日の気づきを2〜3文でまとめてください。`,
+        },
+      ];
+      const summary = await callClaudeMessages({ system, messages: summaryMessages, maxTokens: 256 });
+      return NextResponse.json({ summary });
+    }
 
     if (action === 'chat') {
       const system = buildChatSystem(missionTitle, missionWhy);
