@@ -498,8 +498,15 @@ export default function DashboardPage() {
     setUsername(name);
     localStorage.setItem('kokolift_username', name);
     setPaidPlan(data.paid_plan || '');
-    setUserEmail(data.email || '');
     setDiagSession(data.diag_session || '');
+    // 認証メールが変わっていたら users テーブルを同期（メアド変更の反映）
+    const { data: { user: authUser } } = await sb.auth.getUser();
+    const authEmail = authUser?.email;
+    if (authEmail && authEmail !== data.email) {
+      await sb.from('users').update({ email: authEmail }).eq('id', uid);
+      data.email = authEmail;
+    }
+    setUserEmail(data.email || '');
     setTypeId(data.type_id || 'distancer');
     localStorage.setItem('kokolift_type_id', data.type_id || 'distancer');
     if (!data.welcome_completed && data.generated_plan) {
@@ -690,11 +697,13 @@ export default function DashboardPage() {
     const sb = getSupabase();
     if (!sb || !newEmail.trim()) return;
     setEmailSaving(true);
-    // Supabaseは新旧両方のアドレスに確認メールを送り、確認後に反映される
-    const { error } = await sb.auth.updateUser({ email: newEmail.trim() });
+    const { error } = await sb.auth.updateUser(
+      { email: newEmail.trim() },
+      { emailRedirectTo: `${window.location.origin}/program/dashboard` },
+    );
     setEmailSaving(false);
     if (error) { setEmailMsg(error.message); return; }
-    setEmailMsg('確認メールを送りました。新しいアドレスのメールから変更を完了してください。');
+    setEmailMsg('確認メールを送りました。届いたメール内のリンクをすべて開いて、変更を完了してください（新しいアドレスと、設定によっては今のアドレスの両方に届きます）。');
     setNewEmail('');
   }
 
