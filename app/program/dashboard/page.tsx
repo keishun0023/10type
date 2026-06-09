@@ -10,6 +10,7 @@ import { selectTodayMission, FEAR_FOCUS_LABEL, KIND_LABEL } from '@/lib/missionS
 import { PROGRAM_COMPONENTS } from '@/data/program';
 import dynamic from 'next/dynamic';
 import CognitiveChatSession from '@/components/CognitiveChatSession';
+import ConsultChat from '@/components/ConsultChat';
 
 const FEAR_AXIS_LABEL: Record<string, string> = {
   F_REL: '関係喪失', F_EVAL: '評価', F_IMP: '不完全性', F_CTRL: '制御不能',
@@ -107,6 +108,7 @@ export default function DashboardPage() {
   const [pwSaving, setPwSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [consultOpen, setConsultOpen] = useState(false);
   const [actionFeedback, setActionFeedback] = useState('');
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [hints, setHints] = useState<string[] | null>(null);
@@ -168,6 +170,36 @@ export default function DashboardPage() {
   function goToTab(key: Tab) {
     if (isTabLocked(key)) { setUpsellPlan('standard'); return; }
     setTab(key);
+  }
+
+  // AI相談（プレミアム）。未加入ならアップセルを開く
+  function openConsult() {
+    if (!isPremium) { setUpsellPlan('premium'); return; }
+    setConsultOpen(true);
+  }
+
+  // 相談に渡す背景情報を、手元のデータから組み立てる
+  function buildConsultContext() {
+    const fearSummary = fearScores
+      ? (Object.entries(fearScores) as [FearAxis, number][])
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 2)
+          .map(([axis]) => FEAR_AXIS_LABEL[axis])
+          .filter(Boolean)
+          .join('、')
+      : '';
+    const missionByDay = new Map((generatedPlan?.missions ?? []).map(m => [m.day, m]));
+    const recentLogs = logs
+      .filter(l => l.done)
+      .slice(0, 5)
+      .map(l => ({ title: missionByDay.get(l.mission_id)?.title ?? '取り組んだこと', memo: l.memo ?? '' }));
+    return {
+      typeName: TYPE_NAMES[typeId] ?? typeId,
+      fearSummary,
+      userInsight: generatedPlan?.userInsight ?? '',
+      currentFocus: currentFocusLabel ?? '',
+      recentLogs,
+    };
   }
 
   // プラン変更（アップグレード）：Stripeチェックアウトへ
@@ -879,6 +911,26 @@ export default function DashboardPage() {
                 </div>
               </div>
             )}
+
+            {/* AIに相談する（プレミアム） */}
+            <button
+              onClick={openConsult}
+              className="w-full bg-white rounded-3xl p-5 border border-stone-100 shadow-sm flex items-center gap-4 text-left"
+            >
+              <div className="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center flex-shrink-0 text-2xl">
+                💬
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-stone-800 flex items-center gap-1.5">
+                  AIに相談する
+                  {!isPremium && <span className="text-[10px]">🔒</span>}
+                </p>
+                <p className="text-xs text-stone-500 leading-relaxed mt-0.5">
+                  あなたの記録をふまえて、いつでも何でも相談できます。
+                </p>
+              </div>
+              <span className="text-stone-300 text-lg flex-shrink-0">›</span>
+            </button>
           </div>
         )}
 
@@ -1836,6 +1888,11 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* AI相談（プレミアム） */}
+      {consultOpen && (
+        <ConsultChat context={buildConsultContext()} onClose={() => setConsultOpen(false)} />
+      )}
 
       {/* 退会確認モーダル */}
       {deleteConfirm && (
