@@ -98,6 +98,15 @@ export default function DashboardPage() {
   const [diagSession, setDiagSession] = useState('');
   const [upsellPlan, setUpsellPlan] = useState<'standard' | 'premium' | null>(null);
   const [upgradeLoading, setUpgradeLoading] = useState(false);
+  // アカウント設定（メール変更・パスワード変更・退会）
+  const [newEmail, setNewEmail] = useState('');
+  const [emailMsg, setEmailMsg] = useState('');
+  const [emailSaving, setEmailSaving] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [pwMsg, setPwMsg] = useState('');
+  const [pwSaving, setPwSaving] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [actionFeedback, setActionFeedback] = useState('');
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [hints, setHints] = useState<string[] | null>(null);
@@ -541,6 +550,53 @@ export default function DashboardPage() {
     localStorage.removeItem('kokolift_user_email');
     localStorage.removeItem('kokolift_type_id');
     setIsLoggedIn(false);
+  }
+
+  async function handleChangeEmail(e: React.FormEvent) {
+    e.preventDefault();
+    setEmailMsg('');
+    const sb = getSupabase();
+    if (!sb || !newEmail.trim()) return;
+    setEmailSaving(true);
+    // Supabaseは新旧両方のアドレスに確認メールを送り、確認後に反映される
+    const { error } = await sb.auth.updateUser({ email: newEmail.trim() });
+    setEmailSaving(false);
+    if (error) { setEmailMsg(error.message); return; }
+    setEmailMsg('確認メールを送りました。新しいアドレスのメールから変更を完了してください。');
+    setNewEmail('');
+  }
+
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault();
+    setPwMsg('');
+    const sb = getSupabase();
+    if (!sb) return;
+    if (newPassword.length < 6) { setPwMsg('パスワードは6文字以上で入力してください。'); return; }
+    setPwSaving(true);
+    const { error } = await sb.auth.updateUser({ password: newPassword });
+    setPwSaving(false);
+    if (error) { setPwMsg(error.message); return; }
+    setPwMsg('パスワードを変更しました。');
+    setNewPassword('');
+  }
+
+  async function handleDeleteAccount() {
+    if (!userId) return;
+    setDeleteLoading(true);
+    try {
+      const res = await fetch('/api/delete-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+      const data = await res.json();
+      if (!res.ok) { alert(data.error || '退会処理に失敗しました。'); setDeleteLoading(false); return; }
+      await handleLogout();
+      window.location.href = '/';
+    } catch {
+      alert('通信エラーが発生しました。');
+      setDeleteLoading(false);
+    }
   }
 
   const progress = Math.min(dayCount / 30, 1);
@@ -1716,15 +1772,92 @@ export default function DashboardPage() {
               </div>
             )}
 
+            {/* アカウント設定 */}
+            <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-5">
+              <p className="text-xs text-stone-400 font-medium">アカウント</p>
+
+              {/* メールアドレス変更 */}
+              <form onSubmit={handleChangeEmail} className="space-y-2">
+                <label className="text-xs text-stone-500">メールアドレスを変更</label>
+                <input
+                  type="email"
+                  value={newEmail}
+                  onChange={e => setNewEmail(e.target.value)}
+                  placeholder={profileData?.email || '新しいメールアドレス'}
+                  className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm focus:outline-none focus:border-purple-400"
+                />
+                {emailMsg && <p className="text-xs text-stone-500 leading-relaxed">{emailMsg}</p>}
+                <button
+                  type="submit"
+                  disabled={emailSaving || !newEmail.trim()}
+                  className="w-full py-2.5 rounded-full text-sm font-medium text-purple-600 border border-purple-200 disabled:opacity-40"
+                >
+                  {emailSaving ? '送信中...' : 'メールアドレスを変更'}
+                </button>
+              </form>
+
+              <div className="border-t border-stone-100" />
+
+              {/* パスワード変更 */}
+              <form onSubmit={handleChangePassword} className="space-y-2">
+                <label className="text-xs text-stone-500">パスワードを変更</label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  placeholder="新しいパスワード（6文字以上）"
+                  className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm focus:outline-none focus:border-purple-400"
+                />
+                {pwMsg && <p className="text-xs text-stone-500 leading-relaxed">{pwMsg}</p>}
+                <button
+                  type="submit"
+                  disabled={pwSaving || !newPassword}
+                  className="w-full py-2.5 rounded-full text-sm font-medium text-purple-600 border border-purple-200 disabled:opacity-40"
+                >
+                  {pwSaving ? '変更中...' : 'パスワードを変更'}
+                </button>
+              </form>
+            </div>
+
             <button
               onClick={handleLogout}
               className="w-full py-3 rounded-full text-sm font-medium text-stone-400 border border-stone-200"
             >
               ログアウト
             </button>
+
+            {/* 退会 */}
+            <button
+              onClick={() => setDeleteConfirm(true)}
+              className="w-full py-3 text-xs text-stone-300 hover:text-red-400 transition-colors"
+            >
+              退会する
+            </button>
           </div>
         )}
       </div>
+
+      {/* 退会確認モーダル */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6" onClick={() => !deleteLoading && setDeleteConfirm(false)}>
+          <div className="w-full max-w-sm bg-white rounded-3xl p-6 space-y-4" onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-bold text-stone-800 text-center">本当に退会しますか？</h2>
+            <p className="text-xs text-stone-500 leading-relaxed text-center">
+              アカウントと、これまでの記録・プラン・足あとがすべて削除されます。<br />この操作は取り消せません。
+            </p>
+            <button
+              onClick={handleDeleteAccount}
+              disabled={deleteLoading}
+              className="w-full py-3.5 rounded-full font-bold text-white text-sm bg-red-400 disabled:opacity-50"
+            >
+              {deleteLoading ? '処理中...' : '退会する'}
+            </button>
+            <button onClick={() => setDeleteConfirm(false)} disabled={deleteLoading} className="w-full text-sm text-stone-400 disabled:opacity-50">
+              キャンセル
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* アップセルモーダル */}
       {upsellPlan && (() => {
