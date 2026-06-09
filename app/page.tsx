@@ -71,7 +71,7 @@ export default function Home() {
           <div className="w-full bg-white rounded-2xl p-4 border border-stone-100 space-y-2 mb-4">
             <p className="text-xs font-bold text-stone-700">ココリフトとは</p>
             <p className="text-xs text-stone-500 leading-relaxed">
-              CBT（認知行動療法）とビッグファイブの考え方をベースに、あなたの「生きづらさのかたち」を8タイプで分析するセルフケアサービスです。診断は無料。詳細レポートと30日間の改善プログラムは有料でご提供しています。
+              CBT（認知行動療法）とビッグファイブの考え方をベースに、あなたの「生きづらさのかたち」を8タイプで分析するセルフケアサービスです。
             </p>
           </div>
 
