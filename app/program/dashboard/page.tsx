@@ -940,7 +940,7 @@ export default function DashboardPage() {
                     >
                       {todayLog?.done
                         ? <span className="text-white text-sm font-bold">✓</span>
-                        : <span className="text-white text-base font-bold pl-0.5">▶</span>
+                        : <svg width="18" height="18" viewBox="0 0 24 24" fill="white" aria-hidden className="ml-0.5"><path d="M8 5v14l11-7z" /></svg>
                       }
                     </div>
                   </div>
@@ -1573,7 +1573,7 @@ export default function DashboardPage() {
                     onClick={() => setFearAxisOpen(v => !v)}
                     className="flex items-center gap-1.5 text-xs text-stone-400 hover:text-purple-500 transition-colors mt-1"
                   >
-                    <span className={`transition-transform ${fearAxisOpen ? 'rotate-90' : ''}`}>▶</span>
+                    <span className={`transition-transform ${fearAxisOpen ? 'rotate-90' : ''}`}><svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M8 5v14l11-7z" /></svg></span>
                     各軸の意味を見る
                   </button>
                   {fearAxisOpen && (
@@ -1597,7 +1597,7 @@ export default function DashboardPage() {
                     onClick={() => setDefenseAxisOpen(v => !v)}
                     className="flex items-center gap-1.5 text-xs text-stone-400 hover:text-purple-500 transition-colors"
                   >
-                    <span className={`transition-transform ${defenseAxisOpen ? 'rotate-90' : ''}`}>▶</span>
+                    <span className={`transition-transform ${defenseAxisOpen ? 'rotate-90' : ''}`}><svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M8 5v14l11-7z" /></svg></span>
                     各軸の見方を見る
                   </button>
                   {defenseAxisOpen && (
@@ -1789,7 +1789,7 @@ export default function DashboardPage() {
                                         onClick={() => setExpandedReview(isOpen ? null : loggedDay!)}
                                         className="flex items-center gap-1 text-[11px] font-bold text-purple-500 hover:text-purple-600"
                                       >
-                                        <span className={`transition-transform ${isOpen ? 'rotate-90' : ''}`}>▶</span>
+                                        <span className={`transition-transform ${isOpen ? 'rotate-90' : ''}`}><svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M8 5v14l11-7z" /></svg></span>
                                         振り返る
                                       </button>
                                       {isOpen && (

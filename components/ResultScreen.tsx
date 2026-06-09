@@ -144,7 +144,7 @@ export default function ResultScreen({
               onClick={onShowEmailInput}
               className="w-full h-16 rounded-full bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white font-bold text-sm transition-all shadow-xl shadow-indigo-200 flex items-center justify-center gap-3"
             >
-              <span className="text-base">▶</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M8 5v14l11-7z" /></svg>
               <span>詳細レポートとプログラムを受け取る</span>
               <span className="text-lg opacity-70">›</span>
             </button>

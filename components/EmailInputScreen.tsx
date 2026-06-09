@@ -69,7 +69,12 @@ export default function EmailInputScreen({ sessionId, firstTypeName, onSuccess }
             disabled={status === 'loading' || !email}
             className="w-full py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition-colors shadow-md shadow-indigo-200 disabled:opacity-50"
           >
-            {status === 'loading' ? '送信中...' : '▶ 詳細レポートとプログラムを受け取る'}
+            {status === 'loading' ? '送信中...' : (
+              <span className="inline-flex items-center justify-center gap-2">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M8 5v14l11-7z" /></svg>
+                詳細レポートとプログラムを受け取る
+              </span>
+            )}
           </button>
           {status === 'error' && (
             <p className="text-xs text-red-500 text-center">エラーが発生しました。もう一度お試しください。</p>
