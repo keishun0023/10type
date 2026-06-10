@@ -402,8 +402,13 @@ function ProgramPageInner() {
     ];
 
     return (
-      <div className="min-h-screen px-5 py-12" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
-        <div className="w-full max-w-sm mx-auto space-y-12">
+      <div className="min-h-screen px-5 py-12 relative" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
+        {/* 背景テクスチャ（public/paywall-texture.png を置くと表示。縦に繰り返し） */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ backgroundImage: 'url(/paywall-texture.png)', backgroundSize: '100% auto', backgroundRepeat: 'repeat-y' }}
+        />
+        <div className="w-full max-w-sm mx-auto space-y-12 relative">
 
           {/* ── 1. ファーストビュー ── */}
           <div className="text-center space-y-4">
