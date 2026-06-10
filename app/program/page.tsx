@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
-import { TYPE_NAMES, ChangeOrientation, GeneratedPlan } from '@/data/program';
-import { REPORT_CONTENT } from '@/data/report';
+import { TYPE_NAMES, ChangeOrientation } from '@/data/program';
+import { updateDiagnosticOnboarding } from '@/lib/analytics';
 
-type Screen = 'landing' | 'onboarding' | 'deepdive' | 'loading' | 'plan-complete' | 'pricing';
+type Screen = 'onboarding' | 'deepdive' | 'building' | 'pricing';
 
 interface Onboarding {
   lifestyle: string;
@@ -98,18 +98,31 @@ const SCENE_DETAILS: Record<string, string[]> = {
   ],
 };
 
+// ペイウォールの個別化見出し用：しんどい場面の短縮ラベル
+const SCENE_SHORT: Record<string, string> = {
+  '評価される・見られる場面（発表・提出・ミスなど）': '評価される場面',
+  '予定が変わったり、見通しが立たないとき': '見通しが立たない場面',
+  '人に頼んだり、断ったりしないといけないとき': '頼む・断る場面',
+  '大切な人との関係がギクシャクしたとき': '大切な人との関係',
+};
+
+const BUILDING_STEPS = [
+  '診断結果を読み込んでいます',
+  'あなたの回答を反映しています',
+  'プランの構成を決めています',
+];
+
 function ProgramPageInner() {
   const searchParams = useSearchParams();
   const typeId = searchParams.get('type') || 'distancer';
   const email = searchParams.get('email') || '';
   const session = searchParams.get('session') || '';
 
-  const [screen, setScreen] = useState<Screen>('landing');
+  const [screen, setScreen] = useState<Screen>('onboarding');
   const [questionIndex, setQuestionIndex] = useState(0);
   const [onboarding, setOnboarding] = useState<Partial<Onboarding>>({});
-  const [loadingStep, setLoadingStep] = useState(0);
+  const [buildingStep, setBuildingStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [generatedPlan, setGeneratedPlan] = useState<GeneratedPlan | null>(null);
 
   // 深掘り（具体的な困りごと）
   const [detailSelected, setDetailSelected] = useState<string[]>([]);
@@ -117,45 +130,19 @@ function ProgramPageInner() {
 
   const typeName = TYPE_NAMES[typeId] || '診断さん';
 
-  const loadingMessages = [
-    `${typeName}の特性を読み込んでいます`,
-    `あなたの回答を反映しています`,
-    `困りごとの背景を整理しています`,
-    `恐れのパターンを分析しています`,
-    `あなたに合った取り組み方を考えています`,
-    `プログラムの構成を決めています`,
-    `分析レポートを書いています`,
-    `ようこそガイドを作っています`,
-    `ミッション文を個別化しています`,
-    `最後の調整をしています`,
-  ];
-
-  // loading 画面に入ったら、メッセージを進めつつ実際にAI生成を叩く
+  // building 画面：短い演出（約2.7秒）の後ペイウォールへ。AI生成は課金後に行う。
   useEffect(() => {
-    if (screen !== 'loading') return;
+    if (screen !== 'building') return;
     let step = 0;
     const interval = setInterval(() => {
-      step = Math.min(step + 1, loadingMessages.length - 1);
-      setLoadingStep(step);
-    }, 2800);
-
-    (async () => {
-      try {
-        const res = await fetch('/api/generate-plan', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ diagSession: session, typeId, onboarding, phase: 'preview' }),
-        });
-        const data = await res.json();
+      step += 1;
+      if (step >= BUILDING_STEPS.length) {
         clearInterval(interval);
-        if (data.plan) setGeneratedPlan(data.plan);
-        setScreen('plan-complete');
-      } catch {
-        clearInterval(interval);
-        setScreen('plan-complete');
+        setScreen('pricing');
+        return;
       }
-    })();
-
+      setBuildingStep(step);
+    }, 900);
     return () => clearInterval(interval);
   }, [screen]);
 
@@ -178,16 +165,21 @@ function ProgramPageInner() {
   }
 
   function handleDeepdiveSubmit() {
-    setOnboarding(prev => ({
-      ...prev,
+    const finalOnboarding = {
+      ...onboarding,
       difficultDetail: detailSelected.join('、'),
       difficultFreeText: freeText.trim(),
-    }));
-    setScreen('loading');
-    setLoadingStep(0);
+    };
+    setOnboarding(finalOnboarding);
+    // 課金後のプラン生成で使うため、回答を diagnostics に保存（待たない）
+    if (session) {
+      updateDiagnosticOnboarding(session, finalOnboarding as Record<string, string>);
+    }
+    setBuildingStep(0);
+    setScreen('building');
   }
 
-  async function handleSelectPlan(plan: 'light' | 'standard' | 'premium') {
+  async function handleSelectPlan(plan: 'standard' | 'premium') {
     setIsLoading(true);
     try {
       const changeOrientation: ChangeOrientation =
@@ -210,65 +202,6 @@ function ProgramPageInner() {
     }
   }
 
-  if (screen === 'landing') {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-5 py-16" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
-        <div className="w-full max-w-sm space-y-8">
-          <div className="text-center space-y-4">
-            <div className="inline-block px-3 py-1 rounded-full bg-purple-100 text-purple-600 text-xs font-medium">
-              あなただけの限定プログラム
-            </div>
-            <h1 className="text-2xl font-bold text-stone-900 leading-snug">
-              <span className="text-purple-600">{typeName}</span>のあなたにぴったりの<br />30日プログラムを<br />ご用意しました。
-            </h1>
-            <p className="text-sm text-stone-500 leading-relaxed">
-              診断結果をもとに、あなたの特性に合わせた<br />毎日のミッションをお届けします。
-            </p>
-          </div>
-
-          <div className="flex justify-center gap-3">
-            <div className="flex items-center gap-1.5 bg-white border border-stone-100 rounded-full px-3 py-1.5 shadow-sm">
-              <span className="text-xs text-stone-500">✦</span>
-              <span className="text-xs text-stone-600 font-medium">CBT準拠</span>
-            </div>
-            <div className="flex items-center gap-1.5 bg-white border border-stone-100 rounded-full px-3 py-1.5 shadow-sm">
-              <span className="text-xs text-stone-500">✦</span>
-              <span className="text-xs text-stone-600 font-medium">30日間プログラム</span>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-3xl p-5 border border-purple-100 space-y-3">
-            <p className="text-xs text-purple-400 font-medium">このプログラムでできること</p>
-            <ul className="space-y-2.5">
-              {[
-                '毎日1つ、あなたに合わせたミッション',
-                '小さな変化を記録・可視化',
-                '続けるほど積み上がる達成感',
-              ].map((item, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-stone-700">
-                  <span className="text-purple-400 mt-0.5">✓</span>
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <button
-            onClick={() => setScreen('onboarding')}
-            className="w-full py-4 rounded-full font-bold text-white text-base transition-all active:scale-[0.98]"
-            style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)', boxShadow: '0 8px 24px rgba(124, 58, 237, 0.3)' }}
-          >
-            プログラムを見る →
-          </button>
-
-          <p className="text-xs text-stone-400 text-center">
-            ※ CBT（認知行動療法）の考え方をベースにした自己改善ツールです。医療ではありません。
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   if (screen === 'onboarding') {
     const q = ONBOARDING_QUESTIONS[questionIndex];
     const isKeyQuestion = q.key === 'difficultScene' || q.key === 'changeOrientation';
@@ -281,6 +214,11 @@ function ProgramPageInner() {
                 <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${i <= questionIndex ? 'bg-purple-500' : 'bg-stone-200'}`} />
               ))}
             </div>
+            {questionIndex === 0 && (
+              <p className="text-xs text-purple-500 font-medium leading-relaxed">
+                {typeName}のあなた専用の30日プランを作るために、少しだけ教えてください（約1分）
+              </p>
+            )}
             <p className="text-xs text-stone-400">{questionIndex + 1} / {ONBOARDING_QUESTIONS.length}</p>
             <h2 className={`font-bold text-stone-800 leading-snug ${isKeyQuestion ? 'text-2xl' : 'text-xl'}`}>{q.question}</h2>
             {'note' in q && q.note && (
@@ -376,150 +314,102 @@ function ProgramPageInner() {
     );
   }
 
-  if (screen === 'loading') {
-    const ITEM_HEIGHT = 19;
-
+  if (screen === 'building') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-5" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
-        <div className="w-full max-w-sm flex flex-col items-center gap-10">
+        <div className="w-full max-w-sm flex flex-col items-center gap-8">
           <div className="w-10 h-10 rounded-full border-4 border-purple-200 border-t-purple-500 animate-spin" />
-
-          {/* リール: overflow hidden で3行分だけ見せる */}
-          <div className="w-full overflow-hidden" style={{ height: ITEM_HEIGHT * 3 }}>
-            <div
-              className="flex flex-col items-center"
-              style={{
-                transform: `translateY(${-loadingStep * ITEM_HEIGHT + ITEM_HEIGHT}px)`,
-                transition: 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
-              }}
-            >
-              {loadingMessages.map((msg, i) => {
-                const isCurrent = i === loadingStep;
-                const isPast = i < loadingStep;
-                return (
-                  <div
-                    key={i}
-                    className="flex items-center justify-center text-center"
-                    style={{
-                      height: ITEM_HEIGHT,
-                      transition: 'opacity 0.6s, color 0.6s',
-                      opacity: Math.abs(i - loadingStep) <= 1 ? 1 : 0,
-                    }}
-                  >
-                    <p className={
-                      isCurrent
-                        ? 'text-base font-bold text-purple-600'
-                        : isPast
-                          ? 'text-sm text-stone-300'
-                          : 'text-sm text-stone-300'
-                    }>
-                      {isPast ? `✓ ${msg}` : msg}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
+          <div className="space-y-2 text-center">
+            {BUILDING_STEPS.map((msg, i) => (
+              <p
+                key={i}
+                className={`text-sm transition-all duration-500 ${
+                  i < buildingStep ? 'text-stone-300' : i === buildingStep ? 'text-base font-bold text-purple-600' : 'text-stone-300 opacity-0'
+                }`}
+              >
+                {i < buildingStep ? `✓ ${msg}` : msg}
+              </p>
+            ))}
           </div>
-
-          <p className="text-xs text-stone-300 text-center">あなた専用に作っています。少しお待ちください。</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (screen === 'plan-complete') {
-    const report = generatedPlan?.report;
-    const missions = generatedPlan?.missions ?? [];
-    const fallback = REPORT_CONTENT[typeId];
-    // AI生成レポートがあればそれを優先。なければタイプ別固定文にフォールバック。
-    const revealSections = [
-      {
-        label: 'あなたが消耗しやすい場面',
-        body: report?.drainScene || fallback?.drainScene,
-        accent: true,
-      },
-      {
-        label: 'その力は、本来こういうもの',
-        body: report?.strengthReframe || fallback?.strengthReframe,
-      },
-      {
-        label: 'いまのあなたについて',
-        body: report?.currentState,
-      },
-      {
-        label: 'これから30日でやること',
-        body: report?.direction,
-      },
-    ].filter(s => s.body);
-    return (
-      <div className="min-h-screen px-5 py-10" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
-        <div className="w-full max-w-sm mx-auto space-y-5">
-          <div className="text-center space-y-2">
-            <span className="inline-block px-3 py-1 rounded-full bg-purple-100 text-purple-600 text-xs font-medium">あなたの分析が完成しました</span>
-            <h1 className="text-2xl font-bold text-stone-900">{typeName}のあなたへの<br />30日プログラムができました。</h1>
-          </div>
-
-          {/* 成果物：上3割はくっきり、その先はフェードしながらロック */}
-          <div className="relative">
-            <div
-              className="space-y-3"
-              style={{
-                maxHeight: 440,
-                overflow: 'hidden',
-                WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 34%, rgba(0,0,0,0.12) 72%, transparent 100%)',
-                maskImage: 'linear-gradient(to bottom, #000 0%, #000 34%, rgba(0,0,0,0.12) 72%, transparent 100%)',
-              }}
-            >
-              {revealSections.map((s, i) => (
-                <div key={i} className={`bg-white rounded-2xl p-5 space-y-1.5 border ${s.accent ? 'border-purple-100' : 'border-stone-100'}`}>
-                  <p className="text-xs text-purple-400 font-medium">{s.label}</p>
-                  <p className="text-sm text-stone-700 leading-relaxed">{s.body}</p>
-                </div>
-              ))}
-              {/* 30日ミッションの地図 */}
-              <div className="bg-white rounded-2xl p-5 border border-stone-100 space-y-2">
-                <p className="text-xs text-purple-400 font-medium">30日分のミッション</p>
-                {(missions.length ? missions.slice(0, 8) : Array.from({ length: 8 })).map((m, i) => (
-                  <p key={i} className="text-sm text-stone-600">
-                    Day {i + 1}：{(m as GeneratedPlan['missions'][number])?.title || 'あなた専用のミッション'}
-                  </p>
-                ))}
-                <p className="text-xs text-stone-400">…Day 30 まで全て用意済み</p>
-              </div>
-            </div>
-
-            {/* ロック（スクロールせず画面内に収まる位置） */}
-            <div className="absolute left-0 right-0 flex justify-center pointer-events-none" style={{ top: '300px' }}>
-              <div className="flex items-center gap-1.5 bg-white/95 backdrop-blur px-4 py-2 rounded-full shadow-md border border-purple-100">
-                <span className="text-sm">🔒</span>
-                <span className="text-xs font-medium text-stone-600">登録すると全て見られます</span>
-              </div>
-            </div>
-          </div>
-
-          <button
-            onClick={() => setScreen('pricing')}
-            className="w-full py-4 rounded-full font-bold text-white text-base transition-all active:scale-[0.98]"
-            style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)', boxShadow: '0 8px 24px rgba(124, 58, 237, 0.3)' }}
-          >
-            プランを始める →
-          </button>
-
-          <p className="text-xs text-stone-400 text-center leading-relaxed">
-            あなたの回答をもとに作った内容です。<br />続きは登録後に、すべてご覧いただけます。
-          </p>
         </div>
       </div>
     );
   }
 
   if (screen === 'pricing') {
+    const sceneShort = SCENE_SHORT[onboarding.difficultScene ?? ''] || '';
+    const orientation = ORIENTATION_MAP[onboarding.changeOrientation ?? ''] ?? 'unknown';
+    const orientationLine =
+      orientation === 'change'
+        ? '「変わりたい」というあなたの気持ちに合わせて、少しずつ行動の幅を広げていく構成にしました。'
+        : orientation === 'accept'
+          ? '「今の自分を受け入れて楽になりたい」というあなたの気持ちに合わせて、自分を追い込まずに楽になっていく構成にしました。'
+          : 'まずは頭の中を整理することから始めて、無理なく進められる構成にしました。';
+
+    const screenshots = [
+      { src: '/paywall-shot-1.png', caption: '毎日ひとつ届く、あなた専用のミッション' },
+      { src: '/paywall-shot-2.png', caption: 'AIとの対話で、考え方のクセを一緒にほぐす' },
+      { src: '/paywall-shot-3.png', caption: '小さな変化が、足あととして積み上がっていく' },
+    ];
+
     return (
       <div className="min-h-screen px-5 py-12" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
         <div className="w-full max-w-sm mx-auto space-y-8">
+
+          {/* 個別化ヘッダー */}
           <div className="text-center space-y-3">
-            <h1 className="text-xl font-bold text-stone-900">一人でやるのは、難しい。<br />ココリフトが、毎日あなたの隣にいます。</h1>
-            <p className="text-sm text-stone-500">あなただけの30日プログラムが完成しました。<br />ここから、毎日の一歩を一緒に続けていきます。</p>
+            <span className="inline-block px-3 py-1 rounded-full bg-purple-100 text-purple-600 text-xs font-medium">
+              あなた専用のプランができました
+            </span>
+            <h1 className="text-2xl font-bold text-stone-900 leading-snug">
+              <span className="text-purple-600">{typeName}</span>のあなたのための<br />30日プログラム
+            </h1>
+            <p className="text-sm text-stone-500 leading-relaxed">
+              {sceneShort
+                ? <>{sceneShort}でしんどくなりやすいあなたに合わせています。<br /></>
+                : null}
+              {orientationLine}
+            </p>
+          </div>
+
+          {/* プランの中身（30日で何が起きるか） */}
+          <div className="bg-white rounded-3xl p-5 border border-purple-100 space-y-4">
+            <p className="text-xs text-purple-400 font-medium">30日間の流れ</p>
+            <div className="space-y-3">
+              {[
+                { icon: '/images/icon-write.png', title: 'まず、頭の中を整理する', body: 'しんどさの正体（事実と思い込みのズレ）に、書き出しながら気づいていきます' },
+                { icon: '/images/icon-sprout.png', title: '小さく、試してみる', body: '不安な場面を小さく再現して「思ってたより大丈夫だった」を少しずつ集めます' },
+                { icon: '/images/icon-path.png', title: '変化が、目に見えて残る', body: '毎日の記録が積み上がり、自分の変化がグラフと言葉で見えるようになります' },
+              ].map((s, i) => (
+                <div key={i} className="flex gap-3 items-start">
+                  <img src={s.icon} alt="" className="w-8 h-8 object-contain flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-bold text-stone-800">{s.title}</p>
+                    <p className="text-xs text-stone-500 leading-relaxed mt-0.5">{s.body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* アプリ実画面（画像が置かれたら表示される） */}
+          <div className="space-y-4">
+            {screenshots.map((s, i) => (
+              <div key={i} className="space-y-1.5">
+                <img
+                  src={s.src}
+                  alt=""
+                  className="w-full rounded-2xl border border-stone-100 shadow-sm"
+                  onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }}
+                />
+                <p className="text-xs text-stone-500 text-center">{s.caption}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center space-y-1">
+            <h2 className="text-lg font-bold text-stone-900">一人でやるのは、難しい。<br />だから、毎日となりにいます。</h2>
+            <p className="text-xs text-stone-500">登録すると、すぐにプログラムが始まります。</p>
           </div>
 
           <div className="space-y-4">
@@ -595,33 +485,6 @@ function ProgramPageInner() {
                   className="w-full py-4 rounded-full font-bold text-stone-700 border-2 border-stone-300 hover:border-purple-300 transition-all active:scale-[0.98] disabled:opacity-50"
                 >
                   {isLoading ? '処理中...' : 'プレミアムで始める'}
-                </button>
-              </div>
-            </div>
-
-            {/* ライト */}
-            <div className="bg-white rounded-3xl p-6 border border-stone-200">
-              <div className="space-y-4">
-                <div>
-                  <p className="font-bold text-stone-900">ライトプラン</p>
-                  <p className="text-xs text-stone-500 mt-1">自分のペースで進める</p>
-                </div>
-                <ul className="space-y-2.5 text-sm text-stone-600">
-                  <li className="flex gap-2"><span className="text-stone-300 mt-0.5">✓</span>詳細レポート（あなたの分析）</li>
-                  <li className="flex gap-2"><span className="text-stone-300 mt-0.5">✓</span>あなた専用の個別プラン（自分の地図）</li>
-                  <li className="flex gap-2"><span className="text-stone-300 mt-0.5">✓</span>ミッションの確認</li>
-                  <li className="flex gap-2 text-stone-400"><span className="text-stone-300 mt-0.5">−</span>ミッションの実行・記録・AIサポートは含まれません</li>
-                </ul>
-                <div className="flex items-end gap-1">
-                  <span className="text-3xl font-bold text-stone-900">¥980</span>
-                  <span className="text-stone-400 text-sm mb-1">／ 1ヶ月</span>
-                </div>
-                <button
-                  onClick={() => handleSelectPlan('light')}
-                  disabled={isLoading}
-                  className="w-full py-4 rounded-full font-bold text-stone-700 border-2 border-stone-300 hover:border-purple-300 transition-all active:scale-[0.98] disabled:opacity-50"
-                >
-                  {isLoading ? '処理中...' : 'ライトで始める'}
                 </button>
               </div>
             </div>

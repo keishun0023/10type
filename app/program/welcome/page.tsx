@@ -20,19 +20,46 @@ export default function WelcomePage() {
       const { data: { session } } = await sb.auth.getSession();
       const user = session?.user;
       if (!user) { router.replace('/program/dashboard'); return; }
-      const { data } = await sb.from('users').select('generated_plan, welcome_completed').eq('id', user.id).single();
+      const { data } = await sb.from('users').select('generated_plan, welcome_completed, diag_session').eq('id', user.id).single();
       if (data?.welcome_completed) { router.replace('/program/dashboard'); return; }
       const plan = data?.generated_plan as GeneratedPlan | null;
       const ws = plan?.welcomeSteps;
-      if (ws && ws.length > 0) setSteps(ws);
-      else { router.replace('/program/dashboard'); }
+      if (ws && ws.length > 0) { setSteps(ws); return; }
+
+      // プランがまだ無い：課金直後に裏で開始した生成の完了を待つ（最大約2分）。
+      // 完了したら users に保存してウェルカムを表示する。
+      if (data?.diag_session) {
+        for (let i = 0; i < 30; i++) {
+          await new Promise(r => setTimeout(r, 4000));
+          try {
+            const res = await fetch('/api/plan-by-session', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ diagSession: data.diag_session }),
+            });
+            const { plan: p } = await res.json() as { plan: GeneratedPlan | null };
+            if (p?.welcomeSteps && p.welcomeSteps.length > 0) {
+              if (p.config) p.config.userId = user.id;
+              await sb.from('users').update({ generated_plan: p, program_config: p.config ?? null }).eq('id', user.id);
+              setSteps(p.welcomeSteps);
+              return;
+            }
+          } catch { /* 次のポーリングで再試行 */ }
+        }
+      }
+      // 生成が間に合わなかった場合はダッシュボードへ（ダッシュボード側で生成を再開する）
+      router.replace('/program/dashboard');
     })();
   }, []);
 
   if (!steps) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-5" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
         <div className="w-10 h-10 rounded-full border-4 border-purple-200 border-t-purple-500 animate-spin" />
+        <div className="text-center space-y-1">
+          <p className="text-sm font-bold text-purple-600">あなた専用のプログラムを仕上げています</p>
+          <p className="text-xs text-stone-400">診断とご回答をもとに作成中です。少しだけお待ちください。</p>
+        </div>
       </div>
     );
   }

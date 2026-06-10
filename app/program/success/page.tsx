@@ -28,6 +28,16 @@ function SuccessPageInner() {
       .then(data => {
         setMeta(data);
         if (data.email) setEmail(data.email);
+        // 課金完了直後にプラン生成を裏で開始（ユーザーがアカウント作成している間に終わらせる）。
+        // onboardingはdiagnosticsに保存済みなので渡さない（metadataのslim版で上書きしないため）。
+        if (data.diagSession && !sessionStorage.getItem(`plan_gen_${data.diagSession}`)) {
+          sessionStorage.setItem(`plan_gen_${data.diagSession}`, '1');
+          fetch('/api/generate-plan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ diagSession: data.diagSession, typeId: data.typeId, phase: 'preview' }),
+          }).catch(() => {});
+        }
       });
   }, [sessionId]);
 

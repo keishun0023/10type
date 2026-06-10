@@ -520,6 +520,10 @@ export default function DashboardPage() {
       if ((data.generated_plan as GeneratedPlan).phase === 'preview' && data.diag_session) {
         upgradeToFullPlan(uid, data.diag_session, data.type_id || 'distancer');
       }
+    } else if (data.diag_session) {
+      // 課金後の生成がまだ終わっていない（or 失敗した）場合のフォールバック。
+      // generate-plan(full) はプレビューが無ければ先にプレビューも作る。
+      upgradeToFullPlan(uid, data.diag_session, data.type_id || 'distancer');
     }
     setProfileData({
       username: data.username || '',

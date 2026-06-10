@@ -55,3 +55,17 @@ export async function updateDiagnosticFeedback(
   if (error) console.warn('[analytics] updateDiagnosticFeedback failed:', error.message);
   else console.log('[analytics] updateDiagnosticFeedback updated rows:', count, 'session_id:', sessionId);
 }
+
+// オンボーディング回答を diagnostics に保存（課金前のAI生成を廃止したため、ここで直接保存する）
+export async function updateDiagnosticOnboarding(
+  sessionId: string,
+  onboarding: Record<string, string>
+): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) return;
+  const { error } = await sb
+    .from('diagnostics')
+    .update({ onboarding })
+    .eq('session_id', sessionId);
+  if (error) console.warn('[analytics] updateDiagnosticOnboarding failed:', error.message);
+}
