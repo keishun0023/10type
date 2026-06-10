@@ -430,7 +430,7 @@ function ProgramPageInner() {
             <span className="inline-block px-3 py-1 rounded-full bg-purple-100 text-purple-600 text-xs font-medium">
               ✦ 診断結果から作成しました
             </span>
-            <h1 className="text-2xl font-bold text-stone-900 leading-snug">
+            <h1 className="text-3xl font-bold text-stone-900 leading-snug">
               <span className="text-purple-600">{typeName}</span>向けに、<br />30日間の&ldquo;小さな一歩&rdquo;を<br />用意しました
             </h1>
             <p className="text-sm text-stone-500 leading-relaxed">
@@ -475,7 +475,7 @@ function ProgramPageInner() {
           {/* ── 2. 無料診断と有料プログラムの違い ── */}
           <div ref={contentRef} className="space-y-5 scroll-mt-6">
             <div className="text-center space-y-3">
-              <h2 className="text-xl font-bold text-stone-900 leading-snug">診断結果を、<br /><span className="text-purple-600">毎日の行動</span>に落とし込みます</h2>
+              <h2 className="text-2xl font-bold text-stone-900 leading-snug">診断結果を、<br /><span className="text-purple-600">毎日の行動</span>に落とし込みます</h2>
               <p className="text-sm text-stone-500 leading-relaxed">
                 無料診断では、あなたのしんどさの傾向を整理しました。ここから先のプログラムでは、その結果をもとに「今日なにをするか」まで具体化していきます。
               </p>
@@ -510,7 +510,7 @@ function ProgramPageInner() {
             <Leaf className="absolute -left-4 -top-2 w-9 opacity-60 -rotate-12 scale-x-[-1]" />
             <Leaf className="absolute -right-4 top-6 w-9 opacity-60 rotate-12" />
             <div className="text-center space-y-2">
-              <h2 className="text-xl font-bold text-stone-900 leading-snug">あなたの<span className="text-purple-600">最初の3日間</span>は、<br />こんな内容です</h2>
+              <h2 className="text-2xl font-bold text-stone-900 leading-snug">あなたの<span className="text-purple-600">最初の3日間</span>は、<br />こんな内容です</h2>
               <p className="text-xs text-stone-400 leading-relaxed">回答内容に合わせて、最初は負担の少ないミッションから始まります。（内容の一例です）</p>
             </div>
             <div className="space-y-3">
@@ -546,7 +546,7 @@ function ProgramPageInner() {
             <Leaf className="absolute -left-3 top-2 w-10 opacity-60 -rotate-6 scale-x-[-1]" />
             <Leaf className="absolute -right-3 top-10 w-8 opacity-50 rotate-45" />
             <div className="text-center space-y-3">
-              <h2 className="text-xl font-bold text-stone-900 leading-snug">いきなり<span className="text-purple-600">変わろうとしなくて</span><br />大丈夫です</h2>
+              <h2 className="text-2xl font-bold text-stone-900 leading-snug">いきなり<span className="text-purple-600">変わろうとしなくて</span><br />大丈夫です</h2>
               <p className="text-sm text-stone-500 leading-relaxed">
                 ココリフトは、気合いで頑張るためのサービスではありません。考えを整理し、小さく試し、振り返る流れを毎日少しずつ積み上げます。
               </p>
@@ -573,7 +573,7 @@ function ProgramPageInner() {
 
           {/* ── 5. アプリ実画面（画像が置かれたら表示される） ── */}
           <div className="space-y-5">
-            <h2 className="text-xl font-bold text-stone-900 leading-snug text-center">実際には、<br /><span className="text-purple-600">こんな画面</span>で進めます</h2>
+            <h2 className="text-2xl font-bold text-stone-900 leading-snug text-center">実際には、<br /><span className="text-purple-600">こんな画面</span>で進めます</h2>
             <div className="space-y-6">
               {screenshots.map((s, i) => (
                 <div key={i} className="space-y-3">
@@ -600,7 +600,7 @@ function ProgramPageInner() {
           <div className="space-y-4">
             <div className="relative">
               <Leaf className="absolute -right-3 -top-3 w-9 opacity-60 rotate-12" />
-              <h2 className="text-xl font-bold text-stone-900 text-center">こんな方に<span className="text-purple-600">向いています</span></h2>
+              <h2 className="text-2xl font-bold text-stone-900 text-center">こんな方に<span className="text-purple-600">向いています</span></h2>
             </div>
             <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-3">
               <p className="text-sm font-bold text-stone-800 text-center">向いている方</p>
@@ -742,7 +742,7 @@ function ProgramPageInner() {
             <div className="text-center space-y-3 relative">
               <Leaf className="absolute left-0 top-1 w-9 opacity-60 -rotate-12 scale-x-[-1]" />
               <Leaf className="absolute right-0 top-1 w-9 opacity-60 rotate-12" />
-              <h2 className="text-xl font-bold text-stone-900 leading-snug px-10">迷ったら、まずは<span className="text-purple-600">スタンダード</span>で十分です</h2>
+              <h2 className="text-2xl font-bold text-stone-900 leading-snug px-10">迷ったら、まずは<span className="text-purple-600">スタンダード</span>で十分です</h2>
               <p className="text-sm text-stone-500 leading-relaxed">
                 30日プログラムを進めるための機能は、スタンダードにすべて含まれています。ミッション以外でもいつでもAIに相談したい場合は、プレミアムを選べます。
               </p>
