@@ -98,40 +98,6 @@ const SCENE_DETAILS: Record<string, string[]> = {
   ],
 };
 
-// ペイウォールの個別化見出し用：しんどい場面の短縮ラベル
-const SCENE_SHORT: Record<string, string> = {
-  '評価される・見られる場面（発表・提出・ミスなど）': '評価される場面',
-  '予定が変わったり、見通しが立たないとき': '見通しが立たない場面',
-  '人に頼んだり、断ったりしないといけないとき': '頼む・断る場面',
-  '大切な人との関係がギクシャクしたとき': '大切な人との関係',
-};
-
-// しんどい場面ごとの「最初の3日間」プレビュー（内容の一例。実際のミッションは課金後にAI生成）
-type DayPreview = { title: string; body: string };
-const DAY_PREVIEWS: Record<string, DayPreview[]> = {
-  '評価される・見られる場面（発表・提出・ミスなど）': [
-    { title: '頭の中の言葉を外に出す', body: '評価される場面で浮かびやすい考えを、3つだけ書き出します。' },
-    { title: '事実と思い込みを分ける', body: '「本当に起きたこと」と「頭の中で想像したこと」を分けて整理します。' },
-    { title: '小さく試す準備をする', body: '不安が強すぎない場面を選び、できそうな一歩を一緒に決めます。' },
-  ],
-  '予定が変わったり、見通しが立たないとき': [
-    { title: '不安の正体を言葉にする', body: '「決まっていないこと」の何が不安なのか、3つだけ書き出します。' },
-    { title: '決められることと、決められないことを分ける', body: '自分で決められることと、相手や状況しだいのことを分けて整理します。' },
-    { title: '小さく試す準備をする', body: '不安が強すぎない場面を選び、できそうな一歩を一緒に決めます。' },
-  ],
-  '人に頼んだり、断ったりしないといけないとき': [
-    { title: '頭の中の言葉を外に出す', body: '頼みたい・断りたいのに言えなかった場面で浮かんだ考えを、3つだけ書き出します。' },
-    { title: '事実と思い込みを分ける', body: '「相手が実際に言ったこと」と「自分が想像したこと」を分けて整理します。' },
-    { title: '小さく試す準備をする', body: '負担の少ない相手・場面を選び、できそうな一言を一緒に決めます。' },
-  ],
-  '大切な人との関係がギクシャクしたとき': [
-    { title: '不安になった瞬間を書き出す', body: '「関係がまずいかも」と感じた瞬間に浮かんだ考えを、3つだけ書き出します。' },
-    { title: '事実と想像を分ける', body: '「実際に起きたこと」と「頭の中で広がった想像」を分けて整理します。' },
-    { title: '小さく試す準備をする', body: '不安が強すぎない相手を選び、できそうな小さな一歩を一緒に決めます。' },
-  ],
-};
-const DEFAULT_DAY_PREVIEW = DAY_PREVIEWS['評価される・見られる場面（発表・提出・ミスなど）'];
-
 const FAQ_ITEMS = [
   {
     q: 'どれくらい時間がかかりますか？',
@@ -161,33 +127,13 @@ const BUILDING_STEPS = [
   'プランの構成を決めています',
 ];
 
-// 装飾用の葉っぱ（public/paywall-leaf.png を置くと表示される。無ければ自動非表示）
-function Leaf({ className, style }: { className?: string; style?: React.CSSProperties }) {
+// チェック行（紫丸✓＋テキスト）
+function CheckItem({ text }: { text: string }) {
   return (
-    <img
-      src="/paywall-leaf.png"
-      alt=""
-      className={`pointer-events-none select-none ${className ?? ''}`}
-      style={style}
-      onError={e => { e.currentTarget.style.display = 'none'; }}
-    />
-  );
-}
-
-
-// 専用イラスト（public/paywall-icon-*.png）を優先し、無ければ既存アイコンにフォールバック
-function PIcon({ src, fallback, className }: { src: string; fallback: string; className?: string }) {
-  return (
-    <img
-      src={src}
-      alt=""
-      className={className}
-      onError={e => {
-        if (e.currentTarget.dataset.fb) return;
-        e.currentTarget.dataset.fb = '1';
-        e.currentTarget.src = fallback;
-      }}
-    />
+    <li className="flex gap-2.5 items-start text-sm font-medium text-stone-700 leading-relaxed">
+      <span className="w-5 h-5 rounded-full bg-violet-500 text-white text-[10px] flex items-center justify-center flex-shrink-0 mt-0.5">✓</span>
+      {text}
+    </li>
   );
 }
 
@@ -204,7 +150,14 @@ function ProgramPageInner() {
   const [isLoading, setIsLoading] = useState(false);
   const [faqOpen, setFaqOpen] = useState<number | null>(null);
   const [planDetailOpen, setPlanDetailOpen] = useState(false);
-  const contentRef = useRef<HTMLDivElement>(null);
+
+  // スティッキーCTA：FV通過後に表示、プランゾーン・フッター表示中は隠す
+  const fvRef = useRef<HTMLElement>(null);
+  const plansRef = useRef<HTMLElement>(null);
+  const footerRef = useRef<HTMLElement>(null);
+  const [pastFV, setPastFV] = useState(false);
+  const [inPlans, setInPlans] = useState(false);
+  const [inFooter, setInFooter] = useState(false);
 
   // 深掘り（具体的な困りごと）
   const [detailSelected, setDetailSelected] = useState<string[]>([]);
@@ -227,6 +180,25 @@ function ProgramPageInner() {
     }, 900);
     return () => clearInterval(interval);
   }, [screen]);
+
+  useEffect(() => {
+    if (screen !== 'pricing') return;
+    const observers: IntersectionObserver[] = [];
+    const watch = (el: Element | null, cb: (v: boolean) => void, threshold: number) => {
+      if (!el) return;
+      const o = new IntersectionObserver(([e]) => cb(e.isIntersecting), { threshold });
+      o.observe(el);
+      observers.push(o);
+    };
+    watch(fvRef.current, v => setPastFV(!v), 0);
+    watch(plansRef.current, v => setInPlans(v), 0.08);
+    watch(footerRef.current, v => setInFooter(v), 0.2);
+    return () => observers.forEach(o => o.disconnect());
+  }, [screen]);
+
+  function scrollToPlans() {
+    plansRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }
 
   function handleAnswer(value: string) {
     const key = ONBOARDING_QUESTIONS[questionIndex].key;
@@ -422,288 +394,195 @@ function ProgramPageInner() {
   }
 
   if (screen === 'pricing') {
-    const sceneShort = SCENE_SHORT[onboarding.difficultScene ?? ''] || '';
-    const dayPreviews = DAY_PREVIEWS[onboarding.difficultScene ?? ''] ?? DEFAULT_DAY_PREVIEW;
-
     const screenshots = [
       { src: '/paywall-shot-1.png', badge: '今日のミッション', title: '今日やることは1つだけ', body: '毎日、今のあなたに合わせた小さなミッションが表示されます' },
       { src: '/paywall-shot-2.png', badge: 'AI対話', title: '不安をひとりで抱え込まない', body: '出来事・考え・感情を、AIと一緒に整理できます' },
       { src: '/paywall-shot-3.png', badge: '成長記録', title: '変化が見えるから、続けやすい', body: '取り組んだ回数や気づきが残り、変化を振り返れます' },
     ];
 
+    const showSticky = pastFV && !inPlans && !inFooter;
+
     return (
-      <div className="min-h-screen px-5 py-12 relative" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
-        {/* 背景テクスチャ（public/paywall-texture.jpg を置くと表示。縦に繰り返し） */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{ backgroundImage: 'url(/paywall-texture.jpg)', backgroundSize: '100% auto', backgroundRepeat: 'repeat-y' }}
-        />
-        <div className="w-full max-w-sm mx-auto space-y-12 relative">
+      <div className="min-h-screen bg-[#faf9ff] text-stone-800">
+        <div className="mx-auto max-w-[26.875rem] min-h-screen relative">
 
-          {/* ── 1. ファーストビュー ── */}
-          <div className="text-center space-y-4 relative">
-            <Leaf className="absolute -right-5 top-14 w-20 rotate-12" />
-            <Leaf className="absolute -left-5 top-48 w-16 opacity-80 -rotate-45 scale-x-[-1]" />
-            <span className="inline-block px-3 py-1 rounded-full bg-purple-100 text-purple-600 text-xs font-medium">
-              ✦ 診断結果から作成しました
-            </span>
-            <h1 className="text-[22px] font-bold text-stone-900 leading-snug">
-              <span className="inline-block -mr-[0.5em]"><span className="text-purple-600 text-[26px]">{typeName}</span>向けに、</span><br />30日間の&ldquo;小さな一歩&rdquo;を<br />用意しました
+          {/* ════ 1. ファーストビュー ════ */}
+          <section
+            ref={fvRef}
+            className="px-6 pt-10 pb-12 text-center"
+            style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.45), rgba(255,255,255,0.45)), url(/paywall-texture.jpg)', backgroundSize: '100% auto', backgroundRepeat: 'repeat-y', backgroundPosition: 'top center' }}
+          >
+            <img src="/intro-service-icon.png" alt="" className="w-12 h-12 mx-auto" />
+            <img src="/intro-logo.png" alt="ココリフト" className="h-6 mx-auto mt-2 object-contain" />
+
+            <h1 className="font-bold leading-[1.6] mt-6 text-stone-900 text-[22px]">
+              <span className="text-[25px]"><span className="text-violet-600" style={{ background: 'linear-gradient(transparent 72%, #ddd2f9 72%)', paddingBottom: 2 }}>{typeName}</span>向けに、</span><br />詳細レポートと個別プログラムを<br />用意しました
             </h1>
-            {/* ミニ価値訴求 */}
-            <div className="bg-white rounded-3xl p-4 border border-stone-100 grid grid-cols-3 divide-x divide-stone-100">
-              {[
-                { icon: '/images/icon-day.png', label: '毎日5分の\nミッション', op: 'opacity-70' },
-                { icon: '/images/icon-cloud.png', label: 'AIと不安を\n整理', op: '' },
-                { icon: '/images/icon-sparkle.png', label: '変化が\n記録で見える', op: 'opacity-80' },
-              ].map((f, i) => (
-                <div key={i} className="flex flex-col items-center gap-1.5 px-1">
-                  <img src={f.icon} alt="" className={`w-8 h-8 object-contain ${f.op}`} />
-                  <p className="text-xs text-stone-600 font-medium text-center whitespace-pre-line leading-tight">{f.label}</p>
-                </div>
-              ))}
-            </div>
 
-            <p className="text-sm text-stone-500 leading-relaxed">
-              {sceneShort ? <>{sceneShort}でしんどくなりやすいあなたへ。<br /></> : null}
-              まずは頭の中を整理し、無理のない<br />小さな行動から始めます。
-            </p>
-
-            {/* 価格の予告 */}
-            <div className="bg-white rounded-3xl p-5 border border-purple-100 space-y-3">
-              <span className="inline-block px-3 py-1 rounded-full bg-purple-50 text-purple-500 text-xs font-medium border border-purple-100">
-                無料診断を受けた方限定
-              </span>
-              <div className="flex items-center justify-center gap-1.5">
-                <span className="text-base text-stone-400 line-through">¥4,980</span>
-                <span className="text-purple-400 text-lg">→</span>
-                <span className="text-3xl font-bold text-purple-600">¥3,980</span>
-                <span className="flex flex-col items-start text-[10px] text-stone-400 leading-tight">
-                  <span>（税込）</span>
-                  <span>買い切り</span>
-                </span>
+            {/* 実画面プレビュー：詳細レポート × 個別プログラム */}
+            <div className="relative mt-7 h-[312px]">
+              <div className="absolute left-0 top-7 w-[55%] -rotate-3 rounded-[20px] bg-white ring-1 ring-violet-100 shadow-[0_16px_40px_-14px_rgba(80,40,160,0.35)] overflow-hidden aspect-[3/4]">
+                <img src="/paywall-fv-report.png" alt="詳細レポート画面" className="w-full h-full object-cover object-top scale-125 origin-top" onError={e => { e.currentTarget.style.display = 'none'; }} />
+                <span className="absolute bottom-2.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-white/90 ring-1 ring-violet-200 text-violet-600 text-[10px] font-bold whitespace-nowrap">詳細レポート</span>
               </div>
-              <button
-                onClick={() => contentRef.current?.scrollIntoView({ behavior: 'smooth' })}
-                className="w-full py-4 rounded-full font-bold text-white text-base transition-all active:scale-[0.98]"
-                style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)', boxShadow: '0 8px 24px rgba(124, 58, 237, 0.3)' }}
-              >
-                内容を見てプランを選ぶ
-              </button>
-              <p className="text-xs text-stone-400">下にスクロールして詳細を確認できます</p>
-            </div>
-          </div>
-
-          {/* ── 2. 無料診断と有料プログラムの違い ── */}
-          <div ref={contentRef} className="space-y-5 scroll-mt-6">
-            <div className="text-center space-y-3">
-              <h2 className="text-xl font-bold text-stone-900 leading-snug">診断結果を、<br /><span className="text-purple-600 text-2xl" style={{ background: 'linear-gradient(transparent 62%, #e9d5ff 62%)' }}>毎日の行動</span><span style={{ background: 'linear-gradient(transparent 62%, #e9d5ff 62%)' }}>に落とし込みます</span></h2>
-              <p className="text-xs text-stone-500 leading-relaxed">
-                ここから先のプログラムでは、<br />あなたのしんどさの傾向を元に<br />「今日何をするか」まで具体化していきます
-              </p>
-            </div>
-            <div className="space-y-2">
-              {[
-                { icon: '/paywall-icon-diagnosis.png', fb: '/images/icon-write.png', title: '無料診断', body: 'あなたの内面や不安を分析', done: true },
-                { icon: '/paywall-icon-program.png', fb: '/images/icon-calendar.png', title: 'パーソナライズされたプログラム', body: 'あなたの認知と行動にアプローチ', done: false },
-                { icon: '/paywall-icon-reflect.png', fb: '/images/icon-cloud.png', title: '考え方のクセを修正', body: '「生きづらさ」や「考えすぎ」が軽くなる', done: false },
-              ].map((s, i) => (
-                <div key={i}>
-                  {i > 0 && <p className="text-center text-purple-400 text-lg leading-none py-1">↓</p>}
-                  <div className="bg-white rounded-2xl p-4 border border-stone-100 flex items-center gap-3">
-                    <div className="w-14 h-14 rounded-full bg-purple-50 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                      <PIcon src={s.icon} fallback={s.fb} className="w-10 h-10 object-contain" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-bold text-stone-800">{s.title}</p>
-                      <p className="text-xs text-stone-500 mt-0.5">{s.body}</p>
-                    </div>
-                    {s.done && (
-                      <span className="px-2.5 py-1 rounded-full bg-purple-50 text-purple-500 text-xs font-medium border border-purple-100">済 ✓</span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* ── 3. 最初の3日間プレビュー ── */}
-          <div className="space-y-5 relative">
-            <Leaf className="absolute -left-5 -top-4 w-16 -rotate-12 scale-x-[-1]" />
-            <Leaf className="absolute -right-5 top-4 w-16 rotate-12" />
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-stone-900 leading-snug">あなたの<span className="text-purple-600">最初の3日間</span>は、<br />こんな内容です</h2>
-            </div>
-            <div className="space-y-3">
-              {dayPreviews.map((d, i) => {
-                const dayIcons = ['/paywall-icon-day1.png', '/paywall-icon-day2.png', '/paywall-icon-day3.png'];
-                const dayFallbacks = ['/images/icon-write.png', '/images/icon-balance.png', '/images/icon-path.png'];
-                return (
-                  <div key={i} className="bg-white rounded-2xl p-5 border border-stone-100 space-y-3">
-                    <span className="inline-block px-2.5 py-0.5 rounded-full bg-purple-500 text-white text-xs font-bold">Day {i + 1}</span>
-                    <div className="flex gap-4 items-center">
-                      <div className="w-14 h-14 rounded-full bg-purple-50 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                        <PIcon src={dayIcons[i]} fallback={dayFallbacks[i]} className="w-10 h-10 object-contain" />
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-base font-bold text-stone-800 leading-snug">{d.title}</p>
-                        <p className="text-xs text-stone-500 leading-relaxed">{d.body}</p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <p className="text-xs text-stone-400 leading-relaxed text-center">回答内容に合わせて、最初は負担の少ないミッションから始まります。（内容の一例です）</p>
-          </div>
-
-          {/* ── 4. 30日間の流れ ── */}
-          <div className="space-y-5 relative">
-            <Leaf className="absolute -left-5 top-0 w-20 -rotate-6 scale-x-[-1]" />
-            <Leaf className="absolute -right-5 top-8 w-16 opacity-80 rotate-45" />
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-stone-900 leading-snug">いきなり<span className="text-purple-600">変わろうとしなくて</span><br />大丈夫です</h2>
-            </div>
-            <div className="space-y-3">
-              {[
-                { icon: '/images/icon-write.png', op: 'opacity-60', title: 'まず、頭の中を整理する', body: '不安になった出来事を、事実と思い込みに分けて見ていきます' },
-                { icon: '/images/icon-sprout.png', op: 'opacity-60', title: '小さく、試してみる', body: 'いきなり大きな挑戦ではなく、できそうな一歩から始めます' },
-                { icon: '/images/icon-sparkle.png', op: '', title: '変化を、見える形で残す', body: '毎日の記録が積み上がり、変化を言葉とグラフで見返せます' },
-              ].map((s, i) => (
-                <div key={i} className="bg-white rounded-2xl p-5 border border-stone-100 space-y-3">
-                  <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-purple-500 text-white text-xs font-bold">{i + 1}</span>
-                  <div className="flex gap-4 items-center">
-                    <img src={s.icon} alt="" className={`w-10 h-10 object-contain flex-shrink-0 ${s.op}`} />
-                    <div className="space-y-1">
-                      <p className="text-base font-bold text-stone-800 leading-snug">{s.title}</p>
-                      <p className="text-xs text-stone-500 leading-relaxed">{s.body}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <p className="text-xs text-stone-500 leading-relaxed text-center">
-              ココリフトは、気合いで頑張るためのサービスではありません。考えを整理し、小さく試し、振り返る流れを毎日少しずつ積み上げます。
-            </p>
-          </div>
-
-          {/* ── 5. アプリ実画面（画像が置かれたら表示される） ── */}
-          <div className="space-y-5">
-            <h2 className="text-2xl font-bold text-stone-900 leading-snug text-center">実際には、<br /><span className="text-purple-600">こんな画面</span>で進めます</h2>
-            <div className="space-y-6">
-              {screenshots.map((s, i) => (
-                <div key={i} className="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 pt-6 flex gap-4 items-center relative">
-                  {/* バッジはカード上端に跨がせる */}
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap px-4 py-1 rounded-full bg-purple-500 text-white text-xs font-bold">{s.badge}</span>
-                  {/* 左：スクショ（上部クロップ＋下端白フェード） 右：説明 */}
-                  <div className="relative w-2/5 flex-shrink-0 aspect-[3/4] overflow-hidden rounded-xl">
-                    <img
-                      src={s.src}
-                      alt=""
-                      className="w-full object-cover object-top"
-                      onError={e => { const card = e.currentTarget.closest('.rounded-3xl') as HTMLElement | null; if (card) card.style.display = 'none'; }}
-                    />
-                    <div className="absolute bottom-0 left-0 right-0 h-10 pointer-events-none" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0), #ffffff)' }} />
-                  </div>
-                  <div className="flex-1 space-y-1.5">
-                    <p className="text-base font-bold text-stone-800 leading-snug">{s.title}</p>
-                    <p className="text-xs text-stone-500 leading-relaxed">{s.body}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* ── 6. 向いている人・向いていない人 ── */}
-          <div className="space-y-4">
-            <div className="relative">
-              <Leaf className="absolute -right-4 -top-6 w-16 rotate-12" />
-              <h2 className="text-2xl font-bold text-stone-900 text-center underline decoration-purple-300 decoration-4 underline-offset-8">こんな方に<span className="text-purple-600">向いています</span></h2>
-            </div>
-            <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-3">
-              <p className="text-sm font-bold text-stone-800 text-center">向いている方</p>
-              <ul className="space-y-2.5">
-                {[
-                  '考えすぎて動けなくなることがある',
-                  '自分のしんどさの原因を、ちゃんと理解したい',
-                  '変わりたいけど、何から始めればいいかわからない',
-                  'AIと一緒に、自分の気持ちを整理しながら進めたい',
-                ].map((t, i) => (
-                  <li key={i} className="flex gap-2.5 items-start text-sm text-stone-700">
-                    <span className="w-5 h-5 rounded-full bg-purple-500 text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">✓</span>
-                    {t}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-3">
-              <p className="text-sm font-bold text-stone-800 text-center">向いていない方</p>
-              <ul className="space-y-2.5">
-                {[
-                  '今すぐ医療的なサポートや専門家との面談が必要な方',
-                  'AIとのやりとりに強い抵抗がある方',
-                ].map((t, i) => (
-                  <li key={i} className="flex gap-2.5 items-start text-sm text-stone-500">
-                    <span className="w-5 h-5 rounded-full bg-stone-200 text-stone-500 text-xs flex items-center justify-center flex-shrink-0 mt-0.5">−</span>
-                    {t}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <p className="text-xs text-stone-400 text-center leading-relaxed">無理におすすめするものではありません。<br />ご自身に合う形でご検討ください。</p>
-          </div>
-
-          {/* ── 7. プランカード ── */}
-          <div className="space-y-4">
-            {/* スタンダード（推奨） */}
-            <div className="bg-white rounded-3xl p-6 border-2 border-purple-400 relative shadow-lg shadow-purple-100">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                <span className="bg-purple-500 text-white text-sm font-bold px-10 py-1.5 rounded-full">✦ おすすめ ✦</span>
+              <div className="absolute right-0 top-0 w-[55%] rotate-2 rounded-[20px] bg-white ring-1 ring-violet-100 shadow-[0_20px_44px_-14px_rgba(80,40,160,0.4)] overflow-hidden aspect-[3/4] z-10">
+                <img src="/paywall-fv-program.png" alt="個別プログラム画面" className="w-full h-full object-cover object-top scale-125 origin-top" onError={e => { e.currentTarget.style.display = 'none'; }} />
+                <span className="absolute bottom-2.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-violet-500 text-white text-[10px] font-bold whitespace-nowrap">個別プログラム</span>
               </div>
-              <div className="space-y-4 text-center pt-2">
-                <div>
-                  <p className="text-2xl font-bold text-stone-900">スタンダード</p>
-                  <p className="text-xs text-stone-500 mt-1">30日プログラムを一通り進めたい方へ</p>
-                </div>
-                <div>
-                  <div className="flex items-center justify-center gap-1.5">
-                    <span className="text-lg text-stone-400 line-through">¥4,980</span>
-                    <span className="text-purple-400 text-xl">→</span>
-                    <span className="text-4xl font-bold text-purple-600">¥3,980</span>
-                    <span className="text-sm text-stone-400 self-end mb-1">（税込）</span>
-                  </div>
-                  <p className="text-xs text-stone-400 mt-1">買い切り・自動更新なし</p>
-                </div>
+            </div>
+
+            {/* 価値訴求カード */}
+            <div className="mt-6 rounded-[28px] p-[1.5px] bg-gradient-to-b from-violet-300 via-violet-100 to-white shadow-[0_24px_48px_-20px_rgba(124,58,237,0.35)]">
+              <div className="rounded-[27px] bg-white px-6 pt-6 pb-6">
+                <ul className="space-y-2.5 text-left">
+                  <CheckItem text="あなたの恐れと不安を可視化する詳細レポート" />
+                  <CheckItem text="あなた専用の30日ミッション" />
+                  <CheckItem text="AIによる記録・フィードバック" />
+                </ul>
                 <button
-                  onClick={() => handleSelectPlan('standard')}
-                  disabled={isLoading}
-                  className="w-full py-4 rounded-full font-bold text-white text-base transition-all active:scale-[0.98] disabled:opacity-50"
+                  onClick={scrollToPlans}
+                  className="mt-5 w-full py-4 rounded-full font-bold text-white text-[15px] active:scale-[0.98] transition-all"
                   style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)', boxShadow: '0 8px 24px rgba(124, 58, 237, 0.3)' }}
                 >
-                  {isLoading ? '処理中...' : 'スタンダードで始める'}
+                  プログラムを試してみる
                 </button>
-                <ul className="space-y-2.5 text-left">
+                <p className="mt-3 flex items-baseline justify-center gap-1.5">
+                  <span className="text-[24px] font-black text-violet-600 tracking-tight">¥3,980</span>
+                  <span className="text-xs text-stone-500 font-medium">（税込）</span>
+                  <span className="text-sm text-stone-600 font-bold">1ヶ月分</span>
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* ════ 2. 詳細レポート ════ */}
+          <section className="bg-white px-6 py-12">
+            <p className="text-center text-[11px] font-bold tracking-[0.18em] text-violet-500">REPORT</p>
+            <h2 className="font-bold text-[22px] text-center leading-snug mt-2 text-stone-900">
+              合計<span className="text-violet-600">8軸</span>からなる<br />詳細なレポートをお届けします
+            </h2>
+            <p className="text-xs text-stone-500 leading-relaxed text-center mt-3">
+              「なんとなくしんどい」の正体を、<br />4つの恐れ×認知・行動の8軸で可視化。<br />自分でも気づいていなかったパターンが、<br />言葉になって見えてきます。
+            </p>
+            <div className="mt-7 mx-auto w-[72%] rounded-[20px] bg-white ring-1 ring-violet-100 shadow-[0_16px_40px_-14px_rgba(80,40,160,0.3)] overflow-hidden aspect-[3/4]">
+              <img src="/paywall-fv-report.png" alt="詳細レポート画面" className="w-full h-full object-cover object-top" onError={e => { e.currentTarget.style.display = 'none'; }} />
+            </div>
+          </section>
+
+          {/* ════ 3. 日替わりミッション ════ */}
+          <section className="bg-[#f4f1fc] px-6 py-12">
+            <p className="text-center text-[11px] font-bold tracking-[0.18em] text-violet-500">PROGRAM</p>
+            <h2 className="font-bold text-[22px] text-center leading-snug mt-2 text-stone-900">
+              レポートを元にした、<br /><span className="text-violet-600">日替わりのミッション</span>を<br />届けます
+            </h2>
+            <p className="text-xs text-stone-500 leading-relaxed text-center mt-3">
+              読んで終わりにしない。<br />あなたのパターンに合わせた小さなミッションが毎日届き、<br />30日かけて少しずつ反応のクセをほぐしていきます。
+            </p>
+            <div className="mt-7 mx-auto w-[72%] rounded-[20px] bg-white ring-1 ring-violet-100 shadow-[0_16px_40px_-14px_rgba(80,40,160,0.3)] overflow-hidden aspect-[3/4]">
+              <img src="/paywall-fv-program.png" alt="個別プログラム画面" className="w-full h-full object-cover object-top" onError={e => { e.currentTarget.style.display = 'none'; }} />
+            </div>
+          </section>
+
+          {/* ════ 4. アプリ実画面 ════ */}
+          <section className="bg-white px-6 py-12">
+            <p className="text-center text-[11px] font-bold tracking-[0.18em] text-violet-500">SCREENS</p>
+            <h2 className="font-bold text-[22px] text-center leading-snug mt-2 text-stone-900">
+              実際には、<span className="text-violet-600">こんな画面</span>で<br />進めます
+            </h2>
+
+            <div className="mt-7 space-y-5">
+              {screenshots.map((s, i) => (
+                <div key={i} className={`rounded-[24px] bg-white shadow-sm ring-1 ring-violet-100/60 p-4 flex gap-4 items-stretch ${i === 1 ? 'flex-row-reverse' : ''}`}>
+                  <div className="relative w-[42%] flex-shrink-0 aspect-[3/4] rounded-2xl ring-1 ring-violet-100 overflow-hidden">
+                    <img src={s.src} alt="" className="w-full h-full object-cover object-top" onError={e => { e.currentTarget.style.display = 'none'; }} />
+                    <div className="absolute bottom-0 left-0 right-0 h-8 pointer-events-none" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0), #ffffff)' }} />
+                  </div>
+                  <div className="flex-1 py-1 flex flex-col justify-center">
+                    <span className="self-start px-2.5 py-0.5 rounded-full bg-violet-100 text-violet-700 text-[10px] font-bold">{s.badge}</span>
+                    <p className="text-[15px] font-bold text-stone-800 leading-snug mt-2">{s.title}</p>
+                    <p className="text-xs text-stone-500 leading-relaxed mt-1.5">{s.body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* ════ 5. 向いている方／向いていない方 ════ */}
+          <section className="bg-[#f4f1fc] px-6 py-12">
+            <p className="text-center text-[11px] font-bold tracking-[0.18em] text-violet-500">FOR YOU?</p>
+            <h2 className="font-bold text-[22px] text-center leading-snug mt-2 text-stone-900">
+              こんな方に<span className="text-violet-600">向いています</span>
+            </h2>
+
+            <div className="mt-7 rounded-[24px] ring-1 ring-violet-100 overflow-hidden">
+              <div className="bg-white px-5 py-5">
+                <ul className="space-y-3">
+                  <CheckItem text="考えすぎて動けなくなることがある" />
+                  <CheckItem text="自分のしんどさの原因を、ちゃんと理解したい" />
+                  <CheckItem text="変わりたいけど、何から始めればいいかわからない" />
+                  <CheckItem text="AIと一緒に、自分の気持ちを整理しながら進めたい" />
+                </ul>
+              </div>
+              <div className="bg-white/60 px-5 py-4 border-t border-violet-100">
+                <p className="text-[11px] font-bold text-stone-400 mb-2">向いていない方</p>
+                <ul className="space-y-2">
                   {[
-                    'あなた専用の30日ミッション',
-                    'ミッション後のAI振り返り',
-                    '記録・連続日数・変化フィードバック',
-                    '詳細な振り返り',
+                    '今すぐ医療的なサポートや専門家との面談が必要な方',
+                    'AIとのやりとりに強い抵抗がある方',
                   ].map((t, i) => (
-                    <li key={i} className="flex gap-2.5 items-start text-sm font-medium text-stone-700 border-b border-dashed border-stone-100 pb-2.5 last:border-0 last:pb-0">
-                      <span className="w-5 h-5 rounded-full bg-purple-400 text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">✓</span>
+                    <li key={i} className="flex gap-2.5 items-start text-[13px] text-stone-500 leading-relaxed">
+                      <span className="w-4 h-4 rounded-full bg-stone-200 text-stone-500 text-[10px] flex items-center justify-center flex-shrink-0 mt-0.5">−</span>
                       {t}
                     </li>
                   ))}
                 </ul>
+              </div>
+            </div>
+            <p className="text-[11px] text-stone-400 text-center leading-relaxed mt-4">
+              無理におすすめするものではありません。ご自身に合う形でご検討ください。
+            </p>
+          </section>
+
+          {/* ════ 6. プラン選択（購入ゾーン） ════ */}
+          <section ref={plansRef} className="px-6 py-12 bg-gradient-to-b from-violet-800 via-violet-600 to-violet-800">
+            <p className="text-center text-[11px] font-bold tracking-[0.18em] text-violet-200">PLANS</p>
+            <h2 className="font-bold text-[22px] text-center leading-snug mt-2 text-white">プランを選ぶ</h2>
+            <p className="text-xs text-violet-100 text-center mt-2">どちらも買い切り・自動更新はありません</p>
+
+            {/* スタンダード（推奨） */}
+            <div className="mt-7 rounded-[28px] bg-white shadow-[0_24px_60px_-16px_rgba(40,16,90,0.5)] overflow-hidden">
+              <div className="bg-gradient-to-r from-violet-400 to-violet-600 text-white text-center text-xs font-bold py-2 tracking-wide">✦ いちばん選ばれているプラン</div>
+              <div className="px-6 pt-5 pb-6">
+                <div className="flex items-baseline justify-between">
+                  <p className="font-bold text-[22px] text-stone-900">スタンダード</p>
+                  <span className="text-[10px] font-bold text-violet-600 bg-violet-50 ring-1 ring-violet-200 rounded-full px-2.5 py-1">迷ったらこちら</span>
+                </div>
+                <p className="text-xs text-stone-500 mt-1">30日プログラムを一通り進めたい方へ</p>
+
+                <div className="mt-4 flex items-end gap-2">
+                  <span className="font-black text-[40px] leading-none text-violet-600 tracking-tight">¥3,980</span>
+                  <div className="mb-0.5">
+                    <p className="text-[11px] text-stone-400"><span className="line-through">¥4,980</span> → 診断特別価格</p>
+                    <p className="text-[11px] text-stone-400">税込・買い切り</p>
+                  </div>
+                </div>
+
+                <ul className="mt-5 space-y-2.5">
+                  <CheckItem text="あなた専用の30日ミッション" />
+                  <CheckItem text="ミッション後のAI振り返り" />
+                  <CheckItem text="記録・連続日数・変化フィードバック" />
+                  <CheckItem text="詳細な振り返り" />
+                </ul>
+
                 <button
                   onClick={() => setPlanDetailOpen(v => !v)}
-                  className="w-full py-3 rounded-2xl border border-stone-200 text-sm font-medium text-stone-600 flex items-center justify-center gap-2"
+                  className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-violet-50/70 text-[13px] font-medium text-stone-600"
                 >
                   含まれる内容を詳しく見る
-                  <span className={`transition-transform ${planDetailOpen ? 'rotate-180' : ''}`}>▾</span>
+                  <span className={`text-violet-400 transition-transform ${planDetailOpen ? 'rotate-180' : ''}`}>▾</span>
                 </button>
                 {planDetailOpen && (
-                  <div className="text-left space-y-3 bg-purple-50/60 rounded-2xl p-4 border border-purple-100">
+                  <div className="mt-3 space-y-3 rounded-2xl bg-violet-50/60 ring-1 ring-violet-100 p-4 text-left">
                     {[
                       { t: 'AI対話セッション', b: '不安になった出来事をAIと対話。事実と思い込みのズレに気づき、考え方のクセを一緒にほぐします。' },
                       { t: 'AIの変化フィードバック', b: '取り組み前後の不安の変化をAIが読み取り、あなたの進歩を言葉にして返します。' },
@@ -716,75 +595,124 @@ function ProgramPageInner() {
                     ))}
                   </div>
                 )}
-              </div>
-            </div>
 
-            {/* プレミアム */}
-            <div className="bg-white rounded-3xl p-6 border border-stone-200">
-              <div className="space-y-4 text-center">
-                <div>
-                  <p className="text-xl font-bold text-stone-900">プレミアム</p>
-                  <p className="text-xs text-stone-500 mt-1">ミッション以外でも、いつでもAIに相談したい方へ</p>
-                </div>
-                <div>
-                  <p>
-                    <span className="text-4xl font-bold text-stone-900">¥8,980</span>
-                    <span className="text-sm text-stone-400 ml-1.5">（税込）</span>
-                  </p>
-                  <p className="text-xs text-stone-400 mt-1">自動更新なし</p>
-                </div>
                 <button
-                  onClick={() => handleSelectPlan('premium')}
+                  onClick={() => handleSelectPlan('standard')}
                   disabled={isLoading}
-                  className="w-full py-4 rounded-full font-bold text-stone-700 border-2 border-stone-300 hover:border-purple-300 transition-all active:scale-[0.98] disabled:opacity-50"
+                  className="mt-5 w-full py-4 rounded-full font-bold text-white text-[15px] active:scale-[0.98] transition-all disabled:opacity-50"
+                  style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)', boxShadow: '0 8px 24px rgba(124, 58, 237, 0.35)' }}
                 >
-                  {isLoading ? '処理中...' : 'プレミアムで始める'}
+                  {isLoading ? '処理中...' : 'スタンダードで始める'}
                 </button>
-                <ul className="space-y-2.5 text-left">
-                  {[
-                    'スタンダードの機能すべて',
-                    'いつでもAI相談（無制限）',
-                    '月次の総括フィードバック',
-                  ].map((t, i) => (
-                    <li key={i} className="flex gap-2.5 items-start text-sm font-medium text-stone-700 border-b border-dashed border-stone-100 pb-2.5 last:border-0 last:pb-0">
-                      <span className="w-5 h-5 rounded-full bg-stone-300 text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">✓</span>
-                      {t}
-                    </li>
-                  ))}
-                </ul>
+
+                <div className="mt-4 grid grid-cols-3 divide-x divide-stone-100 text-center">
+                  <div className="px-1">
+                    <p className="text-[10px] font-bold text-stone-600">買い切り</p>
+                    <p className="text-[9px] text-stone-400 mt-0.5">月額ではありません</p>
+                  </div>
+                  <div className="px-1">
+                    <p className="text-[10px] font-bold text-stone-600">自動更新なし</p>
+                    <p className="text-[9px] text-stone-400 mt-0.5">解約手続き不要</p>
+                  </div>
+                  <div className="px-1">
+                    <p className="text-[10px] font-bold text-stone-600">安全な決済</p>
+                    <p className="text-[9px] text-stone-400 mt-0.5">Stripeを利用</p>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* ── 8. 迷ったら＋FAQ ── */}
-          <div className="space-y-5">
-            <div className="text-center space-y-3 relative">
-              <Leaf className="absolute -left-2 top-0 w-14 -rotate-12 scale-x-[-1]" />
-              <Leaf className="absolute -right-2 top-0 w-14 rotate-12" />
-              <h2 className="text-xl font-bold text-stone-900 leading-snug px-10">迷ったら、<br />まずは<span className="text-purple-600">スタンダード</span>で十分です</h2>
-              <p className="text-sm text-stone-500 leading-relaxed">
-                30日プログラムを進めるための機能は、<br />スタンダードにすべて含まれています。<br />ミッション以外でも、<br />いつでもAIに相談したい場合は、<br />プレミアムを選べます。
-              </p>
+            {/* プレミアム（控えめなガラスカード） */}
+            <div className="mt-4 rounded-[28px] bg-white/10 ring-1 ring-white/25 backdrop-blur px-6 py-6 text-white">
+              <div className="flex items-baseline justify-between">
+                <p className="font-bold text-lg">プレミアム</p>
+                <p><span className="font-black text-[26px] tracking-tight">¥8,980</span><span className="text-[11px] text-violet-100 ml-1">税込</span></p>
+              </div>
+              <p className="text-[11px] text-violet-100 mt-1">ミッション以外でも、いつでもAIに相談したい方へ</p>
+              <ul className="mt-4 space-y-2">
+                {[
+                  'スタンダードの機能すべて',
+                  'いつでもAI相談（無制限）',
+                  '月次の総括フィードバック',
+                ].map((t, i) => (
+                  <li key={i} className="flex gap-2 items-start text-[13px] text-white/90">
+                    <span className="w-4 h-4 rounded-full bg-white/25 text-white text-[9px] flex items-center justify-center flex-shrink-0 mt-0.5">✓</span>
+                    {t}
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={() => handleSelectPlan('premium')}
+                disabled={isLoading}
+                className="mt-5 w-full py-3.5 rounded-full font-bold text-white text-sm ring-2 ring-white/60 active:scale-[0.98] transition-all hover:bg-white/10 disabled:opacity-50"
+              >
+                {isLoading ? '処理中...' : 'プレミアムで始める'}
+              </button>
             </div>
 
-            <div className="bg-white rounded-3xl p-5 border border-purple-100 space-y-1">
-              <p className="text-base font-bold text-stone-800 text-center pb-2">よくある質問</p>
+            <p className="text-xs text-violet-100 leading-relaxed text-center mt-6">
+              迷ったら、まずはスタンダードで十分です。<br />30日プログラムを進めるための機能は、<br />スタンダードにすべて含まれています。
+            </p>
+          </section>
+
+          {/* ════ 7. FAQ ════ */}
+          <section className="bg-white px-6 py-12">
+            <p className="text-center text-[11px] font-bold tracking-[0.18em] text-violet-500">FAQ</p>
+            <h2 className="font-bold text-[22px] text-center leading-snug mt-2 text-stone-900">よくある質問</h2>
+
+            <div className="mt-6 divide-y divide-stone-100 rounded-[24px] ring-1 ring-violet-100 px-5">
               {FAQ_ITEMS.map((f, i) => (
-                <div key={i} className="border-t border-stone-100">
+                <div key={i} className="py-1">
                   <button
                     onClick={() => setFaqOpen(faqOpen === i ? null : i)}
                     className="w-full py-3.5 flex items-center justify-between gap-3 text-left"
                   >
-                    <span className="text-sm font-bold text-stone-800">{i + 1}. {f.q}</span>
-                    <span className={`text-purple-400 transition-transform flex-shrink-0 ${faqOpen === i ? 'rotate-180' : ''}`}>▾</span>
+                    <span className="text-sm font-bold text-stone-800 leading-snug">{f.q}</span>
+                    <span className={`text-violet-400 transition-transform flex-shrink-0 ${faqOpen === i ? 'rotate-180' : ''}`}>▾</span>
                   </button>
                   {faqOpen === i && (
-                    <p className="text-xs text-stone-500 leading-relaxed pb-3.5">{f.a}</p>
+                    <p className="text-xs text-stone-500 leading-relaxed pb-4">{f.a}</p>
                   )}
                 </div>
               ))}
             </div>
-            <p className="text-xs text-stone-400 text-center">✦ 気になることがあれば、購入前に確認できます ✦</p>
+          </section>
+
+          {/* ════ フッター（最後にもう一度、静かなCTA） ════ */}
+          <section
+            ref={footerRef}
+            className="px-6 pt-10 pb-28 text-center"
+            style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.45), rgba(255,255,255,0.45)), url(/paywall-texture.jpg)', backgroundSize: '100% auto', backgroundRepeat: 'repeat-y', backgroundPosition: 'top center' }}
+          >
+            <img src="/images/icon-sprout.png" alt="" className="w-12 h-12 mx-auto" />
+            <p className="font-bold text-[18px] text-stone-900 leading-relaxed mt-3">
+              小さな一歩から、<br />始めてみませんか
+            </p>
+            <button
+              onClick={scrollToPlans}
+              className="mt-5 w-full py-4 rounded-full font-bold text-white text-[15px] active:scale-[0.98] transition-all"
+              style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)', boxShadow: '0 8px 24px rgba(124, 58, 237, 0.3)' }}
+            >
+              プランを選ぶ
+            </button>
+            <p className="text-[10px] text-stone-400 mt-4">買い切り・自動更新なし ｜ 医療行為ではありません</p>
+          </section>
+
+          {/* ════ スティッキーCTA ════ */}
+          <div className={`fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[26.875rem] px-4 pb-4 pt-2 z-50 transition-transform duration-300 ${showSticky ? '' : 'translate-y-full pointer-events-none'}`}>
+            <div className="rounded-full bg-white/95 backdrop-blur shadow-[0_12px_40px_rgba(60,30,120,0.25)] ring-1 ring-violet-100 pl-5 pr-2 py-2 flex items-center gap-3">
+              <div className="leading-tight">
+                <p className="text-[10px] text-stone-400"><span className="line-through">¥4,980</span> 買い切り</p>
+                <p className="font-black text-[20px] text-violet-600 tracking-tight">¥3,980</p>
+              </div>
+              <button
+                onClick={scrollToPlans}
+                className="flex-1 py-3 rounded-full font-bold text-white text-sm active:scale-[0.98] transition-all"
+                style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}
+              >
+                プランを選ぶ
+              </button>
+            </div>
           </div>
 
         </div>
