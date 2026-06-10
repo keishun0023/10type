@@ -576,13 +576,16 @@ function ProgramPageInner() {
             <h2 className="text-xl font-bold text-stone-900 leading-snug text-center">実際には、<br /><span className="text-purple-600">こんな画面</span>で進めます</h2>
             <div className="space-y-6">
               {screenshots.map((s, i) => (
-                <div key={i} className="space-y-2">
-                  <img
-                    src={s.src}
-                    alt=""
-                    className="w-3/4 mx-auto"
-                    onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }}
-                  />
+                <div key={i} className="space-y-3">
+                  {/* 上半分だけ見せるクロップ（縦の圧迫感を減らす） */}
+                  <div className="w-3/4 mx-auto aspect-[5/4] overflow-hidden">
+                    <img
+                      src={s.src}
+                      alt=""
+                      className="w-full object-cover object-top"
+                      onError={e => { ((e.currentTarget.parentElement as HTMLElement).parentElement as HTMLElement).style.display = 'none'; }}
+                    />
+                  </div>
                   <div className="text-center space-y-1">
                     <span className="inline-block px-3 py-1 rounded-full bg-purple-500 text-white text-xs font-bold">{s.badge}</span>
                     <p className="text-base font-bold text-stone-800">{s.title}</p>
