@@ -203,6 +203,7 @@ function ProgramPageInner() {
   const [buildingStep, setBuildingStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [faqOpen, setFaqOpen] = useState<number | null>(null);
+  const [planDetailOpen, setPlanDetailOpen] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
   // 深掘り（具体的な困りごと）
@@ -446,8 +447,8 @@ function ProgramPageInner() {
             <span className="inline-block px-3 py-1 rounded-full bg-purple-100 text-purple-600 text-xs font-medium">
               ✦ 診断結果から作成しました
             </span>
-            <h1 className="text-xl font-bold text-stone-900 leading-snug">
-              <span className="inline-block -mr-[0.5em]"><span className="text-purple-600 text-2xl">{typeName}</span>向けに、</span><br />30日間の&ldquo;小さな一歩&rdquo;を<br />用意しました
+            <h1 className="text-[22px] font-bold text-stone-900 leading-snug">
+              <span className="inline-block -mr-[0.5em]"><span className="text-purple-600 text-[26px]">{typeName}</span>向けに、</span><br />30日間の&ldquo;小さな一歩&rdquo;を<br />用意しました
             </h1>
             {/* ミニ価値訴求 */}
             <div className="bg-white rounded-3xl p-4 border border-stone-100 grid grid-cols-3 divide-x divide-stone-100">
@@ -463,16 +464,25 @@ function ProgramPageInner() {
               ))}
             </div>
 
+            <p className="text-sm text-stone-500 leading-relaxed">
+              {sceneShort ? <>{sceneShort}でしんどくなりやすいあなたへ。<br /></> : null}
+              まずは頭の中を整理し、無理のない<br />小さな行動から始めます。
+            </p>
+
             {/* 価格の予告 */}
             <div className="bg-white rounded-3xl p-5 border border-purple-100 space-y-3">
               <span className="inline-block px-3 py-1 rounded-full bg-purple-50 text-purple-500 text-xs font-medium border border-purple-100">
                 無料診断を受けた方限定
               </span>
-              <p className="flex items-end justify-center gap-2">
-                <span className="text-base text-stone-400 line-through mb-0.5">¥4,980</span>
+              <div className="flex items-center justify-center gap-1.5">
+                <span className="text-base text-stone-400 line-through">¥4,980</span>
+                <span className="text-purple-400 text-lg">→</span>
                 <span className="text-3xl font-bold text-purple-600">¥3,980</span>
-                <span className="text-xs text-stone-400 mb-1">（税込）・買い切り</span>
-              </p>
+                <span className="flex flex-col items-start text-[10px] text-stone-400 leading-tight">
+                  <span>（税込）</span>
+                  <span>買い切り</span>
+                </span>
+              </div>
               <button
                 onClick={() => contentRef.current?.scrollIntoView({ behavior: 'smooth' })}
                 className="w-full py-4 rounded-full font-bold text-white text-base transition-all active:scale-[0.98]"
@@ -482,23 +492,21 @@ function ProgramPageInner() {
               </button>
               <p className="text-xs text-stone-400">下にスクロールして詳細を確認できます</p>
             </div>
-
-            <p className="text-sm text-stone-500 leading-relaxed">
-              {sceneShort ? <>{sceneShort}でしんどくなりやすいあなたへ。<br /></> : null}
-              まずは頭の中を整理し、無理のない<br />小さな行動から始めます。
-            </p>
           </div>
 
           {/* ── 2. 無料診断と有料プログラムの違い ── */}
           <div ref={contentRef} className="space-y-5 scroll-mt-6">
-            <div className="text-center">
-              <h2 className="text-xl font-bold text-stone-900 leading-snug">診断結果を、<br /><span className="text-purple-600 text-2xl">毎日の行動</span>に落とし込みます</h2>
+            <div className="text-center space-y-3">
+              <h2 className="text-xl font-bold text-stone-900 leading-snug">診断結果を、<br /><span className="text-purple-600 text-2xl" style={{ background: 'linear-gradient(transparent 62%, #e9d5ff 62%)' }}>毎日の行動</span><span style={{ background: 'linear-gradient(transparent 62%, #e9d5ff 62%)' }}>に落とし込みます</span></h2>
+              <p className="text-xs text-stone-500 leading-relaxed">
+                ここから先のプログラムでは、<br />あなたのしんどさの傾向を元に<br />「今日何をするか」まで具体化していきます
+              </p>
             </div>
             <div className="space-y-2">
               {[
-                { icon: '/paywall-icon-diagnosis.png', fb: '/images/icon-write.png', title: '無料診断', body: 'AIがあなたの不安を分析', done: true },
-                { icon: '/paywall-icon-program.png', fb: '/images/icon-calendar.png', title: 'パーソナライズされたプログラム', body: '認知と行動にアプローチ', done: false },
-                { icon: '/paywall-icon-reflect.png', fb: '/images/icon-cloud.png', title: '考え方のクセを修正', body: '明日からの人生がラクになる', done: false },
+                { icon: '/paywall-icon-diagnosis.png', fb: '/images/icon-write.png', title: '無料診断', body: 'あなたの内面や不安を分析', done: true },
+                { icon: '/paywall-icon-program.png', fb: '/images/icon-calendar.png', title: 'パーソナライズされたプログラム', body: 'あなたの認知と行動にアプローチ', done: false },
+                { icon: '/paywall-icon-reflect.png', fb: '/images/icon-cloud.png', title: '考え方のクセを修正', body: '「生きづらさ」や「考えすぎ」が軽くなる', done: false },
               ].map((s, i) => (
                 <div key={i}>
                   {i > 0 && <p className="text-center text-purple-400 text-lg leading-none py-1">↓</p>}
@@ -517,9 +525,6 @@ function ProgramPageInner() {
                 </div>
               ))}
             </div>
-            <p className="text-xs text-stone-500 leading-relaxed text-center">
-              無料診断では、あなたの内面と不安を分析しました。ここから先は、その結果をもとに、「生きづらさを解消する」プログラムを進めていきます。
-            </p>
           </div>
 
           {/* ── 3. 最初の3日間プレビュー ── */}
@@ -527,21 +532,23 @@ function ProgramPageInner() {
             <Leaf className="absolute -left-5 -top-4 w-16 -rotate-12 scale-x-[-1]" />
             <Leaf className="absolute -right-5 top-4 w-16 rotate-12" />
             <div className="text-center">
-              <h2 className="text-xl font-bold text-stone-900 leading-snug">あなたの<span className="text-purple-600 text-2xl">最初の3日間</span>は、<br />こんな内容です</h2>
+              <h2 className="text-2xl font-bold text-stone-900 leading-snug">あなたの<span className="text-purple-600">最初の3日間</span>は、<br />こんな内容です</h2>
             </div>
             <div className="space-y-3">
               {dayPreviews.map((d, i) => {
                 const dayIcons = ['/paywall-icon-day1.png', '/paywall-icon-day2.png', '/paywall-icon-day3.png'];
                 const dayFallbacks = ['/images/icon-write.png', '/images/icon-balance.png', '/images/icon-path.png'];
                 return (
-                  <div key={i} className="bg-white rounded-2xl p-5 border border-stone-100 flex gap-4 items-start">
-                    <div className="w-14 h-14 rounded-full bg-purple-50 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                      <PIcon src={dayIcons[i]} fallback={dayFallbacks[i]} className="w-10 h-10 object-contain" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <span className="inline-block px-2.5 py-0.5 rounded-full bg-purple-500 text-white text-xs font-bold">Day {i + 1}</span>
-                      <p className="text-sm font-bold text-stone-800">{d.title}</p>
-                      <p className="text-xs text-stone-500 leading-relaxed">{d.body}</p>
+                  <div key={i} className="bg-white rounded-2xl p-5 border border-stone-100 space-y-3">
+                    <span className="inline-block px-2.5 py-0.5 rounded-full bg-purple-500 text-white text-xs font-bold">Day {i + 1}</span>
+                    <div className="flex gap-4 items-center">
+                      <div className="w-14 h-14 rounded-full bg-purple-50 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        <PIcon src={dayIcons[i]} fallback={dayFallbacks[i]} className="w-10 h-10 object-contain" />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-base font-bold text-stone-800 leading-snug">{d.title}</p>
+                        <p className="text-xs text-stone-500 leading-relaxed">{d.body}</p>
+                      </div>
                     </div>
                   </div>
                 );
@@ -555,7 +562,7 @@ function ProgramPageInner() {
             <Leaf className="absolute -left-5 top-0 w-20 -rotate-6 scale-x-[-1]" />
             <Leaf className="absolute -right-5 top-8 w-16 opacity-80 rotate-45" />
             <div className="text-center">
-              <h2 className="text-xl font-bold text-stone-900 leading-snug">いきなり<span className="text-purple-600">変わろうとしなくて</span><br />大丈夫です</h2>
+              <h2 className="text-2xl font-bold text-stone-900 leading-snug">いきなり<span className="text-purple-600">変わろうとしなくて</span><br />大丈夫です</h2>
             </div>
             <div className="space-y-3">
               {[
@@ -563,14 +570,14 @@ function ProgramPageInner() {
                 { icon: '/images/icon-sprout.png', op: 'opacity-60', title: '小さく、試してみる', body: 'いきなり大きな挑戦ではなく、できそうな一歩から始めます' },
                 { icon: '/images/icon-sparkle.png', op: '', title: '変化を、見える形で残す', body: '毎日の記録が積み上がり、変化を言葉とグラフで見返せます' },
               ].map((s, i) => (
-                <div key={i} className="bg-white rounded-2xl p-5 border border-stone-100 flex gap-4 items-start">
-                  <img src={s.icon} alt="" className={`w-10 h-10 object-contain flex-shrink-0 ${s.op}`} />
-                  <div>
-                    <p className="text-sm font-bold text-stone-800">
-                      <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-purple-500 text-white text-xs font-bold mr-1.5">{i + 1}</span>
-                      {s.title}
-                    </p>
-                    <p className="text-xs text-stone-500 leading-relaxed mt-1">{s.body}</p>
+                <div key={i} className="bg-white rounded-2xl p-5 border border-stone-100 space-y-3">
+                  <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-purple-500 text-white text-xs font-bold">{i + 1}</span>
+                  <div className="flex gap-4 items-center">
+                    <img src={s.icon} alt="" className={`w-10 h-10 object-contain flex-shrink-0 ${s.op}`} />
+                    <div className="space-y-1">
+                      <p className="text-base font-bold text-stone-800 leading-snug">{s.title}</p>
+                      <p className="text-xs text-stone-500 leading-relaxed">{s.body}</p>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -582,10 +589,12 @@ function ProgramPageInner() {
 
           {/* ── 5. アプリ実画面（画像が置かれたら表示される） ── */}
           <div className="space-y-5">
-            <h2 className="text-xl font-bold text-stone-900 leading-snug text-center">実際には、<br /><span className="text-purple-600">こんな画面</span>で進めます</h2>
+            <h2 className="text-2xl font-bold text-stone-900 leading-snug text-center">実際には、<br /><span className="text-purple-600">こんな画面</span>で進めます</h2>
             <div className="space-y-6">
               {screenshots.map((s, i) => (
-                <div key={i} className="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 flex gap-4 items-center">
+                <div key={i} className="bg-white rounded-3xl border border-stone-100 shadow-sm p-4 pt-6 flex gap-4 items-center relative">
+                  {/* バッジはカード上端に跨がせる */}
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap px-4 py-1 rounded-full bg-purple-500 text-white text-xs font-bold">{s.badge}</span>
                   {/* 左：スクショ（上部クロップ＋下端白フェード） 右：説明 */}
                   <div className="relative w-2/5 flex-shrink-0 aspect-[3/4] overflow-hidden rounded-xl">
                     <img
@@ -597,7 +606,6 @@ function ProgramPageInner() {
                     <div className="absolute bottom-0 left-0 right-0 h-10 pointer-events-none" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0), #ffffff)' }} />
                   </div>
                   <div className="flex-1 space-y-1.5">
-                    <span className="inline-block px-3 py-1 rounded-full bg-purple-500 text-white text-xs font-bold">{s.badge}</span>
                     <p className="text-base font-bold text-stone-800 leading-snug">{s.title}</p>
                     <p className="text-xs text-stone-500 leading-relaxed">{s.body}</p>
                   </div>
@@ -610,7 +618,7 @@ function ProgramPageInner() {
           <div className="space-y-4">
             <div className="relative">
               <Leaf className="absolute -right-4 -top-6 w-16 rotate-12" />
-              <h2 className="text-xl font-bold text-stone-900 text-center">こんな方に<span className="text-purple-600">向いています</span></h2>
+              <h2 className="text-2xl font-bold text-stone-900 text-center underline decoration-purple-300 decoration-4 underline-offset-8">こんな方に<span className="text-purple-600">向いています</span></h2>
             </div>
             <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-3">
               <p className="text-sm font-bold text-stone-800 text-center">向いている方</p>
@@ -650,7 +658,7 @@ function ProgramPageInner() {
             {/* スタンダード（推奨） */}
             <div className="bg-white rounded-3xl p-6 border-2 border-purple-400 relative shadow-lg shadow-purple-100">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                <span className="bg-purple-500 text-white text-sm font-bold px-5 py-1.5 rounded-full">✦ おすすめ・まずはこちら</span>
+                <span className="bg-purple-500 text-white text-sm font-bold px-10 py-1.5 rounded-full">✦ おすすめ ✦</span>
               </div>
               <div className="space-y-4 text-center pt-2">
                 <div>
@@ -658,11 +666,12 @@ function ProgramPageInner() {
                   <p className="text-xs text-stone-500 mt-1">30日プログラムを一通り進めたい方へ</p>
                 </div>
                 <div>
-                  <p className="flex items-end justify-center gap-2">
-                    <span className="text-lg text-stone-400 line-through mb-1">¥4,980</span>
+                  <div className="flex items-center justify-center gap-1.5">
+                    <span className="text-lg text-stone-400 line-through">¥4,980</span>
+                    <span className="text-purple-400 text-xl">→</span>
                     <span className="text-4xl font-bold text-purple-600">¥3,980</span>
-                    <span className="text-sm text-stone-400 mb-1">（税込）</span>
-                  </p>
+                    <span className="text-sm text-stone-400 self-end mb-1">（税込）</span>
+                  </div>
                   <p className="text-xs text-stone-400 mt-1">買い切り・自動更新なし</p>
                 </div>
                 <button
@@ -686,6 +695,27 @@ function ProgramPageInner() {
                     </li>
                   ))}
                 </ul>
+                <button
+                  onClick={() => setPlanDetailOpen(v => !v)}
+                  className="w-full py-3 rounded-2xl border border-stone-200 text-sm font-medium text-stone-600 flex items-center justify-center gap-2"
+                >
+                  含まれる内容を詳しく見る
+                  <span className={`transition-transform ${planDetailOpen ? 'rotate-180' : ''}`}>▾</span>
+                </button>
+                {planDetailOpen && (
+                  <div className="text-left space-y-3 bg-purple-50/60 rounded-2xl p-4 border border-purple-100">
+                    {[
+                      { t: 'AI対話セッション', b: '不安になった出来事をAIと対話。事実と思い込みのズレに気づき、考え方のクセを一緒にほぐします。' },
+                      { t: 'AIの変化フィードバック', b: '取り組み前後の不安の変化をAIが読み取り、あなたの進歩を言葉にして返します。' },
+                      { t: '詳細な振り返り', b: '恐れ軸別・認知/行動別の統計と気づきの蓄積。変化がグラフと言葉の両方で見えます。' },
+                    ].map((d, i) => (
+                      <div key={i}>
+                        <p className="text-xs font-bold text-stone-700">{d.t}</p>
+                        <p className="text-xs text-stone-500 leading-relaxed mt-0.5">{d.b}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
