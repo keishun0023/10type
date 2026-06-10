@@ -458,12 +458,12 @@ function ProgramPageInner() {
             {/* ミニ価値訴求 */}
             <div className="bg-white rounded-3xl p-4 border border-stone-100 grid grid-cols-3 divide-x divide-stone-100">
               {[
-                { icon: '/images/icon-day.png', label: '毎日5分の\nミッション' },
-                { icon: '/images/icon-cloud.png', label: 'AIと不安を\n整理' },
-                { icon: '/images/icon-sparkle.png', label: '変化が\n記録で見える' },
+                { icon: '/images/icon-day.png', label: '毎日5分の\nミッション', op: 'opacity-50' },
+                { icon: '/images/icon-cloud.png', label: 'AIと不安を\n整理', op: '' },
+                { icon: '/images/icon-sparkle.png', label: '変化が\n記録で見える', op: 'opacity-80' },
               ].map((f, i) => (
                 <div key={i} className="flex flex-col items-center gap-1.5 px-1">
-                  <img src={f.icon} alt="" className="w-8 h-8 object-contain" />
+                  <img src={f.icon} alt="" className={`w-8 h-8 object-contain ${f.op}`} />
                   <p className="text-xs text-stone-600 font-medium text-center whitespace-pre-line leading-tight">{f.label}</p>
                 </div>
               ))}
@@ -571,14 +571,12 @@ function ProgramPageInner() {
             </div>
             <div className="space-y-3">
               {[
-                { icon: '/paywall-icon-step1.png', fb: '/images/icon-write.png', title: 'まず、頭の中を整理する', body: '不安になった出来事を、事実と思い込みに分けて見ていきます' },
-                { icon: '/paywall-icon-step2.png', fb: '/images/icon-sprout.png', title: '小さく、試してみる', body: 'いきなり大きな挑戦ではなく、できそうな一歩から始めます' },
-                { icon: '/paywall-icon-step3.png', fb: '/images/icon-sparkle.png', title: '変化を、見える形で残す', body: '毎日の記録が積み上がり、変化を言葉とグラフで見返せます' },
+                { icon: '/images/icon-write.png', op: 'opacity-60', title: 'まず、頭の中を整理する', body: '不安になった出来事を、事実と思い込みに分けて見ていきます' },
+                { icon: '/images/icon-sprout.png', op: 'opacity-60', title: '小さく、試してみる', body: 'いきなり大きな挑戦ではなく、できそうな一歩から始めます' },
+                { icon: '/images/icon-sparkle.png', op: '', title: '変化を、見える形で残す', body: '毎日の記録が積み上がり、変化を言葉とグラフで見返せます' },
               ].map((s, i) => (
                 <div key={i} className="bg-white rounded-2xl p-5 border border-stone-100 flex gap-4 items-start">
-                  <div className="w-14 h-14 rounded-full bg-purple-50 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                    <PIcon src={s.icon} fallback={s.fb} className="w-10 h-10 object-contain" />
-                  </div>
+                  <img src={s.icon} alt="" className={`w-10 h-10 object-contain flex-shrink-0 ${s.op}`} />
                   <div>
                     <p className="text-sm font-bold text-stone-800">
                       <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-purple-500 text-white text-xs font-bold mr-1.5">{i + 1}</span>
