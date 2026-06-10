@@ -10,13 +10,13 @@ const PLANS = {
     amount: 980,
   },
   standard: {
-    name: 'スタンダードプラン（3ヶ月）',
-    description: 'AIと一緒に進める（AI対話＋ヒント＋足あと＋変化FB／3ヶ月アクセス）',
+    name: 'スタンダードプラン（30日）',
+    description: '30日プログラム（AI対話＋ヒント＋足あと＋変化フィードバック）',
     amount: 3980,
   },
   premium: {
-    name: 'プレミアムプラン（半年）',
-    description: 'とことん向き合う（いつでもAI相談＋月次総括／半年アクセス）',
+    name: 'プレミアムプラン（30日）',
+    description: '30日プログラム＋いつでもAI相談＋月次総括',
     amount: 8980,
   },
 };

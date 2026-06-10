@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { TYPE_NAMES, ChangeOrientation } from '@/data/program';
@@ -106,6 +106,55 @@ const SCENE_SHORT: Record<string, string> = {
   '大切な人との関係がギクシャクしたとき': '大切な人との関係',
 };
 
+// しんどい場面ごとの「最初の3日間」プレビュー（内容の一例。実際のミッションは課金後にAI生成）
+type DayPreview = { title: string; body: string };
+const DAY_PREVIEWS: Record<string, DayPreview[]> = {
+  '評価される・見られる場面（発表・提出・ミスなど）': [
+    { title: '頭の中の言葉を外に出す', body: '評価される場面で浮かびやすい考えを、3つだけ書き出します。' },
+    { title: '事実と思い込みを分ける', body: '「本当に起きたこと」と「頭の中で想像したこと」を分けて整理します。' },
+    { title: '小さく試す準備をする', body: '不安が強すぎない場面を選び、できそうな一歩を一緒に決めます。' },
+  ],
+  '予定が変わったり、見通しが立たないとき': [
+    { title: '不安の正体を言葉にする', body: '「決まっていないこと」の何が不安なのか、3つだけ書き出します。' },
+    { title: '決められることと、決められないことを分ける', body: '自分で決められることと、相手や状況しだいのことを分けて整理します。' },
+    { title: '小さく試す準備をする', body: '不安が強すぎない場面を選び、できそうな一歩を一緒に決めます。' },
+  ],
+  '人に頼んだり、断ったりしないといけないとき': [
+    { title: '頭の中の言葉を外に出す', body: '頼みたい・断りたいのに言えなかった場面で浮かんだ考えを、3つだけ書き出します。' },
+    { title: '事実と思い込みを分ける', body: '「相手が実際に言ったこと」と「自分が想像したこと」を分けて整理します。' },
+    { title: '小さく試す準備をする', body: '負担の少ない相手・場面を選び、できそうな一言を一緒に決めます。' },
+  ],
+  '大切な人との関係がギクシャクしたとき': [
+    { title: '不安になった瞬間を書き出す', body: '「関係がまずいかも」と感じた瞬間に浮かんだ考えを、3つだけ書き出します。' },
+    { title: '事実と想像を分ける', body: '「実際に起きたこと」と「頭の中で広がった想像」を分けて整理します。' },
+    { title: '小さく試す準備をする', body: '不安が強すぎない相手を選び、できそうな小さな一歩を一緒に決めます。' },
+  ],
+};
+const DEFAULT_DAY_PREVIEW = DAY_PREVIEWS['評価される・見られる場面（発表・提出・ミスなど）'];
+
+const FAQ_ITEMS = [
+  {
+    q: 'どれくらい時間がかかりますか？',
+    a: '1日のミッションは5分ほどから始められます。余裕がある日は、AIとの振り返りを長めに行えます。',
+  },
+  {
+    q: '毎日できないと意味がありませんか？',
+    a: '毎日続けることを目指しますが、空いた日があっても大丈夫です。記録を見ながら、自分のペースで再開できます。',
+  },
+  {
+    q: 'これは治療ですか？',
+    a: '医療行為ではありません。CBTの考え方をベースにした、自己理解と行動のためのセルフケアツールです。効果を保証するものではありません。',
+  },
+  {
+    q: '支払いは自動更新ですか？',
+    a: '自動更新ではありません。一度のお支払いで、30日プログラムをご利用いただけます。',
+  },
+  {
+    q: 'どちらのプランを選べばいいですか？',
+    a: '迷ったらスタンダードがおすすめです。30日プログラムを進める機能はすべて含まれています。',
+  },
+];
+
 const BUILDING_STEPS = [
   '診断結果を読み込んでいます',
   'あなたの回答を反映しています',
@@ -123,6 +172,9 @@ function ProgramPageInner() {
   const [onboarding, setOnboarding] = useState<Partial<Onboarding>>({});
   const [buildingStep, setBuildingStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [faqOpen, setFaqOpen] = useState<number | null>(null);
+  const [planDetailOpen, setPlanDetailOpen] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   // 深掘り（具体的な困りごと）
   const [detailSelected, setDetailSelected] = useState<string[]>([]);
@@ -341,146 +393,280 @@ function ProgramPageInner() {
 
   if (screen === 'pricing') {
     const sceneShort = SCENE_SHORT[onboarding.difficultScene ?? ''] || '';
-    const orientation = ORIENTATION_MAP[onboarding.changeOrientation ?? ''] ?? 'unknown';
-    const orientationLine =
-      orientation === 'change'
-        ? '「変わりたい」というあなたの気持ちに合わせて、少しずつ行動の幅を広げていく構成にしました。'
-        : orientation === 'accept'
-          ? '「今の自分を受け入れて楽になりたい」というあなたの気持ちに合わせて、自分を追い込まずに楽になっていく構成にしました。'
-          : 'まずは頭の中を整理することから始めて、無理なく進められる構成にしました。';
+    const dayPreviews = DAY_PREVIEWS[onboarding.difficultScene ?? ''] ?? DEFAULT_DAY_PREVIEW;
 
     const screenshots = [
-      { src: '/paywall-shot-1.png', caption: '毎日ひとつ届く、あなた専用のミッション' },
-      { src: '/paywall-shot-2.png', caption: 'AIとの対話で、考え方のクセを一緒にほぐす' },
-      { src: '/paywall-shot-3.png', caption: '小さな変化が、足あととして積み上がっていく' },
+      { src: '/paywall-shot-1.png', badge: '今日のミッション', title: '今日やることは1つだけ', body: '毎日、今のあなたに合わせた小さなミッションが表示されます' },
+      { src: '/paywall-shot-2.png', badge: 'AI対話', title: '不安をひとりで抱え込まない', body: '出来事・考え・感情を、AIと一緒に整理できます' },
+      { src: '/paywall-shot-3.png', badge: '成長記録', title: '変化が見えるから、続けやすい', body: '取り組んだ回数や気づきが残り、変化を振り返れます' },
     ];
 
     return (
       <div className="min-h-screen px-5 py-12" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
-        <div className="w-full max-w-sm mx-auto space-y-8">
+        <div className="w-full max-w-sm mx-auto space-y-12">
 
-          {/* 個別化ヘッダー */}
-          <div className="text-center space-y-3">
+          {/* ── 1. ファーストビュー ── */}
+          <div className="text-center space-y-4">
             <span className="inline-block px-3 py-1 rounded-full bg-purple-100 text-purple-600 text-xs font-medium">
-              あなた専用のプランができました
+              ✦ 診断結果から作成しました
             </span>
             <h1 className="text-2xl font-bold text-stone-900 leading-snug">
-              <span className="text-purple-600">{typeName}</span>のあなたのための<br />30日プログラム
+              <span className="text-purple-600">{typeName}</span>向けに、<br />30日間の&ldquo;小さな一歩&rdquo;を<br />用意しました
             </h1>
             <p className="text-sm text-stone-500 leading-relaxed">
-              {sceneShort
-                ? <>{sceneShort}でしんどくなりやすいあなたに合わせています。<br /></>
-                : null}
-              {orientationLine}
+              {sceneShort ? <>{sceneShort}でしんどくなりやすいあなたへ。<br /></> : null}
+              まずは頭の中を整理し、無理のない<br />小さな行動から始めます。
             </p>
+
+            {/* ミニ価値訴求 */}
+            <div className="bg-white rounded-3xl p-4 border border-stone-100 grid grid-cols-3 divide-x divide-stone-100">
+              {[
+                { icon: '/images/icon-day.png', label: '毎日5分の\nミッション' },
+                { icon: '/images/icon-cloud.png', label: 'AIと不安を\n整理' },
+                { icon: '/images/icon-sparkle.png', label: '変化が\n記録で見える' },
+              ].map((f, i) => (
+                <div key={i} className="flex flex-col items-center gap-1.5 px-1">
+                  <img src={f.icon} alt="" className="w-8 h-8 object-contain" />
+                  <p className="text-xs text-stone-600 font-medium text-center whitespace-pre-line leading-tight">{f.label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* 価格の予告 */}
+            <div className="bg-white rounded-3xl p-5 border border-purple-100 space-y-3">
+              <span className="inline-block px-3 py-1 rounded-full bg-purple-50 text-purple-500 text-xs font-medium border border-purple-100">
+                30日プログラム
+              </span>
+              <p>
+                <span className="text-3xl font-bold text-purple-600">¥3,980〜</span>
+                <span className="text-xs text-stone-400 ml-2">・自動更新なし</span>
+              </p>
+              <button
+                onClick={() => contentRef.current?.scrollIntoView({ behavior: 'smooth' })}
+                className="w-full py-4 rounded-full font-bold text-white text-base transition-all active:scale-[0.98]"
+                style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)', boxShadow: '0 8px 24px rgba(124, 58, 237, 0.3)' }}
+              >
+                内容を見てプランを選ぶ
+              </button>
+              <p className="text-xs text-stone-400">下にスクロールして詳細を確認できます</p>
+            </div>
           </div>
 
-          {/* プランの中身（30日で何が起きるか） */}
-          <div className="bg-white rounded-3xl p-5 border border-purple-100 space-y-4">
-            <p className="text-xs text-purple-400 font-medium">30日間の流れ</p>
-            <div className="space-y-3">
+          {/* ── 2. 無料診断と有料プログラムの違い ── */}
+          <div ref={contentRef} className="space-y-5 scroll-mt-6">
+            <div className="text-center space-y-3">
+              <h2 className="text-xl font-bold text-stone-900 leading-snug">診断結果を、<br /><span className="text-purple-600">毎日の行動</span>に落とし込みます</h2>
+              <p className="text-sm text-stone-500 leading-relaxed">
+                無料診断では、あなたのしんどさの傾向を整理しました。ここから先のプログラムでは、その結果をもとに「今日なにをするか」まで具体化していきます。
+              </p>
+            </div>
+            <div className="space-y-2">
               {[
-                { icon: '/images/icon-write.png', title: 'まず、頭の中を整理する', body: 'しんどさの正体（事実と思い込みのズレ）に、書き出しながら気づいていきます' },
-                { icon: '/images/icon-sprout.png', title: '小さく、試してみる', body: '不安な場面を小さく再現して「思ってたより大丈夫だった」を少しずつ集めます' },
-                { icon: '/images/icon-path.png', title: '変化が、目に見えて残る', body: '毎日の記録が積み上がり、自分の変化がグラフと言葉で見えるようになります' },
+                { title: '無料診断', body: 'あなたの傾向がわかる', done: true },
+                { title: '30日プログラム', body: '毎日のミッションに落とし込む', done: false },
+                { title: 'AI振り返り', body: '不安や気づきを一緒に整理する', done: false },
               ].map((s, i) => (
-                <div key={i} className="flex gap-3 items-start">
-                  <img src={s.icon} alt="" className="w-8 h-8 object-contain flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-bold text-stone-800">{s.title}</p>
-                    <p className="text-xs text-stone-500 leading-relaxed mt-0.5">{s.body}</p>
+                <div key={i}>
+                  {i > 0 && <p className="text-center text-purple-400 text-lg leading-none py-1">↓</p>}
+                  <div className="bg-white rounded-2xl p-4 border border-stone-100 flex items-center gap-3">
+                    <div className="flex-1">
+                      <p className="text-sm font-bold text-stone-800">{s.title}</p>
+                      <p className="text-xs text-stone-500 mt-0.5">{s.body}</p>
+                    </div>
+                    {s.done && (
+                      <span className="px-2.5 py-1 rounded-full bg-purple-50 text-purple-500 text-xs font-medium border border-purple-100">済 ✓</span>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* アプリ実画面（画像が置かれたら表示される） */}
-          <div className="space-y-4">
-            {screenshots.map((s, i) => (
-              <div key={i} className="space-y-1.5">
-                <img
-                  src={s.src}
-                  alt=""
-                  className="w-full rounded-2xl border border-stone-100 shadow-sm"
-                  onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }}
-                />
-                <p className="text-xs text-stone-500 text-center">{s.caption}</p>
+          {/* ── 3. 最初の3日間プレビュー ── */}
+          <div className="space-y-5">
+            <div className="text-center space-y-2">
+              <h2 className="text-xl font-bold text-stone-900 leading-snug">あなたの<span className="text-purple-600">最初の3日間</span>は、<br />こんな内容です</h2>
+              <p className="text-xs text-stone-400 leading-relaxed">回答内容に合わせて、最初は負担の少ないミッションから始まります。（内容の一例です）</p>
+            </div>
+            <div className="space-y-3">
+              {dayPreviews.map((d, i) => (
+                <div key={i} className="bg-white rounded-2xl p-5 border border-stone-100 space-y-1.5">
+                  <span className="inline-block px-2.5 py-0.5 rounded-full bg-purple-500 text-white text-xs font-bold">Day {i + 1}</span>
+                  <p className="text-sm font-bold text-stone-800">{d.title}</p>
+                  <p className="text-xs text-stone-500 leading-relaxed">{d.body}</p>
+                </div>
+              ))}
+              <div className="bg-purple-50 rounded-2xl p-5 border border-purple-100 text-center space-y-1">
+                <p className="text-sm font-bold text-purple-600">Day 4以降も、あなたの記録に合わせて続きます</p>
+                <p className="text-xs text-stone-500">開始後にすべて確認できます 🔒</p>
               </div>
-            ))}
+            </div>
           </div>
 
-          <div className="text-center space-y-1">
-            <h2 className="text-lg font-bold text-stone-900">一人でやるのは、難しい。<br />だから、毎日となりにいます。</h2>
-            <p className="text-xs text-stone-500">登録すると、すぐにプログラムが始まります。</p>
+          {/* ── 4. 30日間の流れ ── */}
+          <div className="space-y-5">
+            <div className="text-center space-y-3">
+              <h2 className="text-xl font-bold text-stone-900 leading-snug">いきなり<span className="text-purple-600">変わろうとしなくて</span><br />大丈夫です</h2>
+              <p className="text-sm text-stone-500 leading-relaxed">
+                ココリフトは、気合いで頑張るためのサービスではありません。考えを整理し、小さく試し、振り返る流れを毎日少しずつ積み上げます。
+              </p>
+            </div>
+            <div className="space-y-3">
+              {[
+                { icon: '/images/icon-write.png', title: 'まず、頭の中を整理する', body: '不安になった出来事を、事実と思い込みに分けて見ていきます' },
+                { icon: '/images/icon-sprout.png', title: '小さく、試してみる', body: 'いきなり大きな挑戦ではなく、できそうな一歩から始めます' },
+                { icon: '/images/icon-sparkle.png', title: '変化を、見える形で残す', body: '毎日の記録が積み上がり、変化を言葉とグラフで見返せます' },
+              ].map((s, i) => (
+                <div key={i} className="bg-white rounded-2xl p-5 border border-stone-100 flex gap-4 items-start">
+                  <img src={s.icon} alt="" className="w-10 h-10 object-contain flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-bold text-stone-800">
+                      <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-purple-500 text-white text-xs font-bold mr-1.5">{i + 1}</span>
+                      {s.title}
+                    </p>
+                    <p className="text-xs text-stone-500 leading-relaxed mt-1">{s.body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
+          {/* ── 5. アプリ実画面（画像が置かれたら表示される） ── */}
+          <div className="space-y-5">
+            <h2 className="text-xl font-bold text-stone-900 leading-snug text-center">実際には、<br /><span className="text-purple-600">こんな画面</span>で進めます</h2>
+            <div className="space-y-6">
+              {screenshots.map((s, i) => (
+                <div key={i} className="space-y-2">
+                  <img
+                    src={s.src}
+                    alt=""
+                    className="w-3/4 mx-auto"
+                    onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }}
+                  />
+                  <div className="text-center space-y-1">
+                    <span className="inline-block px-3 py-1 rounded-full bg-purple-500 text-white text-xs font-bold">{s.badge}</span>
+                    <p className="text-base font-bold text-stone-800">{s.title}</p>
+                    <p className="text-xs text-stone-500 leading-relaxed">{s.body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── 6. 向いている人・向いていない人 ── */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-stone-900 text-center">こんな方に<span className="text-purple-600">向いています</span></h2>
+            <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-3">
+              <p className="text-sm font-bold text-stone-800 text-center">向いている方</p>
+              <ul className="space-y-2.5">
+                {[
+                  '考えすぎて動けなくなることがある',
+                  '自分のしんどさの原因を、ちゃんと理解したい',
+                  '変わりたいけど、何から始めればいいかわからない',
+                  'AIと一緒に、自分の気持ちを整理しながら進めたい',
+                ].map((t, i) => (
+                  <li key={i} className="flex gap-2.5 items-start text-sm text-stone-700">
+                    <span className="w-5 h-5 rounded-full bg-purple-500 text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">✓</span>
+                    {t}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-3">
+              <p className="text-sm font-bold text-stone-800 text-center">向いていない方</p>
+              <ul className="space-y-2.5">
+                {[
+                  '今すぐ医療的なサポートや専門家との面談が必要な方',
+                  'AIとのやりとりに強い抵抗がある方',
+                ].map((t, i) => (
+                  <li key={i} className="flex gap-2.5 items-start text-sm text-stone-500">
+                    <span className="w-5 h-5 rounded-full bg-stone-200 text-stone-500 text-xs flex items-center justify-center flex-shrink-0 mt-0.5">−</span>
+                    {t}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <p className="text-xs text-stone-400 text-center leading-relaxed">無理におすすめするものではありません。<br />ご自身に合う形でご検討ください。</p>
+          </div>
+
+          {/* ── 7. プランカード ── */}
           <div className="space-y-4">
             {/* スタンダード（推奨） */}
             <div className="bg-white rounded-3xl p-6 border-2 border-purple-400 relative shadow-lg shadow-purple-100">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <span className="bg-purple-500 text-white text-xs font-bold px-4 py-1 rounded-full">おすすめ</span>
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                <span className="bg-purple-500 text-white text-xs font-bold px-4 py-1 rounded-full">✦ おすすめ・まずはこちら</span>
               </div>
-              <div className="space-y-4">
+              <div className="space-y-4 text-center pt-2">
                 <div>
-                  <p className="font-bold text-stone-900">スタンダードプラン</p>
-                  <p className="text-xs text-stone-500 mt-1">AIと一緒に進める</p>
+                  <p className="text-xl font-bold text-stone-900">スタンダード</p>
+                  <p className="text-xs text-stone-500 mt-1">30日プログラムを一通り進めたい方へ</p>
                 </div>
-                <ul className="space-y-2.5 text-sm font-bold text-stone-700">
-                  <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>あなた専用の個別プラン（診断結果から生成）</li>
-                  <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>毎日のミッション</li>
-                  <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>取り組みの記録（回数・連続日数）</li>
-                  <li className="flex flex-col gap-1">
-                    <span className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>AI対話セッション</span>
-                    <span className="text-xs font-normal text-stone-500 pl-6 leading-relaxed">不安になった出来事をAIと対話。事実と思い込みのズレに気づき、考え方のクセを一緒にほぐす</span>
-                  </li>
-                  <li className="flex flex-col gap-1">
-                    <span className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>AIの変化フィードバック</span>
-                    <span className="text-xs font-normal text-stone-500 pl-6 leading-relaxed">取り組み前後の不安の変化をAIが読み取り、あなたの進歩を言葉にして返す</span>
-                  </li>
-                  <li className="flex flex-col gap-1">
-                    <span className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>振り返り（詳細）</span>
-                    <span className="text-xs font-normal text-stone-500 pl-6 leading-relaxed">恐れ軸別・認知/行動別の統計と気づきの蓄積。変化がグラフと言葉の両方で見える</span>
-                  </li>
-                  <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>3ヶ月間ずっと使える</li>
-                </ul>
-                <div className="flex items-end gap-1">
-                  <span className="text-3xl font-bold text-stone-900">¥3,980</span>
-                  <span className="text-stone-400 text-sm mb-1">／ 3ヶ月</span>
+                <div>
+                  <p>
+                    <span className="text-4xl font-bold text-purple-600">¥3,980</span>
+                    <span className="text-sm text-stone-400 ml-1.5">税込</span>
+                  </p>
+                  <p className="text-xs text-stone-400 mt-1">自動更新なし</p>
                 </div>
                 <button
                   onClick={() => handleSelectPlan('standard')}
                   disabled={isLoading}
-                  className="w-full py-4 rounded-full font-bold text-white transition-all active:scale-[0.98] disabled:opacity-50"
-                  style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}
+                  className="w-full py-4 rounded-full font-bold text-white text-base transition-all active:scale-[0.98] disabled:opacity-50"
+                  style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)', boxShadow: '0 8px 24px rgba(124, 58, 237, 0.3)' }}
                 >
                   {isLoading ? '処理中...' : 'スタンダードで始める'}
                 </button>
+                <p className="text-xs text-stone-400">決済後、すぐに今日のミッションから始められます</p>
+                <ul className="space-y-2.5 text-left">
+                  {[
+                    'あなた専用の30日ミッション',
+                    'ミッション後のAI振り返り',
+                    '記録・連続日数・変化フィードバック',
+                    '詳細な振り返り',
+                  ].map((t, i) => (
+                    <li key={i} className="flex gap-2.5 items-start text-sm font-medium text-stone-700 border-b border-dashed border-stone-100 pb-2.5 last:border-0 last:pb-0">
+                      <span className="w-5 h-5 rounded-full bg-purple-400 text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">✓</span>
+                      {t}
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  onClick={() => setPlanDetailOpen(v => !v)}
+                  className="w-full py-3 rounded-2xl border border-stone-200 text-sm font-medium text-stone-600 flex items-center justify-center gap-2"
+                >
+                  含まれる内容を詳しく見る
+                  <span className={`transition-transform ${planDetailOpen ? 'rotate-180' : ''}`}>▾</span>
+                </button>
+                {planDetailOpen && (
+                  <div className="text-left space-y-3 bg-purple-50/60 rounded-2xl p-4 border border-purple-100">
+                    {[
+                      { t: 'AI対話セッション', b: '不安になった出来事をAIと対話。事実と思い込みのズレに気づき、考え方のクセを一緒にほぐします。' },
+                      { t: 'AIの変化フィードバック', b: '取り組み前後の不安の変化をAIが読み取り、あなたの進歩を言葉にして返します。' },
+                      { t: '詳細な振り返り', b: '恐れ軸別・認知/行動別の統計と気づきの蓄積。変化がグラフと言葉の両方で見えます。' },
+                    ].map((d, i) => (
+                      <div key={i}>
+                        <p className="text-xs font-bold text-stone-700">{d.t}</p>
+                        <p className="text-xs text-stone-500 leading-relaxed mt-0.5">{d.b}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
             {/* プレミアム */}
             <div className="bg-white rounded-3xl p-6 border border-stone-200">
-              <div className="space-y-4">
+              <div className="space-y-4 text-center">
                 <div>
-                  <p className="font-bold text-stone-900">プレミアムプラン</p>
-                  <p className="text-xs text-stone-500 mt-1">とことん向き合う</p>
+                  <p className="text-xl font-bold text-stone-900">プレミアム</p>
+                  <p className="text-xs text-stone-500 mt-1">ミッション以外でも、いつでもAIに相談したい方へ</p>
                 </div>
-                <ul className="space-y-2.5 text-sm font-bold text-stone-700">
-                  <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>スタンダードの機能すべて</li>
-                  <li className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>半年間ずっと使える</li>
-                  <li className="flex flex-col gap-1">
-                    <span className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>いつでもAI相談（無制限）</span>
-                    <span className="text-xs font-normal text-stone-500 pl-6 leading-relaxed">あなたの記録をふまえて、何でもいつでもAIに相談できる</span>
-                  </li>
-                  <li className="flex flex-col gap-1">
-                    <span className="flex gap-2"><span className="text-purple-400 mt-0.5">✓</span>月次の総括フィードバック</span>
-                    <span className="text-xs font-normal text-stone-500 pl-6 leading-relaxed">1ヶ月の歩みをAIが総括し、次の一歩を提案</span>
-                  </li>
-                </ul>
-                <div className="flex items-end gap-1">
-                  <span className="text-3xl font-bold text-stone-900">¥8,980</span>
-                  <span className="text-stone-400 text-sm mb-1">／ 半年</span>
+                <div>
+                  <p>
+                    <span className="text-4xl font-bold text-stone-900">¥8,980</span>
+                    <span className="text-sm text-stone-400 ml-1.5">税込</span>
+                  </p>
+                  <p className="text-xs text-stone-400 mt-1">自動更新なし</p>
                 </div>
                 <button
                   onClick={() => handleSelectPlan('premium')}
@@ -489,14 +675,51 @@ function ProgramPageInner() {
                 >
                   {isLoading ? '処理中...' : 'プレミアムで始める'}
                 </button>
+                <ul className="space-y-2.5 text-left">
+                  {[
+                    'スタンダードの機能すべて',
+                    'いつでもAI相談（無制限）',
+                    '月次の総括フィードバック',
+                  ].map((t, i) => (
+                    <li key={i} className="flex gap-2.5 items-start text-sm font-medium text-stone-700 border-b border-dashed border-stone-100 pb-2.5 last:border-0 last:pb-0">
+                      <span className="w-5 h-5 rounded-full bg-stone-300 text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">✓</span>
+                      {t}
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
           </div>
 
-          <p className="text-xs text-stone-400 text-center leading-relaxed">
-            ※効果を保証するものではありません。<br />
-            ビッグファイブ／CBTの考え方をベースにした自己改善ツールです。
-          </p>
+          {/* ── 8. 迷ったら＋FAQ ── */}
+          <div className="space-y-5">
+            <div className="text-center space-y-3">
+              <h2 className="text-xl font-bold text-stone-900 leading-snug">迷ったら、まずは<span className="text-purple-600">スタンダード</span>で十分です</h2>
+              <p className="text-sm text-stone-500 leading-relaxed">
+                30日プログラムを進めるための機能は、スタンダードにすべて含まれています。ミッション以外でもいつでもAIに相談したい場合は、プレミアムを選べます。
+              </p>
+            </div>
+
+            <div className="bg-white rounded-3xl p-5 border border-purple-100 space-y-1">
+              <p className="text-base font-bold text-stone-800 text-center pb-2">よくある質問</p>
+              {FAQ_ITEMS.map((f, i) => (
+                <div key={i} className="border-t border-stone-100">
+                  <button
+                    onClick={() => setFaqOpen(faqOpen === i ? null : i)}
+                    className="w-full py-3.5 flex items-center justify-between gap-3 text-left"
+                  >
+                    <span className="text-sm font-bold text-stone-800">{i + 1}. {f.q}</span>
+                    <span className={`text-purple-400 transition-transform flex-shrink-0 ${faqOpen === i ? 'rotate-180' : ''}`}>▾</span>
+                  </button>
+                  {faqOpen === i && (
+                    <p className="text-xs text-stone-500 leading-relaxed pb-3.5">{f.a}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-stone-400 text-center">✦ 気になることがあれば、購入前に確認できます ✦</p>
+          </div>
+
         </div>
       </div>
     );

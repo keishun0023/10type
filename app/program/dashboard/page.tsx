@@ -2112,7 +2112,6 @@ export default function DashboardPage() {
       {upsellPlan && (() => {
         const isStd = upsellPlan === 'standard';
         const price = isStd ? '3,980' : '8,980';
-        const period = isStd ? '3ヶ月' : '半年';
         const planName = isStd ? 'スタンダード' : 'プレミアム';
         const features = isStd
           ? [
@@ -2148,7 +2147,7 @@ export default function DashboardPage() {
               </div>
               <div className="flex items-end justify-center gap-1">
                 <span className="text-2xl font-bold text-stone-800">¥{price}</span>
-                <span className="text-sm text-stone-400 mb-0.5">／ {period}</span>
+                <span className="text-sm text-stone-400 mb-0.5">税込・自動更新なし</span>
               </div>
               <button
                 onClick={() => handleUpgrade(upsellPlan)}
