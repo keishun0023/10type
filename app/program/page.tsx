@@ -462,13 +462,16 @@ function ProgramPageInner() {
             </div>
             <div className="space-y-2">
               {[
-                { title: '無料診断', body: 'あなたの傾向がわかる', done: true },
-                { title: '30日プログラム', body: '毎日のミッションに落とし込む', done: false },
-                { title: 'AI振り返り', body: '不安や気づきを一緒に整理する', done: false },
+                { icon: '/images/icon-write.png', title: '無料診断', body: 'あなたの傾向がわかる', done: true },
+                { icon: '/images/icon-calendar.png', title: '30日プログラム', body: '毎日のミッションに落とし込む', done: false },
+                { icon: '/images/icon-cloud.png', title: 'AI振り返り', body: '不安や気づきを一緒に整理する', done: false },
               ].map((s, i) => (
                 <div key={i}>
                   {i > 0 && <p className="text-center text-purple-400 text-lg leading-none py-1">↓</p>}
                   <div className="bg-white rounded-2xl p-4 border border-stone-100 flex items-center gap-3">
+                    <div className="w-14 h-14 rounded-full bg-purple-50 flex items-center justify-center flex-shrink-0">
+                      <img src={s.icon} alt="" className="w-8 h-8 object-contain" />
+                    </div>
                     <div className="flex-1">
                       <p className="text-sm font-bold text-stone-800">{s.title}</p>
                       <p className="text-xs text-stone-500 mt-0.5">{s.body}</p>
@@ -489,16 +492,29 @@ function ProgramPageInner() {
               <p className="text-xs text-stone-400 leading-relaxed">回答内容に合わせて、最初は負担の少ないミッションから始まります。（内容の一例です）</p>
             </div>
             <div className="space-y-3">
-              {dayPreviews.map((d, i) => (
-                <div key={i} className="bg-white rounded-2xl p-5 border border-stone-100 space-y-1.5">
-                  <span className="inline-block px-2.5 py-0.5 rounded-full bg-purple-500 text-white text-xs font-bold">Day {i + 1}</span>
-                  <p className="text-sm font-bold text-stone-800">{d.title}</p>
-                  <p className="text-xs text-stone-500 leading-relaxed">{d.body}</p>
+              {dayPreviews.map((d, i) => {
+                const dayIcons = ['/images/icon-write.png', '/images/icon-balance.png', '/images/icon-path.png'];
+                return (
+                  <div key={i} className="bg-white rounded-2xl p-5 border border-stone-100 flex gap-4 items-start">
+                    <div className="w-14 h-14 rounded-full bg-purple-50 flex items-center justify-center flex-shrink-0">
+                      <img src={dayIcons[i]} alt="" className="w-8 h-8 object-contain" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <span className="inline-block px-2.5 py-0.5 rounded-full bg-purple-500 text-white text-xs font-bold">Day {i + 1}</span>
+                      <p className="text-sm font-bold text-stone-800">{d.title}</p>
+                      <p className="text-xs text-stone-500 leading-relaxed">{d.body}</p>
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="bg-purple-50 rounded-2xl p-5 border border-purple-100 flex gap-4 items-center">
+                <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center flex-shrink-0 text-2xl">
+                  🔒
                 </div>
-              ))}
-              <div className="bg-purple-50 rounded-2xl p-5 border border-purple-100 text-center space-y-1">
-                <p className="text-sm font-bold text-purple-600">Day 4以降も、あなたの記録に合わせて続きます</p>
-                <p className="text-xs text-stone-500">開始後にすべて確認できます 🔒</p>
+                <div className="space-y-1">
+                  <p className="text-sm font-bold text-purple-600">Day 4以降も、あなたの記録に合わせて続きます</p>
+                  <p className="text-xs text-stone-500">開始後にすべて確認できます</p>
+                </div>
               </div>
             </div>
           </div>
