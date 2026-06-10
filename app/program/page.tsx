@@ -209,16 +209,19 @@ function ProgramPageInner() {
       <div className="min-h-screen flex flex-col items-center justify-center px-5 py-12" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
         <div className="w-full max-w-sm space-y-8">
           <div className="space-y-2">
+            {questionIndex === 0 && (
+              <div className="mb-6 space-y-1">
+                <h1 className="text-xl font-bold text-stone-900 leading-snug">
+                  <span className="text-purple-600">{typeName}</span>のあなた専用のプランを作るために、少しだけ教えてください
+                </h1>
+                <p className="text-xs text-stone-400">約1分で終わります</p>
+              </div>
+            )}
             <div className="flex gap-1 mb-6">
               {ONBOARDING_QUESTIONS.map((_, i) => (
                 <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${i <= questionIndex ? 'bg-purple-500' : 'bg-stone-200'}`} />
               ))}
             </div>
-            {questionIndex === 0 && (
-              <p className="text-xs text-purple-500 font-medium leading-relaxed">
-                {typeName}のあなた専用の30日プランを作るために、少しだけ教えてください（約1分）
-              </p>
-            )}
             <p className="text-xs text-stone-400">{questionIndex + 1} / {ONBOARDING_QUESTIONS.length}</p>
             <h2 className={`font-bold text-stone-800 leading-snug ${isKeyQuestion ? 'text-2xl' : 'text-xl'}`}>{q.question}</h2>
             {'note' in q && q.note && (
