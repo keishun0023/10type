@@ -161,6 +161,19 @@ const BUILDING_STEPS = [
   'プランの構成を決めています',
 ];
 
+// 装飾用の葉っぱ（public/paywall-leaf.png を置くと表示される。無ければ自動非表示）
+function Leaf({ className, style }: { className?: string; style?: React.CSSProperties }) {
+  return (
+    <img
+      src="/paywall-leaf.png"
+      alt=""
+      className={`pointer-events-none select-none ${className ?? ''}`}
+      style={style}
+      onError={e => { e.currentTarget.style.display = 'none'; }}
+    />
+  );
+}
+
 function ProgramPageInner() {
   const searchParams = useSearchParams();
   const typeId = searchParams.get('type') || 'distancer';
@@ -411,7 +424,9 @@ function ProgramPageInner() {
         <div className="w-full max-w-sm mx-auto space-y-12 relative">
 
           {/* ── 1. ファーストビュー ── */}
-          <div className="text-center space-y-4">
+          <div className="text-center space-y-4 relative">
+            <Leaf className="absolute -right-3 top-16 w-10 opacity-70 rotate-12" />
+            <Leaf className="absolute -left-3 top-44 w-8 opacity-50 -rotate-45 scale-x-[-1]" />
             <span className="inline-block px-3 py-1 rounded-full bg-purple-100 text-purple-600 text-xs font-medium">
               ✦ 診断結果から作成しました
             </span>
@@ -491,7 +506,9 @@ function ProgramPageInner() {
           </div>
 
           {/* ── 3. 最初の3日間プレビュー ── */}
-          <div className="space-y-5">
+          <div className="space-y-5 relative">
+            <Leaf className="absolute -left-4 -top-2 w-9 opacity-60 -rotate-12 scale-x-[-1]" />
+            <Leaf className="absolute -right-4 top-6 w-9 opacity-60 rotate-12" />
             <div className="text-center space-y-2">
               <h2 className="text-xl font-bold text-stone-900 leading-snug">あなたの<span className="text-purple-600">最初の3日間</span>は、<br />こんな内容です</h2>
               <p className="text-xs text-stone-400 leading-relaxed">回答内容に合わせて、最初は負担の少ないミッションから始まります。（内容の一例です）</p>
@@ -525,7 +542,9 @@ function ProgramPageInner() {
           </div>
 
           {/* ── 4. 30日間の流れ ── */}
-          <div className="space-y-5">
+          <div className="space-y-5 relative">
+            <Leaf className="absolute -left-3 top-2 w-10 opacity-60 -rotate-6 scale-x-[-1]" />
+            <Leaf className="absolute -right-3 top-10 w-8 opacity-50 rotate-45" />
             <div className="text-center space-y-3">
               <h2 className="text-xl font-bold text-stone-900 leading-snug">いきなり<span className="text-purple-600">変わろうとしなくて</span><br />大丈夫です</h2>
               <p className="text-sm text-stone-500 leading-relaxed">
@@ -576,7 +595,10 @@ function ProgramPageInner() {
 
           {/* ── 6. 向いている人・向いていない人 ── */}
           <div className="space-y-4">
-            <h2 className="text-xl font-bold text-stone-900 text-center">こんな方に<span className="text-purple-600">向いています</span></h2>
+            <div className="relative">
+              <Leaf className="absolute -right-3 -top-3 w-9 opacity-60 rotate-12" />
+              <h2 className="text-xl font-bold text-stone-900 text-center">こんな方に<span className="text-purple-600">向いています</span></h2>
+            </div>
             <div className="bg-white rounded-3xl p-5 border border-stone-100 space-y-3">
               <p className="text-sm font-bold text-stone-800 text-center">向いている方</p>
               <ul className="space-y-2.5">
@@ -714,8 +736,10 @@ function ProgramPageInner() {
 
           {/* ── 8. 迷ったら＋FAQ ── */}
           <div className="space-y-5">
-            <div className="text-center space-y-3">
-              <h2 className="text-xl font-bold text-stone-900 leading-snug">迷ったら、まずは<span className="text-purple-600">スタンダード</span>で十分です</h2>
+            <div className="text-center space-y-3 relative">
+              <Leaf className="absolute left-0 top-1 w-9 opacity-60 -rotate-12 scale-x-[-1]" />
+              <Leaf className="absolute right-0 top-1 w-9 opacity-60 rotate-12" />
+              <h2 className="text-xl font-bold text-stone-900 leading-snug px-10">迷ったら、まずは<span className="text-purple-600">スタンダード</span>で十分です</h2>
               <p className="text-sm text-stone-500 leading-relaxed">
                 30日プログラムを進めるための機能は、スタンダードにすべて含まれています。ミッション以外でもいつでもAIに相談したい場合は、プレミアムを選べます。
               </p>
