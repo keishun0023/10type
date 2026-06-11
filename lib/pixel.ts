@@ -28,6 +28,6 @@ export function fbqPaywallReached() {
     window.fbq('init', PAYWALL_PIXEL_ID);
     paywallPixelInitialized = true;
   }
-  window.fbq('trackSingle', PAYWALL_PIXEL_ID, 'PageView');
-  window.fbq('trackSingle', PAYWALL_PIXEL_ID, 'ViewContent', { content_name: 'paywall' });
+  // PageView等の汎用イベントは送らず、ペイウォール到達専用のカスタムイベントのみ発火する
+  window.fbq('trackSingleCustom', PAYWALL_PIXEL_ID, 'PaywallReached');
 }
