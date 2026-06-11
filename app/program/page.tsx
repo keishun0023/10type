@@ -603,13 +603,13 @@ function ProgramPageInner() {
           </section>
 
           {/* ════ 6. プラン選択（購入ゾーン） ════ */}
-          <section ref={plansRef} className="px-6 py-12 bg-gradient-to-b from-violet-800 via-violet-600 to-violet-800">
-            <p className="text-center text-[11px] font-bold tracking-[0.18em] text-violet-200">PLANS</p>
-            <h2 className="font-bold text-[22px] text-center leading-snug mt-2 text-white">ココリフトを始める</h2>
-            <p className="text-xs text-violet-100 text-center mt-2">買い切り・自動更新はありません</p>
+          <section ref={plansRef} className="px-6 py-12 bg-gradient-to-b from-violet-100 via-[#f4f1fc] to-violet-100">
+            <p className="text-center text-[11px] font-bold tracking-[0.18em] text-violet-500">PLANS</p>
+            <h2 className="font-bold text-[22px] text-center leading-snug mt-2 text-stone-900">ココリフトを始める</h2>
+            <p className="text-xs text-stone-500 text-center mt-2">買い切り・自動更新はありません</p>
 
             {/* 30日プログラム */}
-            <div className="mt-7 rounded-[28px] bg-white shadow-[0_24px_60px_-16px_rgba(40,16,90,0.5)] overflow-hidden">
+            <div className="mt-7 rounded-[28px] bg-white shadow-[0_24px_60px_-16px_rgba(80,40,160,0.3)] ring-1 ring-violet-100 overflow-hidden">
               <div className="bg-gradient-to-r from-violet-400 to-violet-600 text-white text-center text-xs font-bold py-2 tracking-wide">✦ 無料診断を受けた方の特別価格</div>
               <div className="px-6 pt-5 pb-6">
                 <p className="font-bold text-[22px] text-stone-900">30日プログラム</p>
@@ -678,7 +678,7 @@ function ProgramPageInner() {
               </div>
             </div>
 
-            <p className="text-xs text-violet-100 leading-relaxed text-center mt-6">
+            <p className="text-xs text-stone-500 leading-relaxed text-center mt-6">
               30日プログラムを進めるための機能は、<br />すべてこのプランに含まれています。
             </p>
           </section>
