@@ -519,9 +519,15 @@ function ProgramPageInner() {
                 { before: '自分が嫌になる', after: '自分のパターンが分かり、立て直せる', note: 'しんどくなっても「いつものクセだ」と気づいて戻れるようになります' },
               ].map((c, i) => (
                 <div key={i} className="rounded-[24px] bg-violet-50/60 ring-1 ring-violet-100 p-5 text-center">
-                  <p className="text-[13px] text-stone-400 font-medium">「{c.before}」</p>
+                  <p className="flex items-center justify-center gap-1.5 text-[13px] font-bold text-stone-800">
+                    <img src="/paywall-change-before.png" alt="" className="w-6 h-6 object-contain" onError={e => { e.currentTarget.style.display = 'none'; }} />
+                    「{c.before}」
+                  </p>
                   <p className="text-violet-400 text-base leading-none my-1.5">↓</p>
-                  <p className="text-[15px] font-bold text-stone-800 leading-snug">{c.after}</p>
+                  <p className="flex items-center justify-center gap-1.5 text-[15px] font-bold text-stone-800 leading-snug">
+                    <img src="/paywall-change-after.png" alt="" className="w-6 h-6 object-contain" onError={e => { e.currentTarget.style.display = 'none'; }} />
+                    {c.after}
+                  </p>
                   <p className="text-xs text-stone-500 leading-relaxed mt-2">{c.note}</p>
                 </div>
               ))}
