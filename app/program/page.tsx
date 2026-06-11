@@ -505,8 +505,35 @@ function ProgramPageInner() {
             </div>
           </section>
 
-          {/* ════ 4. 最初の3日間プレビュー ════ */}
+          {/* ════ 4. 期待できる変化（Before → After） ════ */}
           <section className="bg-white px-6 py-12">
+            <p className="text-center text-[11px] font-bold tracking-[0.18em] text-violet-500">CHANGES</p>
+            <h2 className="font-bold text-[22px] text-center leading-snug mt-2 text-stone-900">
+              続けると、<br /><span className="text-violet-600">こんな変化</span>が期待できます
+            </h2>
+
+            <div className="mt-7 space-y-4">
+              {[
+                { before: '不安で頭がぐるぐるする', after: '考えと事実を分けて、距離を取れる', note: 'ぐるぐる考える時間が、少しずつ短くなっていきます' },
+                { before: '考えすぎて動けない', after: '小さな一歩なら、踏み出せる', note: '回避や先延ばしが減り、できたことが積み上がります' },
+                { before: '自分が嫌になる', after: '自分のパターンが分かり、立て直せる', note: 'しんどくなっても「いつものクセだ」と気づいて戻れるようになります' },
+              ].map((c, i) => (
+                <div key={i} className="rounded-[24px] bg-violet-50/60 ring-1 ring-violet-100 p-5 text-center">
+                  <p className="text-[13px] text-stone-400 font-medium">「{c.before}」</p>
+                  <p className="text-violet-400 text-base leading-none my-1.5">↓</p>
+                  <p className="text-[15px] font-bold text-stone-800 leading-snug">{c.after}</p>
+                  <p className="text-xs text-stone-500 leading-relaxed mt-2">{c.note}</p>
+                </div>
+              ))}
+            </div>
+
+            <p className="text-[11px] text-stone-400 text-center leading-relaxed mt-5">
+              ※CBT（認知行動療法）の考え方に基づいています。<br />効果には個人差があります。
+            </p>
+          </section>
+
+          {/* ════ 5. 最初の3日間プレビュー ════ */}
+          <section className="bg-[#f4f1fc] px-6 py-12">
             <p className="text-center text-[11px] font-bold tracking-[0.18em] text-violet-500">PREVIEW</p>
             <h2 className="font-bold text-[22px] text-center leading-snug mt-2 text-stone-900">
               あなたの<span className="text-violet-600">最初の3日間</span>は、<br />こんな内容です
@@ -533,15 +560,15 @@ function ProgramPageInner() {
             </div>
           </section>
 
-          {/* ════ 5. 向いている方／向いていない方 ════ */}
-          <section className="bg-[#f4f1fc] px-6 py-12">
+          {/* ════ 6. 向いている方／向いていない方 ════ */}
+          <section className="bg-white px-6 py-12">
             <p className="text-center text-[11px] font-bold tracking-[0.18em] text-violet-500">FOR YOU?</p>
             <h2 className="font-bold text-[22px] text-center leading-snug mt-2 text-stone-900">
               こんな方に<span className="text-violet-600">向いています</span>
             </h2>
 
             <div className="mt-7 rounded-[24px] ring-1 ring-violet-100 overflow-hidden">
-              <div className="bg-white px-5 py-5">
+              <div className="bg-violet-50/60 px-5 py-5">
                 <ul className="space-y-3">
                   <CheckItem text="考えすぎて動けなくなることがある" />
                   <CheckItem text="自分のしんどさの原因を、ちゃんと理解したい" />
@@ -549,7 +576,7 @@ function ProgramPageInner() {
                   <CheckItem text="AIと一緒に、自分の気持ちを整理しながら進めたい" />
                 </ul>
               </div>
-              <div className="bg-white/60 px-5 py-4 border-t border-violet-100">
+              <div className="bg-white px-5 py-4 border-t border-violet-100">
                 <p className="text-[11px] font-bold text-stone-400 mb-2">向いていない方</p>
                 <ul className="space-y-2">
                   {[
