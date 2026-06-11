@@ -470,7 +470,7 @@ function ProgramPageInner() {
                 </button>
                 <p className="mt-3 flex items-baseline justify-center gap-1.5">
                   <span className="text-[24px] font-black text-violet-600 tracking-tight">¥3,980</span>
-                  <span className="text-xs text-stone-500 font-medium">（税込）</span>
+                  <span className="text-xs text-stone-500 font-medium -ml-2.5">（税込）</span>
                   <span className="text-sm text-stone-600 font-bold">1ヶ月分</span>
                 </p>
               </div>
