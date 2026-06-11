@@ -1761,6 +1761,8 @@ export default function DashboardPage() {
                             const isDone = !isToday && (loggedDay != null || lastDay < dayCount);
                             const isFuture = !isToday && !isDone;
                             const isLast = gi === grouped.length - 1;
+                            // フル生成が終わるまで、プレビュー済み(Day1〜8)以降の日は文面未確定なのでシマー表示
+                            const isPending = (generatedPlan?.phase ?? 'full') !== 'full' && g.days[0] > 8;
                             return (
                               <div key={g.dayLabel} className="flex gap-3">
                                 {/* タイムラインの軸（バッジ＋縦線） */}
@@ -1779,14 +1781,23 @@ export default function DashboardPage() {
                                       </span>
                                       {isToday && <span className="text-[10px] font-bold text-purple-500">(現在)</span>}
                                     </div>
-                                    <p className={`text-sm font-medium leading-snug ${isFuture ? 'text-stone-400' : 'text-stone-800'}`}>{g.title}</p>
-                                    {g.why && <p className={`text-xs leading-relaxed ${isFuture ? 'text-stone-300' : 'text-stone-400'}`}>{g.why}</p>}
+                                    {isPending ? (
+                                      <div className="space-y-2 animate-pulse pt-1">
+                                        <div className="h-3.5 w-3/4 rounded bg-stone-100" />
+                                        <div className="h-3 w-full rounded bg-stone-100" />
+                                      </div>
+                                    ) : (<>
+                                      <p className={`text-sm font-medium leading-snug ${isFuture ? 'text-stone-400' : 'text-stone-800'}`}>{g.title}</p>
+                                      {g.why && <p className={`text-xs leading-relaxed ${isFuture ? 'text-stone-300' : 'text-stone-400'}`}>{g.why}</p>}
+                                    </>)}
                                   </div>
+                                  {!isPending && (
                                   <div className="flex flex-wrap gap-1.5">
                                     {fearLabel && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-100 text-stone-500">{fearLabel}</span>}
                                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-500">{g.kind === 'action' ? '行動' : '認知'}</span>
                                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-200 text-stone-500">Lv {g.lv}</span>
                                   </div>
+                                  )}
                                   {log && (
                                     <div>
                                       <button
