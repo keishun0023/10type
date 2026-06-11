@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { TYPE_NAMES, ChangeOrientation } from '@/data/program';
 import { updateDiagnosticOnboarding } from '@/lib/analytics';
+import { fbqPaywallReached } from '@/lib/pixel';
 
 type Screen = 'onboarding' | 'deepdive' | 'building' | 'pricing';
 
@@ -205,6 +206,11 @@ function ProgramPageInner() {
       setBuildingStep(step);
     }, 900);
     return () => clearInterval(interval);
+  }, [screen]);
+
+  // ペイウォール到達を計測（専用ピクセルに発火）
+  useEffect(() => {
+    if (screen === 'pricing') fbqPaywallReached();
   }, [screen]);
 
   useEffect(() => {
