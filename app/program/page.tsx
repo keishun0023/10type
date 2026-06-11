@@ -98,6 +98,32 @@ const SCENE_DETAILS: Record<string, string[]> = {
   ],
 };
 
+// しんどい場面ごとの「最初の3日間」プレビュー（内容の一例。実際のミッションは課金後にAI生成）
+type DayPreview = { title: string; body: string };
+const DAY_PREVIEWS: Record<string, DayPreview[]> = {
+  '評価される・見られる場面（発表・提出・ミスなど）': [
+    { title: '頭の中の言葉を外に出す', body: '評価される場面で浮かびやすい考えを、3つだけ書き出します。' },
+    { title: '事実と思い込みを分ける', body: '「本当に起きたこと」と「頭の中で想像したこと」を分けて整理します。' },
+    { title: '小さく試す準備をする', body: '不安が強すぎない場面を選び、できそうな一歩を一緒に決めます。' },
+  ],
+  '予定が変わったり、見通しが立たないとき': [
+    { title: '不安の正体を言葉にする', body: '「決まっていないこと」の何が不安なのか、3つだけ書き出します。' },
+    { title: '決められることと、決められないことを分ける', body: '自分で決められることと、相手や状況しだいのことを分けて整理します。' },
+    { title: '小さく試す準備をする', body: '不安が強すぎない場面を選び、できそうな一歩を一緒に決めます。' },
+  ],
+  '人に頼んだり、断ったりしないといけないとき': [
+    { title: '頭の中の言葉を外に出す', body: '頼みたい・断りたいのに言えなかった場面で浮かんだ考えを、3つだけ書き出します。' },
+    { title: '事実と思い込みを分ける', body: '「相手が実際に言ったこと」と「自分が想像したこと」を分けて整理します。' },
+    { title: '小さく試す準備をする', body: '負担の少ない相手・場面を選び、できそうな一言を一緒に決めます。' },
+  ],
+  '大切な人との関係がギクシャクしたとき': [
+    { title: '不安になった瞬間を書き出す', body: '「関係がまずいかも」と感じた瞬間に浮かんだ考えを、3つだけ書き出します。' },
+    { title: '事実と想像を分ける', body: '「実際に起きたこと」と「頭の中で広がった想像」を分けて整理します。' },
+    { title: '小さく試す準備をする', body: '不安が強すぎない相手を選び、できそうな小さな一歩を一緒に決めます。' },
+  ],
+};
+const DEFAULT_DAY_PREVIEW = DAY_PREVIEWS['評価される・見られる場面（発表・提出・ミスなど）'];
+
 const FAQ_ITEMS = [
   {
     q: 'どれくらい時間がかかりますか？',
@@ -116,8 +142,8 @@ const FAQ_ITEMS = [
     a: '自動更新ではありません。一度のお支払いで、30日プログラムをご利用いただけます。',
   },
   {
-    q: 'どちらのプランを選べばいいですか？',
-    a: '迷ったらスタンダードがおすすめです。30日プログラムを進める機能はすべて含まれています。',
+    q: '機能はあとから追加できますか？',
+    a: 'はい。いつでもAIに相談できるプレミアム機能へ、開始後にいつでもアップグレードできます。',
   },
 ];
 
@@ -394,11 +420,7 @@ function ProgramPageInner() {
   }
 
   if (screen === 'pricing') {
-    const screenshots = [
-      { src: '/paywall-shot-1.png', badge: '今日のミッション', title: '今日やることは1つだけ', body: '毎日、今のあなたに合わせた小さなミッションが表示されます' },
-      { src: '/paywall-shot-2.png', badge: 'AI対話', title: '不安をひとりで抱え込まない', body: '出来事・考え・感情を、AIと一緒に整理できます' },
-      { src: '/paywall-shot-3.png', badge: '成長記録', title: '変化が見えるから、続けやすい', body: '取り組んだ回数や気づきが残り、変化を振り返れます' },
-    ];
+    const dayPreviews = DAY_PREVIEWS[onboarding.difficultScene ?? ''] ?? DEFAULT_DAY_PREVIEW;
 
     const showSticky = pastFV && !inPlans && !inFooter;
 
@@ -483,27 +505,31 @@ function ProgramPageInner() {
             </div>
           </section>
 
-          {/* ════ 4. アプリ実画面 ════ */}
+          {/* ════ 4. 最初の3日間プレビュー ════ */}
           <section className="bg-white px-6 py-12">
-            <p className="text-center text-[11px] font-bold tracking-[0.18em] text-violet-500">SCREENS</p>
+            <p className="text-center text-[11px] font-bold tracking-[0.18em] text-violet-500">PREVIEW</p>
             <h2 className="font-bold text-[22px] text-center leading-snug mt-2 text-stone-900">
-              実際には、<span className="text-violet-600">こんな画面</span>で<br />進めます
+              あなたの<span className="text-violet-600">最初の3日間</span>は、<br />こんな内容です
             </h2>
 
-            <div className="mt-7 space-y-5">
-              {screenshots.map((s, i) => (
-                <div key={i} className={`rounded-[24px] bg-white shadow-sm ring-1 ring-violet-100/60 p-4 flex gap-4 items-stretch ${i === 1 ? 'flex-row-reverse' : ''}`}>
-                  <div className="relative w-[42%] flex-shrink-0 aspect-[3/4] rounded-2xl ring-1 ring-violet-100 overflow-hidden">
-                    <img src={s.src} alt="" className="w-full h-full object-cover object-top" onError={e => { e.currentTarget.style.display = 'none'; }} />
-                    <div className="absolute bottom-0 left-0 right-0 h-8 pointer-events-none" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0), #ffffff)' }} />
-                  </div>
-                  <div className="flex-1 py-1 flex flex-col justify-center">
-                    <span className="self-start px-2.5 py-0.5 rounded-full bg-violet-100 text-violet-700 text-[10px] font-bold">{s.badge}</span>
-                    <p className="text-[15px] font-bold text-stone-800 leading-snug mt-2">{s.title}</p>
-                    <p className="text-xs text-stone-500 leading-relaxed mt-1.5">{s.body}</p>
-                  </div>
-                </div>
-              ))}
+            <div className="mt-7 rounded-[24px] bg-white shadow-sm ring-1 ring-violet-100/60 px-5 py-6">
+              <ol className="relative space-y-7">
+                <span className="absolute left-[17px] top-6 bottom-6 w-0.5 bg-violet-100" aria-hidden="true"></span>
+                {dayPreviews.map((d, i) => (
+                  <li key={i} className="relative flex gap-4">
+                    <span className={`w-9 h-9 rounded-full text-white text-[10px] font-bold flex flex-col items-center justify-center leading-none flex-shrink-0 z-10 ${['bg-violet-500', 'bg-violet-400', 'bg-violet-300'][i]}`}>
+                      <span className="text-[8px] opacity-80">Day</span>{i + 1}
+                    </span>
+                    <div className="pt-0.5">
+                      <p className="text-[15px] font-bold text-stone-800 leading-snug">{d.title}</p>
+                      <p className="text-xs text-stone-500 leading-relaxed mt-1">{d.body}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+              <p className="text-[11px] text-stone-400 leading-relaxed mt-6 pt-4 border-t border-stone-100">
+                回答内容に合わせて、最初は負担の少ないミッションから始まります。（内容の一例です）
+              </p>
             </div>
           </section>
 
@@ -546,18 +572,15 @@ function ProgramPageInner() {
           {/* ════ 6. プラン選択（購入ゾーン） ════ */}
           <section ref={plansRef} className="px-6 py-12 bg-gradient-to-b from-violet-800 via-violet-600 to-violet-800">
             <p className="text-center text-[11px] font-bold tracking-[0.18em] text-violet-200">PLANS</p>
-            <h2 className="font-bold text-[22px] text-center leading-snug mt-2 text-white">プランを選ぶ</h2>
-            <p className="text-xs text-violet-100 text-center mt-2">どちらも買い切り・自動更新はありません</p>
+            <h2 className="font-bold text-[22px] text-center leading-snug mt-2 text-white">ココリフトを始める</h2>
+            <p className="text-xs text-violet-100 text-center mt-2">買い切り・自動更新はありません</p>
 
-            {/* スタンダード（推奨） */}
+            {/* 30日プログラム */}
             <div className="mt-7 rounded-[28px] bg-white shadow-[0_24px_60px_-16px_rgba(40,16,90,0.5)] overflow-hidden">
-              <div className="bg-gradient-to-r from-violet-400 to-violet-600 text-white text-center text-xs font-bold py-2 tracking-wide">✦ いちばん選ばれているプラン</div>
+              <div className="bg-gradient-to-r from-violet-400 to-violet-600 text-white text-center text-xs font-bold py-2 tracking-wide">✦ 無料診断を受けた方の特別価格</div>
               <div className="px-6 pt-5 pb-6">
-                <div className="flex items-baseline justify-between">
-                  <p className="font-bold text-[22px] text-stone-900">スタンダード</p>
-                  <span className="text-[10px] font-bold text-violet-600 bg-violet-50 ring-1 ring-violet-200 rounded-full px-2.5 py-1">迷ったらこちら</span>
-                </div>
-                <p className="text-xs text-stone-500 mt-1">30日プログラムを一通り進めたい方へ</p>
+                <p className="font-bold text-[22px] text-stone-900">30日プログラム</p>
+                <p className="text-xs text-stone-500 mt-1">詳細レポートと30日ミッションがすべて含まれています</p>
 
                 <div className="mt-4 flex items-end gap-2">
                   <span className="font-black text-[40px] leading-none text-violet-600 tracking-tight">¥3,980</span>
@@ -602,7 +625,7 @@ function ProgramPageInner() {
                   className="mt-5 w-full py-4 rounded-full font-bold text-white text-[15px] active:scale-[0.98] transition-all disabled:opacity-50"
                   style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)', boxShadow: '0 8px 24px rgba(124, 58, 237, 0.35)' }}
                 >
-                  {isLoading ? '処理中...' : 'スタンダードで始める'}
+                  {isLoading ? '処理中...' : 'プログラムを始める'}
                 </button>
 
                 <div className="mt-4 grid grid-cols-3 divide-x divide-stone-100 text-center">
@@ -622,36 +645,8 @@ function ProgramPageInner() {
               </div>
             </div>
 
-            {/* プレミアム（控えめなガラスカード） */}
-            <div className="mt-4 rounded-[28px] bg-white/10 ring-1 ring-white/25 backdrop-blur px-6 py-6 text-white">
-              <div className="flex items-baseline justify-between">
-                <p className="font-bold text-lg">プレミアム</p>
-                <p><span className="font-black text-[26px] tracking-tight">¥8,980</span><span className="text-[11px] text-violet-100 ml-1">税込</span></p>
-              </div>
-              <p className="text-[11px] text-violet-100 mt-1">ミッション以外でも、いつでもAIに相談したい方へ</p>
-              <ul className="mt-4 space-y-2">
-                {[
-                  'スタンダードの機能すべて',
-                  'いつでもAI相談（無制限）',
-                  '月次の総括フィードバック',
-                ].map((t, i) => (
-                  <li key={i} className="flex gap-2 items-start text-[13px] text-white/90">
-                    <span className="w-4 h-4 rounded-full bg-white/25 text-white text-[9px] flex items-center justify-center flex-shrink-0 mt-0.5">✓</span>
-                    {t}
-                  </li>
-                ))}
-              </ul>
-              <button
-                onClick={() => handleSelectPlan('premium')}
-                disabled={isLoading}
-                className="mt-5 w-full py-3.5 rounded-full font-bold text-white text-sm ring-2 ring-white/60 active:scale-[0.98] transition-all hover:bg-white/10 disabled:opacity-50"
-              >
-                {isLoading ? '処理中...' : 'プレミアムで始める'}
-              </button>
-            </div>
-
             <p className="text-xs text-violet-100 leading-relaxed text-center mt-6">
-              迷ったら、まずはスタンダードで十分です。<br />30日プログラムを進めるための機能は、<br />スタンダードにすべて含まれています。
+              30日プログラムを進めるための機能は、<br />すべてこのプランに含まれています。
             </p>
           </section>
 
@@ -693,7 +688,7 @@ function ProgramPageInner() {
               className="mt-5 w-full py-4 rounded-full font-bold text-white text-[15px] active:scale-[0.98] transition-all"
               style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)', boxShadow: '0 8px 24px rgba(124, 58, 237, 0.3)' }}
             >
-              プランを選ぶ
+              プログラムを始める
             </button>
             <p className="text-[10px] text-stone-400 mt-4">買い切り・自動更新なし ｜ 医療行為ではありません</p>
           </section>
@@ -710,7 +705,7 @@ function ProgramPageInner() {
                 className="flex-1 py-3 rounded-full font-bold text-white text-sm active:scale-[0.98] transition-all"
                 style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}
               >
-                プランを選ぶ
+                プログラムを始める
               </button>
             </div>
           </div>
