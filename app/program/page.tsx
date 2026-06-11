@@ -521,12 +521,12 @@ function ProgramPageInner() {
                 <div key={i} className="rounded-[24px] bg-violet-50/60 ring-1 ring-violet-100 p-5 text-center">
                   <p className="flex items-center justify-center gap-1.5 text-[13px] font-bold text-stone-800">
                     <img src="/paywall-change-before.png" alt="" className="w-6 h-6 object-contain" onError={e => { e.currentTarget.style.display = 'none'; }} />
-                    「{c.before}」
+                    <span style={{ background: 'linear-gradient(transparent 68%, #e7e5e4 68%)', paddingBottom: 2 }}>「{c.before}」</span>
                   </p>
                   <p className="text-violet-400 text-base leading-none my-1.5">↓</p>
                   <p className="flex items-center justify-center gap-1.5 text-[15px] font-bold text-stone-800 leading-snug">
                     <img src="/paywall-change-after.png" alt="" className="w-6 h-6 object-contain" onError={e => { e.currentTarget.style.display = 'none'; }} />
-                    {c.after}
+                    <span style={{ background: 'linear-gradient(transparent 68%, #ddd2f9 68%)', paddingBottom: 2 }}>{c.after}</span>
                   </p>
                   <p className="text-xs text-stone-500 leading-relaxed mt-2">{c.note}</p>
                 </div>
