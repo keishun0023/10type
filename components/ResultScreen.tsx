@@ -34,7 +34,7 @@ export default function ResultScreen({
   const content = TYPE_CONTENT[firstType.id];
 
   useEffect(() => {
-    fbqEvent('ViewContent', { content_name: firstType.name });
+    fbqEvent('CompleteRegistration', { content_name: firstType.name });
   }, [firstType.name]);
 
   if (!content) return null;

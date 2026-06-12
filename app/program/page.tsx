@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { TYPE_NAMES, ChangeOrientation } from '@/data/program';
 import { updateDiagnosticOnboarding } from '@/lib/analytics';
-import { fbqPaywallReached } from '@/lib/pixel';
+import { fbqPaywallReached, fbqEvent } from '@/lib/pixel';
 
 type Screen = 'onboarding' | 'deepdive' | 'building' | 'pricing';
 
@@ -268,6 +268,7 @@ function ProgramPageInner() {
   }
 
   async function handleSelectPlan(plan: 'standard' | 'premium') {
+    fbqEvent('InitiateCheckout', { content_name: plan });
     setIsLoading(true);
     try {
       const changeOrientation: ChangeOrientation =
