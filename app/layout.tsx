@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
-import { PIXEL_ID } from "@/lib/pixel";
+import { PIXEL_ID, PAYWALL_PIXEL_ID } from "@/lib/pixel";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,6 +42,7 @@ export default function RootLayout({
             s.parentNode.insertBefore(t,s)}(window, document,'script',
             'https://connect.facebook.net/en_US/fbevents.js');
             fbq('init', '${PIXEL_ID}');
+            fbq('init', '${PAYWALL_PIXEL_ID}');
             fbq('track', 'PageView');
           `}
         </Script>

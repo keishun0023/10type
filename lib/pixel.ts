@@ -1,4 +1,5 @@
 export const PIXEL_ID = '875620858900566';
+export const PAYWALL_PIXEL_ID = '537934028825464';
 
 declare global {
   interface Window {
@@ -6,10 +7,11 @@ declare global {
   }
 }
 
+// 両ピクセルに同じ標準イベントを送る
 export function fbqEvent(event: string, params?: Record<string, unknown>) {
-  if (typeof window !== 'undefined' && window.fbq) {
-    window.fbq('track', event, params);
-  }
+  if (typeof window === 'undefined' || !window.fbq) return;
+  window.fbq('trackSingle', PIXEL_ID, event, params);
+  window.fbq('trackSingle', PAYWALL_PIXEL_ID, event, params);
 }
 
 export function fbqCustomEvent(event: string, params?: Record<string, unknown>) {
@@ -18,16 +20,9 @@ export function fbqCustomEvent(event: string, params?: Record<string, unknown>) 
   }
 }
 
-// ペイウォール到達計測用の別ピクセル。到達時に初期化し、このピクセルにだけイベントを送る
-export const PAYWALL_PIXEL_ID = '537934028825464';
-let paywallPixelInitialized = false;
-
+// ペイウォール到達：PAYWALLピクセルにのみViewContentを送る
 export function fbqPaywallReached() {
   if (typeof window === 'undefined' || !window.fbq) return;
-  if (!paywallPixelInitialized) {
-    window.fbq('init', PAYWALL_PIXEL_ID);
-    paywallPixelInitialized = true;
-  }
   // PageViewは過去データと混ざるため使わず、標準イベントViewContentをペイウォール到達として発火する
   window.fbq('trackSingle', PAYWALL_PIXEL_ID, 'ViewContent', { content_name: 'paywall' });
 }
