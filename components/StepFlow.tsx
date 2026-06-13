@@ -238,6 +238,7 @@ export default function StepFlow({
   const [onboarding, setOnboarding] = useState<Partial<Onboarding>>({});
   const [vision, setVision] = useState<VisionData | null>(null);
   const [visionLoading, setVisionLoading] = useState(false);
+  const [visionSettled, setVisionSettled] = useState(false);
   const [visionError, setVisionError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -322,27 +323,30 @@ export default function StepFlow({
           console.error('[generate-vision] 生成失敗:', lastError);
           setVisionError(lastError);
         }
-        if (mountedRef.current) setVisionLoading(false);
+        if (mountedRef.current) {
+          setVisionLoading(false);
+          setVisionSettled(true);
+        }
       })();
     }
 
-    // Building animation
+    // Building animation（生成完了まで進行を続け、最後のステップで待機）
     let step = 0;
     setBuildingStep(0);
     const interval = setInterval(() => {
-      step += 1;
-      if (step >= BUILDING_STEPS.length) {
-        clearInterval(interval);
-        setTimeout(() => {
-          setCurrentStepIndex(prev => prev + 1);
-        }, 500);
-        return;
-      }
+      step = Math.min(step + 1, BUILDING_STEPS.length - 1);
       setBuildingStep(step);
     }, 900);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep]);
+
+  // vision生成が確定したら結果画面へ進む（再shimmerを避け、完成した状態で見せる）
+  useEffect(() => {
+    if (currentStep !== 'analysis' || !visionSettled) return;
+    const t = setTimeout(() => setCurrentStepIndex(prev => prev + 1), 600);
+    return () => clearTimeout(t);
+  }, [currentStep, visionSettled]);
 
   // Fire ViewContent when entering service explanation phase
   useEffect(() => {
