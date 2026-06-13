@@ -644,13 +644,7 @@ export default function StepFlow({
           <div className="w-full max-w-sm mx-auto space-y-6">
             <h2 className="text-xl font-bold text-stone-900 leading-snug">最初の3日間で、こんな体験が始まります</h2>
 
-            <div className="bg-white rounded-2xl p-4 border border-stone-100 space-y-1">
-              <p className="text-sm font-bold text-stone-800">🤖 AIによる個別カウンセリング</p>
-              <p className="text-xs text-stone-500 leading-relaxed">24時間いつでも相談OK。やりとりは積み重なり、あなたを理解していきます。</p>
-            </div>
-
             <div className="space-y-3">
-              <p className="text-sm font-bold text-stone-800">📋 パーソナルプログラム</p>
               {dayPreviews.map((d, i) => (
                 <div key={i} className="bg-white rounded-2xl p-4 border border-stone-100 flex items-start gap-3">
                   <span className="inline-block px-2.5 py-0.5 rounded-full bg-purple-500 text-white text-xs font-bold flex-shrink-0">Day {i + 1}</span>
@@ -660,6 +654,13 @@ export default function StepFlow({
                   </div>
                 </div>
               ))}
+            </div>
+
+            <div className="text-center text-purple-400 font-bold text-lg">＆</div>
+
+            <div className="bg-white rounded-2xl p-4 border border-stone-100 space-y-1">
+              <p className="text-sm font-bold text-stone-800">🤖 AIによる個別カウンセリング</p>
+              <p className="text-xs text-stone-500 leading-relaxed">24時間いつでも相談OK。やりとりは積み重なり、あなたを理解していきます。</p>
             </div>
             <NextButton onClick={goNext} />
           </div>
@@ -712,19 +713,14 @@ export default function StepFlow({
                 <p className="text-base text-stone-400 line-through">¥10,000〜¥20,000 / 月</p>
                 <p className="text-purple-400 text-xl">↓</p>
               </div>
-              <div className="flex items-center justify-center gap-1.5">
-                <span className="text-4xl font-bold text-purple-600">¥3,980</span>
-                <span className="text-sm text-stone-400 self-end mb-1">（税込）</span>
+              <div className="space-y-0.5">
+                <p className="text-sm font-bold text-purple-600">ココリフト</p>
+                <div className="flex items-center justify-center gap-1.5">
+                  <span className="text-4xl font-bold text-purple-600">¥3,980</span>
+                  <span className="text-sm text-stone-400 self-end mb-1">（税込）</span>
+                </div>
+                <p className="text-xs text-stone-400">買い切りお試し・自動更新なし</p>
               </div>
-              <p className="text-xs text-stone-400">買い切りお試し・自動更新なし</p>
-              <button
-                onClick={handleCheckout}
-                disabled={isLoading}
-                className="w-full py-4 rounded-full font-bold text-white text-base transition-all active:scale-[0.98] disabled:opacity-50"
-                style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)', boxShadow: '0 8px 24px rgba(124, 58, 237, 0.3)' }}
-              >
-                {isLoading ? '処理中...' : 'このプログラムを始める'}
-              </button>
               <ul className="space-y-2.5 text-left">
                 {[
                   '常時相談できるAIカウンセリング',
@@ -738,6 +734,14 @@ export default function StepFlow({
                   </li>
                 ))}
               </ul>
+              <button
+                onClick={handleCheckout}
+                disabled={isLoading}
+                className="w-full py-4 rounded-full font-bold text-white text-base transition-all active:scale-[0.98] disabled:opacity-50"
+                style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)', boxShadow: '0 8px 24px rgba(124, 58, 237, 0.3)' }}
+              >
+                {isLoading ? '処理中...' : 'まずはお得に体験'}
+              </button>
               <p className="text-xs text-stone-500 leading-relaxed pt-1">効果を実感できたら、来月以降も続けられます。</p>
             </div>
 
