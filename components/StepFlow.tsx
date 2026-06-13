@@ -163,9 +163,14 @@ const FAQ_ITEMS = [
 ];
 
 const BUILDING_STEPS = [
-  '診断結果を読み込んでいます',
-  'あなたの回答を反映しています',
-  'プランの構成を決めています',
+  'あなたの回答を読み込んでいます',
+  '4つの恐れの傾向を分析しています',
+  '3つの守り方のパターンを照合しています',
+  'あなた特有の組み合わせを特定しています',
+  '生きづらさの根を言葉にしています',
+  '日常での表れ方を読み解いています',
+  '30日後に期待できる変化を描いています',
+  '結果をまとめています',
 ];
 
 const TOTAL_STEPS = 12;
@@ -336,7 +341,7 @@ export default function StepFlow({
     const interval = setInterval(() => {
       step = Math.min(step + 1, BUILDING_STEPS.length - 1);
       setBuildingStep(step);
-    }, 900);
+    }, 1100);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep]);
