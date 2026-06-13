@@ -34,7 +34,57 @@ interface VisionData {
   outcomes: string[];
 }
 
-// ─── Constants (from program/page.tsx) ───
+// ─── 線アイコン（1.6px stroke） ───
+
+type IcoProps = React.SVGProps<SVGSVGElement>;
+const Ico = {
+  check: (p: IcoProps = {}) => (
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+      strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M4 12.5l5 5L20 6.5" /></svg>
+  ),
+  bloom: (p: IcoProps = {}) => (
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor"
+      strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="M12 3c.9 2.4.9 4.2 0 6 -.9-1.8-.9-3.6 0-6z" /><path d="M12 21c-.9-2.4-.9-4.2 0-6 .9 1.8.9 3.6 0 6z" />
+      <path d="M3 12c2.4-.9 4.2-.9 6 0 -1.8.9-3.6.9-6 0z" /><path d="M21 12c-2.4.9-4.2.9-6 0 1.8-.9 3.6-.9 6 0z" />
+      <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
+    </svg>
+  ),
+  chat: (p: IcoProps = {}) => (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+      strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="M4 5.5h16v10H9l-4 3.5v-3.5H4z" /><path d="M8.5 10.2h7M8.5 13h4.5" /></svg>
+  ),
+  arrow: (p: IcoProps = {}) => (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+      strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M12 5v14M6 13l6 6 6-6" /></svg>
+  ),
+  chevron: (p: IcoProps = {}) => (
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
+      strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M6 9l6 6 6-6" /></svg>
+  ),
+  go: (p: IcoProps = {}) => (
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
+      strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M9 6l6 6-6 6" /></svg>
+  ),
+  full: (p: IcoProps = {}) => (
+    <svg viewBox="0 0 24 24" width="21" height="21" {...p}>
+      <circle cx="12" cy="12" r="9" fill="currentColor" opacity="0.14" />
+      <path d="M7.5 12.3l3 3 6-6.2" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" /></svg>
+  ),
+  partial: (p: IcoProps = {}) => (
+    <svg viewBox="0 0 24 24" width="21" height="21" {...p}>
+      <circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.5" />
+      <path d="M12 8.4v7.2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" opacity="0.5" /></svg>
+  ),
+  none: (p: IcoProps = {}) => (
+    <svg viewBox="0 0 24 24" width="21" height="21" {...p}>
+      <path d="M9 12h6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" opacity="0.38" /></svg>
+  ),
+};
+type CompareMark = 'full' | 'partial' | 'none';
+
+// ─── Constants ───
 
 const ORIENTATION_MAP: Record<string, ChangeOrientation> = {
   '変わりたい・できるようになりたい': 'change',
@@ -45,7 +95,7 @@ const ORIENTATION_MAP: Record<string, ChangeOrientation> = {
 const ONBOARDING_QUESTIONS = [
   {
     key: 'difficultScene',
-    question: '一番しんどくなりやすい場面はどれですか？',
+    question: '一番しんどくなりやすい場面は\nどれですか？',
     options: [
       '評価される・見られる場面（発表・提出・ミスなど）',
       '予定が変わったり、見通しが立たないとき',
@@ -61,7 +111,7 @@ const ONBOARDING_QUESTIONS = [
   },
   {
     key: 'changeOrientation',
-    question: '今の自分に対して、どちらに近いですか？',
+    question: '今の自分に対して、\nどちらに近いですか？',
     options: [
       '変わりたい・できるようになりたい',
       '今の自分を受け入れて、楽になりたい',
@@ -69,7 +119,7 @@ const ONBOARDING_QUESTIONS = [
     ],
     note: 'プログラムの内容の組み立て方が変わります。正解はありません',
   },
-];
+] as const;
 
 const SCENE_DETAILS: Record<string, string[]> = {
   '評価される・見られる場面（発表・提出・ミスなど）': [
@@ -107,59 +157,38 @@ const DAY_PREVIEWS: Record<string, DayPreview[]> = {
   ],
   '予定が変わったり、見通しが立たないとき': [
     { title: '不安の正体を言葉にする', body: '「決まっていないこと」の何が不安なのか、3つだけ書き出します。' },
-    { title: '決められることと、決められないことを分ける', body: '自分で決められることと、相手や状況しだいのことを分けて整理します。' },
+    { title: '決められること・られないことを分ける', body: '自分で決められることと、状況しだいのことを分けて整理します。' },
     { title: '小さく試す準備をする', body: '不安が強すぎない場面を選び、できそうな一歩を一緒に決めます。' },
   ],
   '人に頼んだり、断ったりしないといけないとき': [
-    { title: '頭の中の言葉を外に出す', body: '頼みたい・断りたいのに言えなかった場面で浮かんだ考えを、3つだけ書き出します。' },
+    { title: '頭の中の言葉を外に出す', body: '言えなかった場面で浮かんだ考えを、3つだけ書き出します。' },
     { title: '事実と思い込みを分ける', body: '「相手が実際に言ったこと」と「自分が想像したこと」を分けて整理します。' },
     { title: '小さく試す準備をする', body: '負担の少ない相手・場面を選び、できそうな一言を一緒に決めます。' },
   ],
   '大切な人との関係がギクシャクしたとき': [
-    { title: '不安になった瞬間を書き出す', body: '「関係がまずいかも」と感じた瞬間に浮かんだ考えを、3つだけ書き出します。' },
+    { title: '不安になった瞬間を書き出す', body: '「関係がまずいかも」と感じた瞬間の考えを、3つだけ書き出します。' },
     { title: '事実と想像を分ける', body: '「実際に起きたこと」と「頭の中で広がった想像」を分けて整理します。' },
     { title: '小さく試す準備をする', body: '不安が強すぎない相手を選び、できそうな小さな一歩を一緒に決めます。' },
   ],
 };
 const DEFAULT_DAY_PREVIEW = DAY_PREVIEWS['評価される・見られる場面（発表・提出・ミスなど）'];
 
-// 画面1のフォールバック（AI生成が失敗した場合でもフローを止めない）
-const FALLBACK_ANALYSIS = {
+// AI生成が失敗した場合でもフローを止めないフォールバック
+const FALLBACK_ANALYSIS: VisionData = {
   fears: 'あなたの心の奥には、いくつかの「恐れ」が静かに働いているようです。',
-  consequence: 'その結果、無意識のうちに自分を守るパターンが生まれ、生きづらさにつながっているのかもしれません。',
+  consequence: 'その結果、無意識のうちに自分を守るパターンが生まれ、**生きづらさ**につながっているのかもしれません。',
   dailyStruggles: [
     '本音を言えずに我慢してしまうことがある',
     '人の評価や反応が必要以上に気になる',
     '頑張っているのに満たされない感覚がある',
   ],
-  outcomes: [] as string[],
+  outcomes: [],
 };
-
-// 30日後の効果のフォールバック（AI生成が間に合わなかった場合）
 const FALLBACK_OUTCOMES = [
   '完璧じゃなくても大丈夫、と思える瞬間が増える',
   '失敗を「学び」として捉え直せるようになる',
   '人に頼ることへの抵抗がやわらぐ',
   'より自然体でいられる時間が増える',
-];
-
-const FAQ_ITEMS = [
-  {
-    q: 'どれくらい時間がかかりますか？',
-    a: '1日のミッションは5分ほどから始められます。余裕がある日は、AIとの振り返りを長めに行えます。',
-  },
-  {
-    q: '毎日できないと意味がありませんか？',
-    a: '毎日続けることを目指しますが、空いた日があっても大丈夫です。記録を見ながら、自分のペースで再開できます。',
-  },
-  {
-    q: 'これは治療ですか？',
-    a: '医療行為ではありません。CBTの考え方をベースにした、自己理解と行動のためのセルフケアツールです。効果を保証するものではありません。',
-  },
-  {
-    q: '支払いは自動更新ですか？',
-    a: '自動更新ではありません。一度のお支払いで、30日プログラムをご利用いただけます。',
-  },
 ];
 
 const BUILDING_STEPS = [
@@ -173,9 +202,12 @@ const BUILDING_STEPS = [
   '結果をまとめています',
 ];
 
-const TOTAL_STEPS = 12;
-
-// ─── Step enum ───
+const FAQ_ITEMS = [
+  { q: 'どれくらい時間がかかりますか？', a: '1日のミッションは5分ほどから始められます。余裕がある日は、AIとの振り返りを長めに行えます。' },
+  { q: '毎日できないと意味がありませんか？', a: '毎日続けることを目指しますが、空いた日があっても大丈夫です。記録を見ながら、自分のペースで再開できます。' },
+  { q: 'これは治療ですか？', a: '医療行為ではありません。CBTの考え方をベースにした、自己理解と行動のためのセルフケアツールです。効果を保証するものではありません。' },
+  { q: '支払いは自動更新ですか？', a: '自動更新ではありません。一度のお支払いで、30日プログラムをご利用いただけます。' },
+];
 
 type StepId =
   | 'difficultScene'
@@ -205,83 +237,60 @@ const STEP_ORDER: StepId[] = [
   'comparison',
   'pricing',
 ];
+const TOTAL_STEPS = STEP_ORDER.length;
 
 // ─── Helpers ───
 
 function renderBold(text: string) {
-  const parts = text.split(/\*\*(.*?)\*\*/g);
-  return parts.map((part, i) =>
+  return text.split(/\*\*(.*?)\*\*/g).map((part, i) =>
     i % 2 === 1 ? (
-      <strong key={i} className="font-bold text-stone-900 underline decoration-purple-200 decoration-4 underline-offset-2">
+      <strong key={i} style={{ fontWeight: 700, color: 'var(--ink)', boxShadow: 'inset 0 -0.5em 0 var(--tint-2)' }}>
         {part}
       </strong>
     ) : part
   );
 }
 
-// ─── Shared CTA button ───
-
-function NextButton({ onClick, label = '次へ' }: { onClick: () => void; label?: string }) {
+function CTA({ onClick, label = '次へ', disabled = false }: { onClick: () => void; label?: string; disabled?: boolean }) {
   return (
-    <button
-      onClick={onClick}
-      className="w-full py-4 rounded-full font-bold text-white text-base transition-all active:scale-[0.98]"
-      style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)', boxShadow: '0 8px 24px rgba(124, 58, 237, 0.3)' }}
-    >
-      {label}
-    </button>
+    <button className="koko-cta" onClick={onClick} disabled={disabled}>{label}</button>
   );
 }
+function Eyebrow({ children }: { children: React.ReactNode }) { return <p className="koko-eyebrow">{children}</p>; }
+function Hero({ children, align = 'left' }: { children: React.ReactNode; align?: 'left' | 'center' }) {
+  return <h2 className="koko-hero" style={{ textAlign: align }}>{children}</h2>;
+}
+function Q({ children }: { children: React.ReactNode }) { return <h2 className="koko-q">{children}</h2>; }
 
 // ─── Component ───
 
-export default function StepFlow({
-  firstType,
-  sessionId,
-}: StepFlowProps) {
+export default function StepFlow({ firstType, sessionId }: StepFlowProps) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [onboarding, setOnboarding] = useState<Partial<Onboarding>>({});
   const [vision, setVision] = useState<VisionData | null>(null);
-  const [visionLoading, setVisionLoading] = useState(false);
   const [visionSettled, setVisionSettled] = useState(false);
   const [visionError, setVisionError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-
-  // Deepdive state
   const [detailSelected, setDetailSelected] = useState<string[]>([]);
   const [freeText, setFreeText] = useState('');
-
-  // Analysis animation
   const [buildingStep, setBuildingStep] = useState(0);
-
-  // FAQ
   const [faqOpen, setFaqOpen] = useState<number | null>(null);
 
-  // Fade animation
-  const [fadeIn, setFadeIn] = useState(true);
-
-  const currentStep = STEP_ORDER[currentStepIndex];
-
-  // vision生成は一度だけ起動。ステップ送りのcleanupでキャンセルされないよう、effectから独立させる。
   const visionStartedRef = useRef(false);
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
 
-  // Fade transition on step change
-  useEffect(() => {
-    setFadeIn(false);
-    const t = setTimeout(() => setFadeIn(true), 50);
-    return () => clearTimeout(t);
-  }, [currentStepIndex]);
+  const currentStep = STEP_ORDER[currentStepIndex];
 
-  // Analysis animation + API call
+  // Scroll to top on step change
+  useEffect(() => { window.scrollTo(0, 0); }, [currentStepIndex]);
+
+  // Analysis animation + vision生成（一度だけ起動・ステップ送りでキャンセルしない）
   useEffect(() => {
     if (currentStep !== 'analysis') return;
 
-    // Fire CompleteRegistration
     fbqEvent('CompleteRegistration', { content_name: firstType.name });
 
-    // Save onboarding to diagnostics
     const finalOnboarding = {
       ...onboarding,
       difficultDetail: detailSelected.join('、'),
@@ -291,14 +300,8 @@ export default function StepFlow({
       updateDiagnosticOnboarding(sessionId, finalOnboarding as Record<string, string>);
     }
 
-    // Start vision generation in background.
-    // 診断行の保存(saveDiagnostic/updateDiagnosticOnboarding)がfire-and-forgetなので、
-    // 行が書かれる前に呼ぶと404になりうる。数回リトライして取り切る。
-    // ※ このfetchはステップ送りのcleanupでキャンセルしない（生成はアニメより長くかかるため）。
-    //    一度だけ起動し、結果はアンマウント時以外は必ず反映する。
     if (!visionStartedRef.current) {
       visionStartedRef.current = true;
-      setVisionLoading(true);
       setVisionError(null);
       (async () => {
         let lastError = '原因不明（全リトライ失敗）';
@@ -311,10 +314,7 @@ export default function StepFlow({
             });
             const data = await res.json().catch(() => null);
             if (res.ok && data && data.fears) {
-              if (mountedRef.current) {
-                setVision(data as VisionData);
-                setVisionError(null);
-              }
+              if (mountedRef.current) { setVision(data as VisionData); setVisionError(null); }
               lastError = '';
               break;
             }
@@ -328,14 +328,10 @@ export default function StepFlow({
           console.error('[generate-vision] 生成失敗:', lastError);
           setVisionError(lastError);
         }
-        if (mountedRef.current) {
-          setVisionLoading(false);
-          setVisionSettled(true);
-        }
+        if (mountedRef.current) setVisionSettled(true);
       })();
     }
 
-    // Building animation（生成完了まで進行を続け、最後のステップで待機）
     let step = 0;
     setBuildingStep(0);
     const interval = setInterval(() => {
@@ -346,14 +342,14 @@ export default function StepFlow({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep]);
 
-  // vision生成が確定したら結果画面へ進む（再shimmerを避け、完成した状態で見せる）
+  // vision生成が確定したら結果画面へ進む（再shimmerを避ける）
   useEffect(() => {
     if (currentStep !== 'analysis' || !visionSettled) return;
     const t = setTimeout(() => setCurrentStepIndex(prev => prev + 1), 600);
     return () => clearTimeout(t);
   }, [currentStep, visionSettled]);
 
-  // Fire ViewContent when entering service explanation phase
+  // サービス説明フェーズ到達でペイウォール計測
   useEffect(() => {
     if (currentStep === 'whatIsService') {
       fbqPaywallReached();
@@ -362,34 +358,24 @@ export default function StepFlow({
   }, [currentStep]);
 
   function goNext() {
-    if (currentStepIndex < STEP_ORDER.length - 1) {
-      setCurrentStepIndex(prev => prev + 1);
-    }
+    if (currentStepIndex < STEP_ORDER.length - 1) setCurrentStepIndex(prev => prev + 1);
   }
-
   function goBack() {
-    if (currentStepIndex > 0) {
-      setCurrentStepIndex(prev => prev - 1);
-    }
+    if (currentStepIndex > 0) setCurrentStepIndex(prev => prev - 1);
   }
-
   function handleOnboardingAnswer(key: string, value: string) {
     setOnboarding(prev => ({ ...prev, [key]: value }));
     goNext();
   }
-
   function toggleDetail(opt: string) {
-    setDetailSelected(prev =>
-      prev.includes(opt) ? prev.filter(o => o !== opt) : [...prev, opt]
-    );
+    setDetailSelected(prev => prev.includes(opt) ? prev.filter(o => o !== opt) : [...prev, opt]);
   }
 
   async function handleCheckout() {
     fbqEvent('InitiateCheckout', { content_name: 'standard' });
     setIsLoading(true);
     try {
-      const changeOrientation: ChangeOrientation =
-        ORIENTATION_MAP[onboarding.changeOrientation ?? ''] ?? 'unknown';
+      const changeOrientation: ChangeOrientation = ORIENTATION_MAP[onboarding.changeOrientation ?? ''] ?? 'unknown';
       const res = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -415,417 +401,322 @@ export default function StepFlow({
   }
 
   const progress = ((currentStepIndex + 1) / TOTAL_STEPS) * 100;
-
-  // ─── Step renderers ───
-
-  function renderQuestionStep(
-    questionKey: string,
-    questionText: string,
-    options: string[],
-    note?: string,
-  ) {
-    return (
-      <div className="w-full max-w-sm mx-auto space-y-8">
-        <div className="space-y-2">
-          <h2 className="text-2xl font-bold text-stone-800 leading-snug">{questionText}</h2>
-          {note && <p className="text-xs text-stone-400 leading-relaxed">{note}</p>}
-        </div>
-        <div className="space-y-3">
-          {options.map((opt) => (
-            <button
-              key={opt}
-              onClick={() => handleOnboardingAnswer(questionKey, opt)}
-              className="w-full py-4 px-5 rounded-2xl border-2 border-stone-200 text-left text-sm font-medium text-stone-700 hover:border-purple-400 hover:bg-purple-50 transition-all active:scale-[0.98] leading-snug"
-            >
-              {opt}
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const isAnalysis = currentStep === 'analysis';
 
   function renderStep(): React.ReactNode {
     switch (currentStep) {
-      // ─── Onboarding Questions ───
+      // ─── オンボ質問 ───
       case 'difficultScene':
       case 'distressLevel':
       case 'changeOrientation': {
         const q = ONBOARDING_QUESTIONS.find(oq => oq.key === currentStep)!;
-        return renderQuestionStep(q.key, q.question, q.options, q.note);
+        return (
+          <div className="koko-col" style={{ gap: 34 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <Q>{q.question}</Q>
+              {'note' in q && q.note && <p className="koko-note">{q.note}</p>}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
+              {q.options.map(opt => (
+                <button key={opt} className="koko-choice" onClick={() => handleOnboardingAnswer(q.key, opt)}>
+                  <span>{opt}</span><span className="ch">{Ico.go()}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        );
       }
 
       case 'difficultDetail': {
-        const scene = onboarding.difficultScene ?? '';
-        const details = SCENE_DETAILS[scene] ?? [];
+        const details = SCENE_DETAILS[onboarding.difficultScene ?? ''] ?? SCENE_DETAILS['評価される・見られる場面（発表・提出・ミスなど）'];
         return (
-          <div className="w-full max-w-sm mx-auto space-y-7">
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-stone-800 leading-snug">具体的に困っていることを教えてください</h2>
-              <p className="text-xs text-stone-400 leading-relaxed">
-                当てはまるものを選んでください（複数可）
-              </p>
+          <div className="koko-col" style={{ gap: 28 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <Q>{'具体的に困っていることを\n教えてください'}</Q>
+              <p className="koko-note">当てはまるものを選んでください（複数可）</p>
             </div>
-            {details.length > 0 && (
-              <div className="space-y-2">
-                {details.map(opt => {
-                  const active = detailSelected.includes(opt);
-                  return (
-                    <button
-                      key={opt}
-                      onClick={() => toggleDetail(opt)}
-                      className={`w-full py-3.5 px-4 rounded-2xl border-2 text-left text-sm font-medium transition-all active:scale-[0.98] flex items-center gap-2
-                        ${active ? 'border-purple-400 bg-purple-50 text-purple-700' : 'border-stone-200 text-stone-700 hover:border-purple-300'}`}
-                    >
-                      <span className={`w-4 h-4 rounded flex-shrink-0 flex items-center justify-center text-[10px] ${active ? 'bg-purple-500 text-white' : 'bg-stone-100'}`}>
-                        {active ? '✓' : ''}
-                      </span>
-                      {opt}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-            <NextButton
-              onClick={() => {
-                setOnboarding(prev => ({ ...prev, difficultDetail: detailSelected.join('、') }));
-                goNext();
-              }}
-            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {details.map(opt => {
+                const on = detailSelected.includes(opt);
+                return (
+                  <button key={opt} className={'koko-check' + (on ? ' on' : '')} onClick={() => toggleDetail(opt)}>
+                    <span className="koko-box">{on && Ico.check()}</span><span>{opt}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <CTA onClick={() => { setOnboarding(prev => ({ ...prev, difficultDetail: detailSelected.join('、') })); goNext(); }} />
           </div>
         );
       }
 
-      case 'difficultFreeText': {
+      case 'difficultFreeText':
         return (
-          <div className="w-full max-w-sm mx-auto space-y-7">
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-stone-800 leading-snug">他にもあれば、自由に書いてください</h2>
-              <p className="text-xs text-stone-400 leading-relaxed">任意です。スキップもできます。</p>
+          <div className="koko-col" style={{ gap: 28 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <Q>{'他にもあれば、\n自由に書いてください'}</Q>
+              <p className="koko-note">任意です。スキップもできます。</p>
             </div>
-            <div className="space-y-2">
-              <textarea
-                value={freeText}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <textarea className="koko-textarea" rows={4} maxLength={500} value={freeText}
                 onChange={e => setFreeText(e.target.value)}
-                rows={4}
-                maxLength={500}
-                placeholder="例：会議で意見を求められると頭が真っ白になって、後から『なんで言えなかったんだ』と落ち込む…"
-                className="w-full px-4 py-3 rounded-2xl border-2 border-stone-200 text-sm focus:outline-none focus:border-purple-400 resize-none leading-relaxed"
-              />
-              <p className="text-[10px] text-stone-300 text-right">{freeText.length} / 500</p>
+                placeholder="例：会議で意見を求められると頭が真っ白になって、後から『なんで言えなかったんだ』と落ち込む…" />
+              <p style={{ fontSize: 10, color: 'var(--ink-faint)', textAlign: 'right', margin: 0 }}>{freeText.length} / 500</p>
             </div>
-            <NextButton onClick={goNext} />
-            <button
-              onClick={goNext}
-              className="w-full text-center text-xs text-stone-400 hover:text-purple-500 transition-colors"
-            >
-              スキップして進む
-            </button>
+            <CTA onClick={goNext} />
+            <button className="koko-skip" onClick={goNext}>スキップして進む</button>
           </div>
         );
-      }
 
-      // ─── Analysis Animation ───
-      case 'analysis': {
+      case 'analysis':
         return (
-          <div className="w-full max-w-sm mx-auto flex flex-col items-center gap-8">
-            <div className="w-10 h-10 rounded-full border-4 border-purple-200 border-t-purple-500 animate-spin" />
-            <p className="text-lg font-bold text-purple-600">あなたの回答を分析しています…</p>
-            <div className="space-y-2 text-center">
-              {BUILDING_STEPS.map((msg, i) => (
-                <p
-                  key={i}
-                  className={`text-sm transition-all duration-500 ${
-                    i < buildingStep ? 'text-stone-300' : i === buildingStep ? 'text-base font-bold text-purple-600' : 'text-stone-300 opacity-0'
-                  }`}
-                >
-                  {i < buildingStep ? `✓ ${msg}` : msg}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 34, paddingTop: 20 }}>
+            <div className="koko-ring" />
+            <p style={{ fontFamily: 'var(--font-editorial)', fontSize: 17, fontWeight: 700, color: 'var(--accent-deep)', margin: 0, letterSpacing: '.02em' }}>あなたの回答を分析しています</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, textAlign: 'center', minHeight: 200 }}>
+              {BUILDING_STEPS.map((m, i) => (
+                <p key={i} style={{
+                  margin: 0, fontSize: i === buildingStep ? 14.5 : 13, transition: 'all .4s', fontWeight: i === buildingStep ? 700 : 400,
+                  color: i < buildingStep ? 'var(--ink-faint)' : i === buildingStep ? 'var(--accent-deep)' : 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+                }}>
+                  {i < buildingStep && <span style={{ color: 'var(--accent)', display: 'inline-flex' }}>{Ico.check({ width: 12, height: 12 })}</span>}{m}
                 </p>
               ))}
             </div>
           </div>
         );
-      }
 
-      // ─── 画面1：分析完了・恐れの提示（AI生成） ───
       case 'analysisResult': {
-        // 生成中のみshimmer。生成が終わったら、失敗していてもフォールバックで必ず進めるようにする。
-        const data = vision ?? FALLBACK_ANALYSIS;
+        const d = vision ?? FALLBACK_ANALYSIS;
         return (
-          <div className="w-full max-w-sm mx-auto space-y-6">
-            <div className="text-center space-y-1">
-              <div className="text-3xl">✨</div>
-              <h2 className="text-xl font-bold text-stone-900">分析が完了しました</h2>
+          <div className="koko-col" style={{ gap: 26 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className="koko-illus koko-bloom" src={`/illustrations/${firstType.id}.png`} alt="" />
+              <Eyebrow>Analysis</Eyebrow>
+              <Hero align="center">分析が完了しました</Hero>
             </div>
-            {visionLoading ? (
-              <div className="space-y-4">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="space-y-2">
-                    <div className="h-4 bg-stone-100 rounded-full animate-pulse" style={{ width: `${88 - i * 6}%` }} />
-                    <div className="h-4 bg-stone-100 rounded-full animate-pulse" style={{ width: `${72 + i * 4}%` }} />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-5 text-sm text-stone-700 leading-relaxed">
-                <p>{renderBold(data.fears)}</p>
-                <p>{renderBold(data.consequence)}</p>
-                <ul className="space-y-2.5 bg-white/70 rounded-2xl border border-stone-100 p-4">
-                  {data.dailyStruggles.map((s, i) => (
-                    <li key={i} className="flex items-start gap-2.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-purple-500 mt-2 shrink-0" />
-                      <span>{s}</span>
-                    </li>
-                  ))}
-                </ul>
-                <p className="text-stone-500">こうした日常の悩みも、もしかしたらこの恐れが根っこにあるのかもしれません。</p>
-              </div>
-            )}
-            {!visionLoading && <NextButton onClick={goNext} />}
-          </div>
-        );
-      }
-
-      // ─── 画面2：ココリフトは、どんなサービス？ ───
-      case 'whatIsService': {
-        return (
-          <div className="w-full max-w-sm mx-auto space-y-6">
-            <h2 className="text-xl font-bold text-stone-900 leading-snug">ココリフトは、どんなサービス？</h2>
-            <p className="text-sm text-stone-700 leading-relaxed">
-              ココリフトは、<strong className="font-bold text-stone-900">4つの恐れ × 3つの守り方</strong>からあなたの心の構造を読み解き、2つを毎日セットで届けます。
-            </p>
-            <div className="space-y-3">
-              {[
-                { num: '①', title: 'AIとの対話', body: 'その日の出来事から「気づき」を深める' },
-                { num: '②', title: '毎日のミッション', body: '恐れに合わせた「実践」を積み重ねる' },
-              ].map((item, i) => (
-                <div key={i} className="bg-white rounded-2xl p-4 border border-stone-100 flex items-start gap-3">
-                  <span className="text-purple-500 font-bold text-lg leading-none mt-0.5">{item.num}</span>
-                  <div className="space-y-0.5">
-                    <p className="text-sm font-bold text-stone-800">{item.title}</p>
-                    <p className="text-xs text-stone-500 leading-relaxed">{item.body}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="border-t border-dashed border-stone-200 pt-5 space-y-4 text-sm text-stone-700 leading-relaxed">
-              <p>
-                一般的なカウンセリングや自己分析では、「自分のことがわかった」気がしても、日常に戻るとまた同じパターンを繰り返してしまいがちです。{renderBold('**気づきだけでは、行動は変わらない**')}から。
-              </p>
-              <p>
-                ですがココリフトは、気づきと実践を{renderBold('**毎日セットで**')}積み重ねます。本当の変化は、日々の小さな実践でしか起きない——だから、{renderBold('**変わるところまで毎日伴走する**')}サービスです。
-              </p>
-            </div>
-            <NextButton onClick={goNext} />
-          </div>
-        );
-      }
-
-      // ─── 画面3：30日後の変化（AI生成） ───
-      case 'outcomes': {
-        const outcomes = vision?.outcomes?.length ? vision.outcomes : FALLBACK_OUTCOMES;
-        return (
-          <div className="w-full max-w-sm mx-auto space-y-6">
-            <h2 className="text-xl font-bold text-stone-900 leading-snug text-center">
-              30日後、あなたにはこんな<span className="text-purple-600">変化</span>が期待できます
-            </h2>
-            <ul className="space-y-3">
-              {outcomes.map((text, i) => (
-                <li key={i} className="flex items-start gap-3 p-4 bg-white rounded-2xl border border-stone-100">
-                  <span className="w-6 h-6 rounded-full bg-purple-100 text-purple-600 text-sm flex items-center justify-center flex-shrink-0">○</span>
-                  <p className="text-sm text-stone-700 leading-relaxed">{text}</p>
-                </li>
-              ))}
-            </ul>
-            <NextButton onClick={goNext} />
-          </div>
-        );
-      }
-
-      // ─── 画面4：届く内容（最初の3日間プレビュー） ───
-      case 'deliverables': {
-        const dayPreviews = DAY_PREVIEWS[onboarding.difficultScene ?? ''] ?? DEFAULT_DAY_PREVIEW;
-        return (
-          <div className="w-full max-w-sm mx-auto space-y-6">
-            <h2 className="text-xl font-bold text-stone-900 leading-snug">最初の3日間は、こんな体験から始まります</h2>
-
-            <div className="space-y-3">
-              {dayPreviews.map((d, i) => (
-                <div key={i} className="bg-white rounded-2xl p-4 border border-stone-100 flex items-start gap-3">
-                  <span className="inline-block px-2.5 py-0.5 rounded-full bg-purple-500 text-white text-xs font-bold flex-shrink-0">Day {i + 1}</span>
-                  <div className="space-y-0.5">
-                    <p className="text-sm font-bold text-stone-800 leading-snug">{d.title}</p>
-                    <p className="text-xs text-stone-500 leading-relaxed">{d.body}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="text-center text-purple-400 font-bold text-lg">＆</div>
-
-            <div className="bg-white rounded-2xl p-4 border border-stone-100 space-y-1">
-              <p className="text-sm font-bold text-stone-800">🤖 AIによる個別カウンセリング</p>
-              <p className="text-xs text-stone-500 leading-relaxed">24時間いつでも相談OK。やりとりは積み重なり、あなたを理解していきます。</p>
-            </div>
-            <NextButton onClick={goNext} />
-          </div>
-        );
-      }
-
-      // ─── 画面5：比較表 ───
-      case 'comparison': {
-        const rows = [
-          { label: '個別最適化', ai: '△', counsel: '○', koko: '○' },
-          { label: 'いつでも相談', ai: '○', counsel: '✕', koko: '○' },
-          { label: '認知＋行動の実践', ai: '✕', counsel: '△', koko: '○' },
-          { label: '継続的な伴走', ai: '✕', counsel: '○', koko: '○' },
-          { label: '費用', ai: '—', counsel: '高い', koko: '手頃' },
-        ];
-        return (
-          <div className="w-full max-w-sm mx-auto space-y-6">
-            <h2 className="text-xl font-bold text-stone-900 leading-snug text-center">ここにしかない体験です</h2>
-            <div className="bg-white rounded-2xl border border-stone-100 overflow-hidden">
-              <div className="grid grid-cols-[1.4fr_1fr_1fr_1fr] text-center text-[11px] font-bold bg-stone-50 border-b border-stone-100">
-                <div className="px-2 py-2.5 text-left text-stone-400"></div>
-                <div className="px-1 py-2.5 text-stone-500">生成AI</div>
-                <div className="px-1 py-2.5 text-stone-500">対面<br />カウンセリング</div>
-                <div className="px-1 py-2.5 text-purple-600">ココリフト</div>
-              </div>
-              {rows.map((row, i) => (
-                <div key={i} className={`grid grid-cols-[1.4fr_1fr_1fr_1fr] text-center text-xs items-center ${i > 0 ? 'border-t border-stone-100' : ''}`}>
-                  <div className="px-2 py-3 text-left text-stone-600 font-medium">{row.label}</div>
-                  <div className="px-1 py-3 text-stone-400">{row.ai}</div>
-                  <div className="px-1 py-3 text-stone-400">{row.counsel}</div>
-                  <div className="px-1 py-3 font-bold text-purple-600 bg-purple-50/50">{row.koko}</div>
-                </div>
-              ))}
-            </div>
-            <NextButton onClick={goNext} />
-          </div>
-        );
-      }
-
-      // ─── 画面6：価格・オファー ───
-      case 'pricing': {
-        return (
-          <div className="w-full max-w-sm mx-auto space-y-8">
-            <h2 className="text-xl font-bold text-stone-900 leading-snug text-center">まずは30日、試してみませんか</h2>
-
-            {/* Price card */}
-            <div className="bg-white rounded-3xl p-6 border-2 border-purple-400 shadow-lg shadow-purple-100 space-y-4 text-center">
-              <div className="space-y-0.5">
-                <p className="text-xs text-stone-400">一般のカウンセリング</p>
-                <p className="text-base text-stone-400 line-through">¥10,000〜¥20,000 / 月</p>
-                <p className="text-purple-400 text-xl">↓</p>
-              </div>
-              <div className="space-y-0.5">
-                <p className="text-sm font-bold text-purple-600">ココリフト</p>
-                <div className="flex items-center justify-center gap-1.5">
-                  <span className="text-4xl font-bold text-purple-600">¥3,980</span>
-                  <span className="text-sm text-stone-400 self-end mb-1">（税込）</span>
-                </div>
-                <p className="text-xs text-stone-400">買い切りお試し・自動更新なし</p>
-              </div>
-              <ul className="space-y-2.5 text-left">
-                {[
-                  '常時相談できるAIカウンセリング',
-                  'あなた専用に最適化された30日ミッション',
-                  '認知＆行動の両面からのアプローチ',
-                  '記録・連続日数・変化フィードバック',
-                ].map((t, i) => (
-                  <li key={i} className="flex gap-2.5 items-start text-sm font-medium text-stone-700 border-b border-dashed border-stone-100 pb-2.5 last:border-0 last:pb-0">
-                    <span className="w-5 h-5 rounded-full bg-purple-400 text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">✓</span>
-                    {t}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 18, fontSize: 14.5, lineHeight: 2, color: 'var(--ink-soft)' }}>
+              <p style={{ margin: 0 }}>{renderBold(d.fears)}</p>
+              <p style={{ margin: 0 }}>{renderBold(d.consequence)}</p>
+              <ul className="koko-tintcard" style={{ listStyle: 'none', margin: 0, padding: 20, display: 'flex', flexDirection: 'column', gap: 13 }}>
+                {d.dailyStruggles.map((s, i) => (
+                  <li key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)', marginTop: 9, flexShrink: 0 }} />
+                    <span style={{ fontSize: 13.5, lineHeight: 1.7 }}>{s}</span>
                   </li>
                 ))}
               </ul>
-              <button
-                onClick={handleCheckout}
-                disabled={isLoading}
-                className="w-full py-4 rounded-full font-bold text-white text-base transition-all active:scale-[0.98] disabled:opacity-50"
-                style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)', boxShadow: '0 8px 24px rgba(124, 58, 237, 0.3)' }}
-              >
-                {isLoading ? '処理中...' : 'まずはお得に体験'}
-              </button>
-              <p className="text-xs text-stone-500 leading-relaxed pt-1">効果を実感できたら、来月以降も続けられます。</p>
+              <p style={{ margin: 0, fontSize: 12.5, color: 'var(--ink-mute)', lineHeight: 1.85 }}>こうした日常の悩みも、もしかしたらこの恐れが根っこにあるのかもしれません。</p>
+            </div>
+            <CTA onClick={goNext} />
+          </div>
+        );
+      }
+
+      case 'whatIsService':
+        return (
+          <div className="koko-col" style={{ gap: 24 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
+              <Eyebrow>About</Eyebrow>
+              <Hero>{'ココリフトは、\nどんなサービス？'}</Hero>
+            </div>
+            <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.95, color: 'var(--ink-soft)' }}>
+              ココリフトは、<strong style={{ fontWeight: 700, color: 'var(--ink)' }}>4つの恐れ × 3つの守り方</strong>からあなたの心の構造を読み解き、2つを毎日セットで届けます。
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
+              {[{ n: '1', icon: Ico.chat(), t: 'AIとの対話', b: 'その日の出来事から「気づき」を深める' },
+                { n: '2', icon: Ico.bloom({ width: 20, height: 20 }), t: '毎日のミッション', b: '恐れに合わせた「実践」を積み重ねる' }].map((it, i) => (
+                <div key={i} className="koko-card" style={{ display: 'flex', gap: 14, alignItems: 'center', padding: 17 }}>
+                  <span className="koko-numchip">{it.n}</span>
+                  <span style={{ color: 'var(--accent)', display: 'inline-flex', flexShrink: 0 }}>{it.icon}</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <p style={{ margin: 0, fontSize: 14.5, fontWeight: 700, color: 'var(--ink)' }}>{it.t}</p>
+                    <p style={{ margin: 0, fontSize: 12.5, color: 'var(--ink-mute)', lineHeight: 1.65 }}>{it.b}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, fontSize: 14, lineHeight: 1.95, color: 'var(--ink-soft)' }}>
+              <hr className="koko-rule" />
+              <p style={{ margin: 0 }}>一般的なカウンセリングや自己分析では、「自分のことがわかった」気がしても、日常に戻るとまた同じパターンを繰り返してしまいがちです。{renderBold('**気づきだけでは、行動は変わらない**')}から。</p>
+              <p style={{ margin: 0 }}>ですがココリフトは、気づきと実践を{renderBold('**毎日セットで**')}積み重ねます。本当の変化は日々の小さな実践でしか起きない——だから、{renderBold('**変わるところまで毎日伴走する**')}サービスです。</p>
+            </div>
+            <CTA onClick={goNext} />
+          </div>
+        );
+
+      case 'outcomes': {
+        const outcomes = vision?.outcomes?.length ? vision.outcomes : FALLBACK_OUTCOMES;
+        return (
+          <div className="koko-col" style={{ gap: 26 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 11, alignItems: 'center' }}>
+              <Eyebrow>Your 30 days</Eyebrow>
+              <Hero align="center">{'30日後、あなたに\n訪れる変化'}</Hero>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {outcomes.map((t, i) => (
+                <div key={i} className="koko-card" style={{ display: 'flex', gap: 14, alignItems: 'center', padding: '16px 17px' }}>
+                  <span className="koko-checkchip">{Ico.check()}</span>
+                  <p style={{ margin: 0, fontSize: 14, lineHeight: 1.65, color: 'var(--ink-soft)' }}>{t}</p>
+                </div>
+              ))}
+            </div>
+            <CTA onClick={goNext} />
+          </div>
+        );
+      }
+
+      case 'deliverables': {
+        const days = DAY_PREVIEWS[onboarding.difficultScene ?? ''] ?? DEFAULT_DAY_PREVIEW;
+        return (
+          <div className="koko-col" style={{ gap: 24 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
+              <Eyebrow>First 3 days</Eyebrow>
+              <Hero>{'最初の3日間は、\nこんな体験から'}</Hero>
+            </div>
+            <div className="koko-timeline">
+              {days.map((d, i) => (
+                <div key={i} className="koko-tl-row">
+                  <span className="koko-daychip"><em>DAY</em>{i + 1}</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 3, paddingTop: 2 }}>
+                    <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--ink)', lineHeight: 1.45 }}>{d.title}</p>
+                    <p style={{ margin: 0, fontSize: 12.5, color: 'var(--ink-mute)', lineHeight: 1.7 }}>{d.body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 11, color: 'var(--ink-faint)' }}>
+              <span style={{ height: 1, width: 26, background: 'var(--line)' }} />
+              <span style={{ fontFamily: 'var(--font-editorial)', fontSize: 13, color: 'var(--ink-mute)', fontStyle: 'italic' }}>and</span>
+              <span style={{ height: 1, width: 26, background: 'var(--line)' }} />
+            </div>
+            <div className="koko-card" style={{ display: 'flex', gap: 14, alignItems: 'center', padding: 17 }}>
+              <span style={{ color: 'var(--accent)', display: 'inline-flex', flexShrink: 0 }}>{Ico.chat()}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>AIによる個別カウンセリング</p>
+                <p style={{ margin: 0, fontSize: 12.5, color: 'var(--ink-mute)', lineHeight: 1.7 }}>24時間いつでも相談OK。やりとりは積み重なり、あなたを理解していきます。</p>
+              </div>
+            </div>
+            <CTA onClick={goNext} />
+          </div>
+        );
+      }
+
+      case 'comparison': {
+        const cols = ['生成AI', '対面\nカウンセリング', 'ココリフト'];
+        const rows: { label: string; v: CompareMark[] }[] = [
+          { label: '個別最適化', v: ['partial', 'full', 'full'] },
+          { label: 'いつでも相談', v: ['full', 'none', 'full'] },
+          { label: '認知＋行動の実践', v: ['none', 'partial', 'full'] },
+          { label: '継続的な伴走', v: ['none', 'full', 'full'] },
+        ];
+        const priceRow = ['—', '高め', '手頃'];
+        return (
+          <div className="koko-col" style={{ gap: 26 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 11, alignItems: 'center' }}>
+              <Eyebrow>Why kokolift</Eyebrow>
+              <Hero align="center">{'ここにしかない、\n毎日の伴走'}</Hero>
+            </div>
+            <div className="koko-compare">
+              <div className="koko-compare-head">
+                <span />
+                {cols.map((c, i) => <span key={i} className={'koko-compare-col' + (i === 2 ? ' koko-me' : '')} style={{ whiteSpace: 'pre-line' }}>{c}</span>)}
+              </div>
+              {rows.map((r, ri) => (
+                <div key={ri} className="koko-compare-row">
+                  <span className="koko-compare-label">{r.label}</span>
+                  {r.v.map((mark, ci) => (
+                    <span key={ci} className={'koko-compare-cell' + (ci === 2 ? ' koko-me' : '')} style={{ color: ci === 2 ? 'var(--accent-deep)' : 'var(--ink-faint)' }}>{Ico[mark]()}</span>
+                  ))}
+                </div>
+              ))}
+              <div className="koko-compare-row">
+                <span className="koko-compare-label">費用のめやす</span>
+                {priceRow.map((p, ci) => (
+                  <span key={ci} className={'koko-compare-cell' + (ci === 2 ? ' koko-me' : '')} style={{ fontSize: 12.5, fontWeight: ci === 2 ? 700 : 500, color: ci === 2 ? 'var(--accent-deep)' : 'var(--ink-mute)' }}>{p}</span>
+                ))}
+              </div>
+            </div>
+            <CTA onClick={goNext} />
+          </div>
+        );
+      }
+
+      case 'pricing':
+        return (
+          <div className="koko-col" style={{ gap: 28 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 11, alignItems: 'center' }}>
+              <Eyebrow>Plan</Eyebrow>
+              <Hero align="center">{'まずは30日、\n試してみませんか'}</Hero>
+            </div>
+            <div className="koko-price">
+              <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <p style={{ margin: 0, fontSize: 11.5, color: 'var(--ink-mute)', letterSpacing: '.04em' }}>一般のカウンセリング</p>
+                <p style={{ margin: 0, fontSize: 14, color: 'var(--ink-faint)', textDecoration: 'line-through' }}>¥10,000〜¥20,000 / 月</p>
+                <span style={{ color: 'var(--accent-soft)', display: 'inline-flex', justifyContent: 'center', margin: '3px 0' }}>{Ico.arrow()}</span>
+              </div>
+              <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 5 }}>
+                <p style={{ margin: 0, fontFamily: 'var(--font-editorial)', fontSize: 14, fontWeight: 700, color: 'var(--accent-deep)', letterSpacing: '.03em' }}>ココリフト</p>
+                <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 6 }}>
+                  <span className="koko-bignum">¥3,980</span>
+                  <span style={{ fontSize: 12.5, color: 'var(--ink-mute)', marginBottom: 5 }}>（税込）</span>
+                </div>
+                <p style={{ margin: 0, fontSize: 11.5, color: 'var(--ink-mute)' }}>買い切りお試し・自動更新なし</p>
+              </div>
+              <hr className="koko-rule" />
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 13 }}>
+                {['常時相談できるAIカウンセリング', 'あなた専用に最適化された30日ミッション', '認知＆行動の両面からのアプローチ', '記録・連続日数・変化フィードバック'].map((t, i) => (
+                  <li key={i} style={{ display: 'flex', gap: 12, alignItems: 'center', fontSize: 13.5, fontWeight: 500, color: 'var(--ink-soft)' }}>
+                    <span className="koko-checkchip sm">{Ico.check({ width: 11, height: 11 })}</span>{t}
+                  </li>
+                ))}
+              </ul>
+              <CTA onClick={handleCheckout} disabled={isLoading} label={isLoading ? '処理中...' : 'まずはお得に体験'} />
+              <p style={{ margin: 0, fontSize: 11.5, color: 'var(--ink-mute)', textAlign: 'center', lineHeight: 1.7 }}>効果を実感できたら、来月以降も続けられます。</p>
             </div>
 
-            {/* FAQ */}
-            <div className="bg-white rounded-3xl p-5 border border-purple-100 space-y-1">
-              <p className="text-base font-bold text-stone-800 text-center pb-2">よくある質問</p>
+            <div>
+              <p style={{ fontFamily: 'var(--font-editorial)', fontSize: 15, fontWeight: 700, color: 'var(--ink)', textAlign: 'center', margin: '0 0 6px' }}>よくある質問</p>
               {FAQ_ITEMS.map((f, i) => (
-                <div key={i} className="border-t border-stone-100">
-                  <button
-                    onClick={() => setFaqOpen(faqOpen === i ? null : i)}
-                    className="w-full py-3.5 flex items-center justify-between gap-3 text-left"
-                  >
-                    <span className="text-sm font-bold text-stone-800">{i + 1}. {f.q}</span>
-                    <span className={`text-purple-400 transition-transform flex-shrink-0 ${faqOpen === i ? 'rotate-180' : ''}`}>▾</span>
+                <div key={i} style={{ borderTop: '1px solid var(--hairline)' }}>
+                  <button onClick={() => setFaqOpen(faqOpen === i ? null : i)}
+                    style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '15px 2px', textAlign: 'left' }}>
+                    <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--ink)' }}>{f.q}</span>
+                    <span style={{ color: 'var(--accent)', display: 'inline-flex', flexShrink: 0, transition: 'transform .25s', transform: faqOpen === i ? 'rotate(180deg)' : 'none' }}>{Ico.chevron()}</span>
                   </button>
-                  {faqOpen === i && (
-                    <p className="text-xs text-stone-500 leading-relaxed pb-3.5">{f.a}</p>
-                  )}
+                  {faqOpen === i && <p style={{ margin: 0, fontSize: 12.5, color: 'var(--ink-mute)', lineHeight: 1.85, padding: '0 2px 15px' }}>{f.a}</p>}
                 </div>
               ))}
             </div>
 
-            {/* Medical disclaimer */}
-            <div className="bg-stone-100 rounded-2xl p-4 text-center">
-              <p className="text-xs text-stone-400 leading-relaxed">
-                ※本プログラムは医療行為ではありません。<br />
-                CBT（認知行動療法）の考え方をベースにした<br />
-                セルフケアツールです。効果を保証するものではありません。
-              </p>
-            </div>
+            <p style={{ margin: 0, fontSize: 10.5, color: 'var(--ink-faint)', textAlign: 'center', lineHeight: 1.85 }}>
+              ※本プログラムは医療行為ではありません。CBT（認知行動療法）の考え方をベースにしたセルフケアツールです。効果を保証するものではありません。
+            </p>
           </div>
         );
-      }
 
       default:
         return null;
     }
   }
 
-  // Don't show navigation for analysis step
-  const isAnalysis = currentStep === 'analysis';
-  const showBackButton = !isAnalysis && currentStepIndex > 0;
-
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
-      {/* Progress bar */}
+    <div className="koko-stage">
       {!isAnalysis && (
-        <div className="fixed top-0 left-0 right-0 z-50">
-          <div className="h-1 bg-stone-100">
-            <div
-              className="h-full bg-purple-500 transition-all duration-500 ease-out"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </div>
+        <div className="koko-progress"><div className="koko-progress-fill" style={{ width: `${progress}%` }} /></div>
       )}
-
-      {/* Content */}
-      <div
-        className={`flex-1 flex flex-col items-center justify-center px-5 py-12 transition-opacity duration-300 ${fadeIn ? 'opacity-100' : 'opacity-0'}`}
-      >
-        {renderStep()}
+      <div className="koko-inner">
+        <div key={currentStepIndex} className="koko-fade">{renderStep()}</div>
+        {!isAnalysis && currentStepIndex > 0 && (
+          <button className="koko-back" onClick={goBack}>← 戻る</button>
+        )}
       </div>
-
-      {/* Back button */}
-      {showBackButton && (
-        <div className="px-5 pb-8 max-w-sm mx-auto w-full">
-          <button
-            onClick={goBack}
-            className="w-full py-3 text-sm text-stone-400 hover:text-stone-600 transition-colors"
-          >
-            ← 戻る
-          </button>
-        </div>
-      )}
 
       {/* 開発時のみ：vision生成エラーを可視化 */}
       {process.env.NODE_ENV !== 'production' && visionError && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-red-600 text-white text-xs px-4 py-2 text-center">
+        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50, background: '#d4615a', color: '#fff', fontSize: 12, padding: '8px 16px', textAlign: 'center' }}>
           ⚠️ vision生成失敗: {visionError}（フォールバック表示中）
         </div>
       )}
