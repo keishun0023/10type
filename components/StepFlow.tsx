@@ -647,7 +647,7 @@ export default function StepFlow({
         const dayPreviews = DAY_PREVIEWS[onboarding.difficultScene ?? ''] ?? DEFAULT_DAY_PREVIEW;
         return (
           <div className="w-full max-w-sm mx-auto space-y-6">
-            <h2 className="text-xl font-bold text-stone-900 leading-snug">最初の3日間で、こんな体験が始まります</h2>
+            <h2 className="text-xl font-bold text-stone-900 leading-snug">最初の3日間は、こんな体験から始まります</h2>
 
             <div className="space-y-3">
               {dayPreviews.map((d, i) => (
