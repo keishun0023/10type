@@ -238,6 +238,7 @@ export default function StepFlow({
   const [onboarding, setOnboarding] = useState<Partial<Onboarding>>({});
   const [vision, setVision] = useState<VisionData | null>(null);
   const [visionLoading, setVisionLoading] = useState(false);
+  const [visionError, setVisionError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // Deepdive state
@@ -283,8 +284,10 @@ export default function StepFlow({
     // 診断行の保存(saveDiagnostic/updateDiagnosticOnboarding)がfire-and-forgetなので、
     // 行が書かれる前に呼ぶと404になりうる。数回リトライして取り切る。
     setVisionLoading(true);
+    setVisionError(null);
     let cancelled = false;
     (async () => {
+      let lastError = '原因不明（全リトライ失敗）';
       for (let attempt = 0; attempt < 4; attempt++) {
         try {
           const res = await fetch('/api/generate-vision', {
@@ -292,17 +295,24 @@ export default function StepFlow({
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sessionId, typeId: firstType.id }),
           });
-          if (res.ok) {
-            const data = await res.json();
-            if (!cancelled && data && data.fears) {
+          const data = await res.json().catch(() => null);
+          if (res.ok && data && data.fears) {
+            if (!cancelled) {
               setVision(data as VisionData);
-              break;
+              setVisionError(null);
             }
+            lastError = '';
+            break;
           }
-        } catch {
-          // network error → retry
+          lastError = `HTTP ${res.status}: ${data?.error ?? (data?.fears ? 'fearsはあるが不正な形' : 'レスポンスにfearsなし')}`;
+        } catch (e) {
+          lastError = `fetch失敗: ${e instanceof Error ? e.message : String(e)}`;
         }
         await new Promise(r => setTimeout(r, 1200 * (attempt + 1)));
+      }
+      if (!cancelled && lastError) {
+        console.error('[generate-vision] 生成失敗:', lastError);
+        setVisionError(lastError);
       }
       if (!cancelled) setVisionLoading(false);
     })();
@@ -788,6 +798,13 @@ export default function StepFlow({
           >
             ← 戻る
           </button>
+        </div>
+      )}
+
+      {/* 開発時のみ：vision生成エラーを可視化 */}
+      {process.env.NODE_ENV !== 'production' && visionError && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-red-600 text-white text-xs px-4 py-2 text-center">
+          ⚠️ vision生成失敗: {visionError}（フォールバック表示中）
         </div>
       )}
     </div>
