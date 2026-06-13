@@ -11,12 +11,15 @@ function SuccessPageInner() {
   const router = useRouter();
   const sessionId = searchParams.get('session_id') || '';
 
-  const [step, setStep] = useState<'account' | 'done'>('account');
+  const [step, setStep] = useState<'setup' | 'account' | 'done'>('setup');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
+  const [dailyTime, setDailyTime] = useState('');
+  const [lifestyle, setLifestyle] = useState('');
+  const [bestTiming, setBestTiming] = useState('');
 
   // Stripeセッションからメタデータを取得
   const [meta, setMeta] = useState<{ email: string; typeId: string; plan: string; onboarding: Record<string, string>; diagSession: string } | null>(null);
@@ -87,9 +90,9 @@ function SuccessPageInner() {
         email,
         username,
         typeId: meta.typeId,
-        lifestyle: meta.onboarding?.lifestyle,
-        dailyTime: meta.onboarding?.dailyTime,
-        bestTiming: meta.onboarding?.bestTiming,
+        lifestyle: lifestyle || meta.onboarding?.lifestyle,
+        dailyTime: dailyTime || meta.onboarding?.dailyTime,
+        bestTiming: bestTiming || meta.onboarding?.bestTiming,
         distressLevel: meta.onboarding?.distressLevel,
         changeScene: meta.onboarding?.changeScene,
         difficultScene: meta.onboarding?.difficultScene,
@@ -119,6 +122,89 @@ function SuccessPageInner() {
     );
   }
 
+  if (step === 'setup') {
+    const canProceed = dailyTime && lifestyle && bestTiming;
+    return (
+      <div className="min-h-screen px-5 py-12" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
+        <div className="w-full max-w-sm mx-auto space-y-8">
+          <div className="space-y-2">
+            <div className="text-3xl text-center">✅</div>
+            <h1 className="text-xl font-bold text-stone-900 text-center">支払いが完了しました！</h1>
+            <p className="text-sm text-stone-500 text-center">あなたに合ったプログラムを作るために<br />3つだけ教えてください。</p>
+          </div>
+
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-stone-700">1日に取れる時間はどれくらいですか？</p>
+              <div className="space-y-2">
+                {['5分以内', '10〜15分', '30分以上'].map(opt => (
+                  <button
+                    key={opt}
+                    onClick={() => setDailyTime(opt)}
+                    className={`w-full py-3 px-4 rounded-xl text-sm text-left border transition-all ${
+                      dailyTime === opt
+                        ? 'border-purple-400 bg-purple-50 text-purple-800 font-medium'
+                        : 'border-stone-200 bg-white text-stone-700 hover:border-stone-300'
+                    }`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-stone-700">生活スタイルを教えてください</p>
+              <div className="space-y-2">
+                {['会社員・フルタイム', 'パートタイム・アルバイト', '学生', 'フリーランス・自営業', '専業主婦・主夫', 'その他'].map(opt => (
+                  <button
+                    key={opt}
+                    onClick={() => setLifestyle(opt)}
+                    className={`w-full py-3 px-4 rounded-xl text-sm text-left border transition-all ${
+                      lifestyle === opt
+                        ? 'border-purple-400 bg-purple-50 text-purple-800 font-medium'
+                        : 'border-stone-200 bg-white text-stone-700 hover:border-stone-300'
+                    }`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-stone-700">続けやすいタイミングはいつですか？</p>
+              <div className="space-y-2">
+                {['朝（起床後）', '昼休み', '夕方・帰宅後', '夜寝る前', 'バラバラ・空き時間に'].map(opt => (
+                  <button
+                    key={opt}
+                    onClick={() => setBestTiming(opt)}
+                    className={`w-full py-3 px-4 rounded-xl text-sm text-left border transition-all ${
+                      bestTiming === opt
+                        ? 'border-purple-400 bg-purple-50 text-purple-800 font-medium'
+                        : 'border-stone-200 bg-white text-stone-700 hover:border-stone-300'
+                    }`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setStep('account')}
+            disabled={!canProceed}
+            className="w-full py-4 rounded-full font-bold text-white disabled:opacity-40"
+            style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' }}
+          >
+            次へ →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (step === 'done') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-5" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
@@ -144,9 +230,9 @@ function SuccessPageInner() {
     <div className="min-h-screen px-5 py-12" style={{ background: 'linear-gradient(180deg, #f5f3ff 0%, #ffffff 60%)' }}>
       <div className="w-full max-w-sm mx-auto space-y-8">
         <div className="space-y-2">
-          <div className="text-3xl text-center">✅</div>
-          <h1 className="text-xl font-bold text-stone-900 text-center">支払いが完了しました！</h1>
-          <p className="text-sm text-stone-500 text-center">最後に、呼び名だけ教えてください。</p>
+          <div className="text-3xl text-center">👤</div>
+          <h1 className="text-xl font-bold text-stone-900 text-center">アカウントを作成しましょう</h1>
+          <p className="text-sm text-stone-500 text-center">プログラムの進捗を保存するために<br />アカウント情報を登録してください。</p>
         </div>
 
         <form onSubmit={handleCreateAccount} className="space-y-4">
