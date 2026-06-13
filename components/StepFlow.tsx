@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { DiagType } from '@/data/types';
 import { FearAxis, DefenseAxis } from '@/data/questions';
 import { ChangeOrientation } from '@/data/program';
@@ -256,6 +256,11 @@ export default function StepFlow({
 
   const currentStep = STEP_ORDER[currentStepIndex];
 
+  // vision生成は一度だけ起動。ステップ送りのcleanupでキャンセルされないよう、effectから独立させる。
+  const visionStartedRef = useRef(false);
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
+
   // Fade transition on step change
   useEffect(() => {
     setFadeIn(false);
@@ -283,39 +288,43 @@ export default function StepFlow({
     // Start vision generation in background.
     // 診断行の保存(saveDiagnostic/updateDiagnosticOnboarding)がfire-and-forgetなので、
     // 行が書かれる前に呼ぶと404になりうる。数回リトライして取り切る。
-    setVisionLoading(true);
-    setVisionError(null);
-    let cancelled = false;
-    (async () => {
-      let lastError = '原因不明（全リトライ失敗）';
-      for (let attempt = 0; attempt < 4; attempt++) {
-        try {
-          const res = await fetch('/api/generate-vision', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionId, typeId: firstType.id }),
-          });
-          const data = await res.json().catch(() => null);
-          if (res.ok && data && data.fears) {
-            if (!cancelled) {
-              setVision(data as VisionData);
-              setVisionError(null);
+    // ※ このfetchはステップ送りのcleanupでキャンセルしない（生成はアニメより長くかかるため）。
+    //    一度だけ起動し、結果はアンマウント時以外は必ず反映する。
+    if (!visionStartedRef.current) {
+      visionStartedRef.current = true;
+      setVisionLoading(true);
+      setVisionError(null);
+      (async () => {
+        let lastError = '原因不明（全リトライ失敗）';
+        for (let attempt = 0; attempt < 4; attempt++) {
+          try {
+            const res = await fetch('/api/generate-vision', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ sessionId, typeId: firstType.id }),
+            });
+            const data = await res.json().catch(() => null);
+            if (res.ok && data && data.fears) {
+              if (mountedRef.current) {
+                setVision(data as VisionData);
+                setVisionError(null);
+              }
+              lastError = '';
+              break;
             }
-            lastError = '';
-            break;
+            lastError = `HTTP ${res.status}: ${data?.error ?? (data?.fears ? 'fearsはあるが不正な形' : 'レスポンスにfearsなし')}`;
+          } catch (e) {
+            lastError = `fetch失敗: ${e instanceof Error ? e.message : String(e)}`;
           }
-          lastError = `HTTP ${res.status}: ${data?.error ?? (data?.fears ? 'fearsはあるが不正な形' : 'レスポンスにfearsなし')}`;
-        } catch (e) {
-          lastError = `fetch失敗: ${e instanceof Error ? e.message : String(e)}`;
+          await new Promise(r => setTimeout(r, 1200 * (attempt + 1)));
         }
-        await new Promise(r => setTimeout(r, 1200 * (attempt + 1)));
-      }
-      if (!cancelled && lastError) {
-        console.error('[generate-vision] 生成失敗:', lastError);
-        setVisionError(lastError);
-      }
-      if (!cancelled) setVisionLoading(false);
-    })();
+        if (mountedRef.current && lastError) {
+          console.error('[generate-vision] 生成失敗:', lastError);
+          setVisionError(lastError);
+        }
+        if (mountedRef.current) setVisionLoading(false);
+      })();
+    }
 
     // Building animation
     let step = 0;
@@ -331,7 +340,7 @@ export default function StepFlow({
       }
       setBuildingStep(step);
     }, 900);
-    return () => { cancelled = true; clearInterval(interval); };
+    return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep]);
 
