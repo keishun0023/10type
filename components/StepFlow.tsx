@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { DiagType, TYPE_CONTENT } from '@/data/types';
+import { DiagType } from '@/data/types';
 import { FearAxis, DefenseAxis } from '@/data/questions';
-import { ChangeOrientation, TYPE_NAMES } from '@/data/program';
+import { ChangeOrientation } from '@/data/program';
 import { updateDiagnosticOnboarding } from '@/lib/analytics';
 import { fbqEvent, fbqPaywallReached } from '@/lib/pixel';
 
@@ -28,10 +28,10 @@ interface Onboarding {
 }
 
 interface VisionData {
-  rootFear: string;
-  manifestation: string;
-  approach: string;
-  future: string;
+  fears: string;
+  consequence: string;
+  dailyStruggles: string[];
+  outcomes: string[];
 }
 
 // ─── Constants (from program/page.tsx) ───
@@ -123,6 +123,14 @@ const DAY_PREVIEWS: Record<string, DayPreview[]> = {
 };
 const DEFAULT_DAY_PREVIEW = DAY_PREVIEWS['評価される・見られる場面（発表・提出・ミスなど）'];
 
+// 30日後の効果のフォールバック（AI生成が間に合わなかった場合）
+const FALLBACK_OUTCOMES = [
+  '完璧じゃなくても大丈夫、と思える瞬間が増える',
+  '失敗を「学び」として捉え直せるようになる',
+  '人に頼ることへの抵抗がやわらぐ',
+  'より自然体でいられる時間が増える',
+];
+
 const FAQ_ITEMS = [
   {
     q: 'どれくらい時間がかかりますか？',
@@ -148,7 +156,7 @@ const BUILDING_STEPS = [
   'プランの構成を決めています',
 ];
 
-const TOTAL_STEPS = 15;
+const TOTAL_STEPS = 12;
 
 // ─── Step enum ───
 
@@ -159,14 +167,11 @@ type StepId =
   | 'difficultDetail'
   | 'difficultFreeText'
   | 'analysis'
-  | 'typeReveal'
-  | 'relatable'
-  | 'why'
-  | 'vision'
-  | 'philosophy'
-  | 'whatYouGet'
-  | 'counselingComparison'
-  | 'preview'
+  | 'analysisResult'
+  | 'whatIsService'
+  | 'outcomes'
+  | 'deliverables'
+  | 'comparison'
   | 'pricing';
 
 const STEP_ORDER: StepId[] = [
@@ -176,14 +181,11 @@ const STEP_ORDER: StepId[] = [
   'difficultDetail',
   'difficultFreeText',
   'analysis',
-  'typeReveal',
-  'relatable',
-  'why',
-  'vision',
-  'philosophy',
-  'whatYouGet',
-  'counselingComparison',
-  'preview',
+  'analysisResult',
+  'whatIsService',
+  'outcomes',
+  'deliverables',
+  'comparison',
   'pricing',
 ];
 
@@ -218,7 +220,6 @@ function NextButton({ onClick, label = '次へ' }: { onClick: () => void; label?
 
 export default function StepFlow({
   firstType,
-  fearScores,
   sessionId,
 }: StepFlowProps) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -240,8 +241,6 @@ export default function StepFlow({
   // Fade animation
   const [fadeIn, setFadeIn] = useState(true);
 
-  const content = TYPE_CONTENT[firstType.id];
-  const typeName = TYPE_NAMES[firstType.id] || firstType.name;
   const currentStep = STEP_ORDER[currentStepIndex];
 
   // Fade transition on step change
@@ -307,7 +306,7 @@ export default function StepFlow({
 
   // Fire ViewContent when entering service explanation phase
   useEffect(() => {
-    if (currentStep === 'philosophy') {
+    if (currentStep === 'whatIsService') {
       fbqPaywallReached();
       fbqEvent('ViewContent', { content_name: 'service_explanation' });
     }
@@ -365,8 +364,6 @@ export default function StepFlow({
       setIsLoading(false);
     }
   }
-
-  if (!content) return null;
 
   const progress = ((currentStepIndex + 1) / TOTAL_STEPS) * 100;
 
@@ -501,42 +498,91 @@ export default function StepFlow({
         );
       }
 
-      // ─── Result Phase ───
-      case 'typeReveal': {
+      // ─── 画面1：分析完了・恐れの提示（AI生成） ───
+      case 'analysisResult': {
+        const loading = visionLoading || !vision;
         return (
-          <div className="w-full max-w-sm mx-auto text-center space-y-4">
-            <span className="inline-block px-4 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-medium tracking-wide">
-              診断タイプ
-            </span>
-            <h1 className="text-2xl font-bold text-stone-900 leading-snug">
-              あなたは「<span className="text-purple-600 underline decoration-purple-200 decoration-4 underline-offset-4">{firstType.name}</span>」です
-            </h1>
-            <div className="relative py-4">
-              <div className="absolute inset-0 bg-purple-100/40 rounded-full blur-3xl -z-10 scale-90" />
-              <img
-                src={`/illustrations/${firstType.id}.png`}
-                alt={firstType.name}
-                className="w-72 h-72 object-contain mx-auto"
-              />
+          <div className="w-full max-w-sm mx-auto space-y-6">
+            <div className="text-center space-y-1">
+              <div className="text-3xl">✨</div>
+              <h2 className="text-xl font-bold text-stone-900">分析が完了しました</h2>
             </div>
-            <p className="text-sm text-stone-500 leading-relaxed">{content.subtitle}</p>
+            {loading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="space-y-2">
+                    <div className="h-4 bg-stone-100 rounded-full animate-pulse" style={{ width: `${88 - i * 6}%` }} />
+                    <div className="h-4 bg-stone-100 rounded-full animate-pulse" style={{ width: `${72 + i * 4}%` }} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-5 text-sm text-stone-700 leading-relaxed">
+                <p>{renderBold(vision!.fears)}</p>
+                <p>{renderBold(vision!.consequence)}</p>
+                <ul className="space-y-2.5 bg-white/70 rounded-2xl border border-stone-100 p-4">
+                  {vision!.dailyStruggles.map((s, i) => (
+                    <li key={i} className="flex items-start gap-2.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-purple-500 mt-2 shrink-0" />
+                      <span>{s}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-stone-500">こうした日常の悩みも、もしかしたらこの恐れが根っこにあるのかもしれません。</p>
+              </div>
+            )}
+            {!loading && <NextButton onClick={goNext} />}
+          </div>
+        );
+      }
+
+      // ─── 画面2：ココリフトは、どんなサービス？ ───
+      case 'whatIsService': {
+        return (
+          <div className="w-full max-w-sm mx-auto space-y-6">
+            <h2 className="text-xl font-bold text-stone-900 leading-snug">ココリフトは、どんなサービス？</h2>
+            <p className="text-sm text-stone-700 leading-relaxed">
+              ココリフトは、<strong className="font-bold text-stone-900">4つの恐れ × 3つの守り方</strong>からあなたの心の構造を読み解き、2つを毎日セットで届けます。
+            </p>
+            <div className="space-y-3">
+              {[
+                { num: '①', title: 'AIとの対話', body: 'その日の出来事から「気づき」を深める' },
+                { num: '②', title: '毎日のミッション', body: '恐れに合わせた「実践」を積み重ねる' },
+              ].map((item, i) => (
+                <div key={i} className="bg-white rounded-2xl p-4 border border-stone-100 flex items-start gap-3">
+                  <span className="text-purple-500 font-bold text-lg leading-none mt-0.5">{item.num}</span>
+                  <div className="space-y-0.5">
+                    <p className="text-sm font-bold text-stone-800">{item.title}</p>
+                    <p className="text-xs text-stone-500 leading-relaxed">{item.body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="border-t border-dashed border-stone-200 pt-5 space-y-4 text-sm text-stone-700 leading-relaxed">
+              <p>
+                一般的なカウンセリングや自己分析では、「自分のことがわかった」気がしても、日常に戻るとまた同じパターンを繰り返してしまいがちです。{renderBold('**気づきだけでは、行動は変わらない**')}から。
+              </p>
+              <p>
+                ですがココリフトは、気づきと実践を{renderBold('**毎日セットで**')}積み重ねます。本当の変化は、日々の小さな実践でしか起きない——だから、{renderBold('**変わるところまで毎日伴走する**')}サービスです。
+              </p>
+            </div>
             <NextButton onClick={goNext} />
           </div>
         );
       }
 
-      case 'relatable': {
-        const items = content.relatable.slice(0, 3);
+      // ─── 画面3：30日後の変化（AI生成） ───
+      case 'outcomes': {
+        const outcomes = vision?.outcomes?.length ? vision.outcomes : FALLBACK_OUTCOMES;
         return (
           <div className="w-full max-w-sm mx-auto space-y-6">
-            <h2 className="text-lg font-bold text-stone-900 flex items-center gap-2">
-              <img src="/section-relatable-title.png" alt="" className="w-8 h-8 object-contain" />
-              こんなこと、ありませんか？
+            <h2 className="text-xl font-bold text-stone-900 leading-snug text-center">
+              30日後、あなたにはこんな<span className="text-purple-600">変化</span>が期待できます
             </h2>
-            <ul className="space-y-4">
-              {items.map((text, i) => (
-                <li key={i} className="flex items-start gap-3 p-4 bg-white/70 rounded-2xl border border-stone-100">
-                  <span className="w-2 h-2 rounded-full bg-purple-500 mt-2 shrink-0" />
+            <ul className="space-y-3">
+              {outcomes.map((text, i) => (
+                <li key={i} className="flex items-start gap-3 p-4 bg-white rounded-2xl border border-stone-100">
+                  <span className="w-6 h-6 rounded-full bg-purple-100 text-purple-600 text-sm flex items-center justify-center flex-shrink-0">○</span>
                   <p className="text-sm text-stone-700 leading-relaxed">{text}</p>
                 </li>
               ))}
@@ -546,175 +592,86 @@ export default function StepFlow({
         );
       }
 
-      case 'why': {
-        return (
-          <div className="w-full max-w-sm mx-auto space-y-6">
-            <h2 className="text-lg font-bold text-stone-900 flex items-center gap-2">
-              <img src="/section-why-title.png" alt="" className="w-8 h-8 object-contain" />
-              どうして、こうなるんだろう？
-            </h2>
-            <div className="space-y-4 text-sm text-stone-700 leading-relaxed">
-              {content.why.map((para, i) => {
-                if (i === 1) {
-                  return (
-                    <div key={i} className="bg-white rounded-2xl border border-stone-200 px-5 py-4 italic text-stone-600 leading-relaxed">
-                      {renderBold(para)}
-                    </div>
-                  );
-                }
-                return <p key={i}>{renderBold(para)}</p>;
-              })}
-            </div>
-            <NextButton onClick={goNext} />
-          </div>
-        );
-      }
-
-      // ─── Vision (AI generated) ───
-      case 'vision': {
-        if (visionLoading || !vision) {
-          return (
-            <div className="w-full max-w-sm mx-auto space-y-6">
-              <h2 className="text-lg font-bold text-stone-900">あなたに合わせた変化のビジョン</h2>
-              <div className="space-y-4">
-                {[1, 2, 3, 4].map(i => (
-                  <div key={i} className="space-y-2">
-                    <div className="h-4 bg-stone-100 rounded-full animate-pulse" style={{ width: `${85 - i * 5}%` }} />
-                    <div className="h-4 bg-stone-100 rounded-full animate-pulse" style={{ width: `${75 - i * 3}%` }} />
-                    <div className="h-4 bg-stone-100 rounded-full animate-pulse" style={{ width: `${65 + i * 2}%` }} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        }
-        return (
-          <div className="w-full max-w-sm mx-auto space-y-6">
-            <h2 className="text-lg font-bold text-stone-900">あなたに合わせた変化のビジョン</h2>
-            <div className="space-y-5 text-sm text-stone-700 leading-relaxed">
-              <p>{vision.rootFear}</p>
-              <p>{vision.manifestation}</p>
-              <p>{vision.approach}</p>
-              <p>{renderBold(vision.future)}</p>
-            </div>
-            <NextButton onClick={goNext} />
-          </div>
-        );
-      }
-
-      // ─── Service Explanation Phase ───
-      case 'philosophy': {
-        return (
-          <div className="w-full max-w-sm mx-auto space-y-6">
-            <h2 className="text-xl font-bold text-stone-900 leading-snug">このプログラムの設計思想</h2>
-            <div className="space-y-4">
-              {[
-                { title: '恐れ(4軸)×防衛(3軸)で構造が違う', body: '同じ「生きづらさ」でも、恐れの種類と防衛のしかたの組み合わせは人によって異なります。' },
-                { title: 'だから個別に配合を変える', body: 'あなたの恐れの上位2軸に合わせて、プログラムの中身を組み替えます。' },
-                { title: '変わりたい/楽になりたいで比率を変える', body: '行動を変えたい人には行動ワークを、考え方を整理したい人には認知ワークを多く配合します。' },
-                { title: 'あなたの30日は、この設計エンジンが組んだもの', body: 'テンプレートではなく、あなたの回答から個別に設計されたプログラムです。' },
-              ].map((item, i) => (
-                <div key={i} className="bg-white rounded-2xl p-4 border border-stone-100 space-y-1">
-                  <p className="text-sm font-bold text-stone-800">{item.title}</p>
-                  <p className="text-xs text-stone-500 leading-relaxed">{item.body}</p>
-                </div>
-              ))}
-            </div>
-            <NextButton onClick={goNext} />
-          </div>
-        );
-      }
-
-      case 'whatYouGet': {
-        return (
-          <div className="w-full max-w-sm mx-auto space-y-6">
-            <h2 className="text-xl font-bold text-stone-900 leading-snug">毎日届くもの</h2>
-            <div className="space-y-4">
-              {[
-                { label: '毎日1つのワーク（認知 or 行動）', detail: '考え方の整理と、小さな行動実験の2種類' },
-                { label: '1日5〜10分', detail: '短い時間で、無理なく続けられます' },
-                { label: 'AIがあなた専用に生成', detail: 'あなたの恐れの構造に合わせた内容です' },
-                { label: 'ダッシュボードで変化を可視化', detail: '取り組みの記録と変化を振り返れます' },
-              ].map((item, i) => (
-                <div key={i} className="bg-white rounded-2xl p-4 border border-stone-100 space-y-1">
-                  <p className="text-sm font-bold text-stone-800">{item.label}</p>
-                  <p className="text-xs text-stone-500 leading-relaxed">{item.detail}</p>
-                </div>
-              ))}
-            </div>
-            <NextButton onClick={goNext} />
-          </div>
-        );
-      }
-
-      case 'counselingComparison': {
-        const rows = [
-          { label: '気づきの方法', old: '週1の対話', neo: '毎日の認知ワーク' },
-          { label: '実践', old: '次回まで放置', neo: 'その日のうちに試す' },
-          { label: '費用', old: '月1〜2万円', neo: '3,980円・買い切り' },
-          { label: 'スタイル', old: '予約して通う', neo: 'スマホで自分のペースで' },
-        ];
-        return (
-          <div className="w-full max-w-sm mx-auto space-y-6">
-            <h2 className="text-xl font-bold text-stone-900 leading-snug">カウンセリングとの違い</h2>
-            <div className="bg-white rounded-2xl border border-stone-100 overflow-hidden">
-              {rows.map((row, i) => (
-                <div key={i} className={`px-4 py-3 ${i > 0 ? 'border-t border-stone-100' : ''}`}>
-                  <p className="text-xs text-stone-400 mb-1">{row.label}</p>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-stone-400 line-through">{row.old}</span>
-                    <span className="text-purple-400">→</span>
-                    <span className="text-sm font-bold text-purple-600">{row.neo}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <NextButton onClick={goNext} />
-          </div>
-        );
-      }
-
-      case 'preview': {
+      // ─── 画面4：届く内容（最初の3日間プレビュー） ───
+      case 'deliverables': {
         const dayPreviews = DAY_PREVIEWS[onboarding.difficultScene ?? ''] ?? DEFAULT_DAY_PREVIEW;
         return (
           <div className="w-full max-w-sm mx-auto space-y-6">
-            <h2 className="text-xl font-bold text-stone-900 leading-snug text-center">
-              あなたの<span className="text-purple-600">最初の3日間</span>
-            </h2>
+            <h2 className="text-xl font-bold text-stone-900 leading-snug">最初の3日間で、こんな体験が始まります</h2>
+
+            <div className="bg-white rounded-2xl p-4 border border-stone-100 space-y-1">
+              <p className="text-sm font-bold text-stone-800">🤖 AIによる個別カウンセリング</p>
+              <p className="text-xs text-stone-500 leading-relaxed">24時間いつでも相談OK。やりとりは積み重なり、あなたを理解していきます。</p>
+            </div>
+
             <div className="space-y-3">
+              <p className="text-sm font-bold text-stone-800">📋 パーソナルプログラム</p>
               {dayPreviews.map((d, i) => (
-                <div key={i} className="bg-white rounded-2xl p-5 border border-stone-100 space-y-3">
-                  <span className="inline-block px-2.5 py-0.5 rounded-full bg-purple-500 text-white text-xs font-bold">Day {i + 1}</span>
-                  <div className="space-y-1">
-                    <p className="text-base font-bold text-stone-800 leading-snug">{d.title}</p>
+                <div key={i} className="bg-white rounded-2xl p-4 border border-stone-100 flex items-start gap-3">
+                  <span className="inline-block px-2.5 py-0.5 rounded-full bg-purple-500 text-white text-xs font-bold flex-shrink-0">Day {i + 1}</span>
+                  <div className="space-y-0.5">
+                    <p className="text-sm font-bold text-stone-800 leading-snug">{d.title}</p>
                     <p className="text-xs text-stone-500 leading-relaxed">{d.body}</p>
                   </div>
                 </div>
               ))}
             </div>
-            <p className="text-xs text-stone-400 text-center leading-relaxed">
-              回答内容に合わせて、最初は負担の少ないミッションから始まります。
-            </p>
             <NextButton onClick={goNext} />
           </div>
         );
       }
 
-      // ─── Payment Phase ───
+      // ─── 画面5：比較表 ───
+      case 'comparison': {
+        const rows = [
+          { label: '個別最適化', ai: '△', counsel: '○', koko: '○' },
+          { label: 'いつでも相談', ai: '○', counsel: '✕', koko: '○' },
+          { label: '認知＋行動の実践', ai: '✕', counsel: '△', koko: '○' },
+          { label: '継続的な伴走', ai: '✕', counsel: '○', koko: '○' },
+          { label: '費用', ai: '—', counsel: '高い', koko: '手頃' },
+        ];
+        return (
+          <div className="w-full max-w-sm mx-auto space-y-6">
+            <h2 className="text-xl font-bold text-stone-900 leading-snug text-center">ここにしかない体験です</h2>
+            <div className="bg-white rounded-2xl border border-stone-100 overflow-hidden">
+              <div className="grid grid-cols-[1.4fr_1fr_1fr_1fr] text-center text-[11px] font-bold bg-stone-50 border-b border-stone-100">
+                <div className="px-2 py-2.5 text-left text-stone-400"></div>
+                <div className="px-1 py-2.5 text-stone-500">生成AI</div>
+                <div className="px-1 py-2.5 text-stone-500">対面<br />カウンセリング</div>
+                <div className="px-1 py-2.5 text-purple-600">ココリフト</div>
+              </div>
+              {rows.map((row, i) => (
+                <div key={i} className={`grid grid-cols-[1.4fr_1fr_1fr_1fr] text-center text-xs items-center ${i > 0 ? 'border-t border-stone-100' : ''}`}>
+                  <div className="px-2 py-3 text-left text-stone-600 font-medium">{row.label}</div>
+                  <div className="px-1 py-3 text-stone-400">{row.ai}</div>
+                  <div className="px-1 py-3 text-stone-400">{row.counsel}</div>
+                  <div className="px-1 py-3 font-bold text-purple-600 bg-purple-50/50">{row.koko}</div>
+                </div>
+              ))}
+            </div>
+            <NextButton onClick={goNext} />
+          </div>
+        );
+      }
+
+      // ─── 画面6：価格・オファー ───
       case 'pricing': {
         return (
           <div className="w-full max-w-sm mx-auto space-y-8">
+            <h2 className="text-xl font-bold text-stone-900 leading-snug text-center">まずは30日、試してみませんか</h2>
+
             {/* Price card */}
             <div className="bg-white rounded-3xl p-6 border-2 border-purple-400 shadow-lg shadow-purple-100 space-y-4 text-center">
-              <p className="text-2xl font-bold text-stone-900">スタンダード</p>
-              <p className="text-xs text-stone-500">30日プログラム</p>
+              <div className="space-y-0.5">
+                <p className="text-xs text-stone-400">一般のカウンセリング</p>
+                <p className="text-base text-stone-400 line-through">¥10,000〜¥20,000 / 月</p>
+                <p className="text-purple-400 text-xl">↓</p>
+              </div>
               <div className="flex items-center justify-center gap-1.5">
-                <span className="text-lg text-stone-400 line-through">¥4,980</span>
-                <span className="text-purple-400 text-xl">→</span>
                 <span className="text-4xl font-bold text-purple-600">¥3,980</span>
                 <span className="text-sm text-stone-400 self-end mb-1">（税込）</span>
               </div>
-              <p className="text-xs text-stone-400">買い切り・自動更新なし</p>
+              <p className="text-xs text-stone-400">買い切りお試し・自動更新なし</p>
               <button
                 onClick={handleCheckout}
                 disabled={isLoading}
@@ -725,10 +682,10 @@ export default function StepFlow({
               </button>
               <ul className="space-y-2.5 text-left">
                 {[
-                  'あなた専用の30日ミッション',
-                  'ミッション後のAI振り返り',
+                  '常時相談できるAIカウンセリング',
+                  'あなた専用に最適化された30日ミッション',
+                  '認知＆行動の両面からのアプローチ',
                   '記録・連続日数・変化フィードバック',
-                  '詳細な振り返り',
                 ].map((t, i) => (
                   <li key={i} className="flex gap-2.5 items-start text-sm font-medium text-stone-700 border-b border-dashed border-stone-100 pb-2.5 last:border-0 last:pb-0">
                     <span className="w-5 h-5 rounded-full bg-purple-400 text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">✓</span>
@@ -736,6 +693,7 @@ export default function StepFlow({
                   </li>
                 ))}
               </ul>
+              <p className="text-xs text-stone-500 leading-relaxed pt-1">効果を実感できたら、来月以降も続けられます。</p>
             </div>
 
             {/* FAQ */}

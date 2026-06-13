@@ -9,12 +9,10 @@ import { TYPES } from '@/data/types';
 export const maxDuration = 60;
 
 type VisionResult = {
-  vision: {
-    rootFear: string;
-    manifestation: string;
-    approach: string;
-    future: string;
-  };
+  fears: string;
+  consequence: string;
+  dailyStruggles: string[];
+  outcomes: string[];
 };
 
 export async function POST(req: NextRequest) {
@@ -88,7 +86,7 @@ export async function POST(req: NextRequest) {
     const existingPlan = (current?.generated_plan as Record<string, unknown>) ?? {};
     await sb
       .from('diagnostics')
-      .update({ generated_plan: { ...existingPlan, vision: result.vision } })
+      .update({ generated_plan: { ...existingPlan, vision: result } })
       .eq('session_id', sessionId);
 
     return NextResponse.json(result);
