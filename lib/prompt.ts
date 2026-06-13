@@ -1,5 +1,5 @@
 import { FearAxis, DefenseAxis } from '@/data/questions';
-import { ProgramConfig, PROGRAM_COMPONENTS, ComponentId } from '@/data/program';
+import { ChangeOrientation, ProgramConfig, PROGRAM_COMPONENTS, ComponentId } from '@/data/program';
 import { TYPES } from '@/data/types';
 import { REPORT_CONTENT } from '@/data/report';
 
@@ -263,4 +263,98 @@ ${kindRule}
 - 【じっくり取り組む日】は、腰を据えて取り組む重めの内省ワークにする。`;
 
   return { system: SYSTEM, user };
+}
+
+// ── 変化のビジョン（Change Vision）：恐れの根 → 表れ方 → アプローチ → 未来像 ──
+
+export type VisionPromptInput = {
+  typeId: string;
+  fearScores: Record<FearAxis, number>;
+  topFear: FearAxis;
+  orientation: ChangeOrientation;
+  difficultScene: string;
+  difficultFreeText?: string;
+  typeName: string;
+};
+
+export function buildVisionPrompt(input: VisionPromptInput): { system: string; user: string } {
+  const { typeId, fearScores, topFear, orientation, difficultScene, difficultFreeText, typeName } = input;
+
+  const type = TYPES.find(t => t.id === typeId);
+
+  const fearLines = (Object.entries(fearScores) as [FearAxis, number][])
+    .sort((a, b) => b[1] - a[1])
+    .map(([axis, score]) => `- ${FEAR_LABEL[axis]}: ${Math.round(score)}点`)
+    .join('\n');
+
+  const orientationLabel =
+    orientation === 'change' ? '変わりたい・できるようになりたい' :
+    orientation === 'accept' ? '今の自分を受け入れて楽になりたい' :
+    'まだ決めきれていない';
+
+  const orientationGuide =
+    orientation === 'change'
+      ? '- この人は「変わりたい」と望んでいます。approach では行動実験（小さく試してみること）を中心に据えてください。'
+      : orientation === 'accept'
+      ? '- この人は「今の自分を受け入れたい」と望んでいます。approach では認知ワーク（捉え方の整理・書き出し）を中心に据え、行動を強制しないでください。'
+      : '- この人はまだ方向性を決めきれていません。approach では認知と行動のバランスを取り、押しつけない形で書いてください。';
+
+  const visionSystem = `あなたは認知行動療法（CBT）とACT（アクセプタンス＆コミットメント・セラピー）の考え方をベースにした、自己改善プログラムの専門ライターです。日本語で、ユーザー一人ひとりに寄り添った「変化のビジョン」を書きます。
+
+【厳守する原則】
+- 確実性を主張しない。「〜ようになる」「〜瞬間が増える」のように可能性・頻度で表現し、「必ず〜」「絶対〜」は使わない。
+- 病名・疾患名を出さない。
+- 効果を保証しない。「治る」「改善します」と約束しない。
+- 医療表現を使わない。「治療」「診断」「症状」「患者」は避け、「整理」「練習」「気づき」を使う。
+- 自己否定ベースの改善を促さない。
+- 本人が書いた具体的な場面名（例：「朝礼での発表」）をそのまま繰り返さず、一段抽象化して扱う。ただし本人の言葉のニュアンスは活かす。
+- トーン：温かく、知識に裏打ちされた安心感があり、説教くさくない。
+- 全体で300〜500文字（日本語）に収める。
+
+【出力形式】
+- 必ず有効なJSONのみを出力する。マークダウンのコードフェンスや説明文は一切付けない。`;
+
+  const user = `# ユーザー情報
+
+## 診断タイプ
+${type ? `${typeName}（${type.catch}）` : typeName}
+
+## 恐れスコア（高いほど強い）
+${fearLines}
+
+## もっとも強い恐れ
+${FEAR_LABEL[topFear]}
+
+## 方向性
+${orientationLabel}
+
+## 本人が一番しんどくなりやすい場面
+${difficultScene || '未回答'}
+
+## その場面で具体的に困っていること（本人の言葉）
+${difficultFreeText || 'なし'}
+
+# あなたのタスク
+
+この人の「変化のビジョン」を作ってください。恐れは性格ではなく、脳が身を守るために作った回路・パターンとして描きます。
+
+${orientationGuide}
+
+以下のJSON形式で**JSONのみ**を出力してください：
+
+{
+  "vision": {
+    "rootFear": "この人の恐れの根を、性格ではなく回路・パターンとして描写する。1段落。",
+    "manifestation": "その恐れが生活のさまざまな場面でどう表れるかを描く。本人のしんどい場面も一段抽象化して織り込む。最後に『根っこは同じ』というニュアンスで締める。1段落。",
+    "approach": "このプログラムで何をするかを説明する。方向性（変わりたい/受け入れたい）に合ったアプローチで書く。1段落。",
+    "future": "具体的な未来像。本人のしんどかった場面がポジティブに転じた姿を描く。キーとなる瞬間は**太字**にする。『消える』ではなく『減る』『和らぐ』で表現する。1段落。"
+  }
+}
+
+注意：
+- rootFear/manifestation/approach/future の各フィールドは1段落ずつ。
+- 全4フィールドの合計で300〜500文字（日本語）。
+- future では本人の困りごとの場面を、ポジティブに裏返して描く（ただし場面名はそのままコピーしない）。`;
+
+  return { system: visionSystem, user };
 }
