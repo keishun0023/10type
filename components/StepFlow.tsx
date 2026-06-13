@@ -123,6 +123,18 @@ const DAY_PREVIEWS: Record<string, DayPreview[]> = {
 };
 const DEFAULT_DAY_PREVIEW = DAY_PREVIEWS['評価される・見られる場面（発表・提出・ミスなど）'];
 
+// 画面1のフォールバック（AI生成が失敗した場合でもフローを止めない）
+const FALLBACK_ANALYSIS = {
+  fears: 'あなたの心の奥には、いくつかの「恐れ」が静かに働いているようです。',
+  consequence: 'その結果、無意識のうちに自分を守るパターンが生まれ、生きづらさにつながっているのかもしれません。',
+  dailyStruggles: [
+    '本音を言えずに我慢してしまうことがある',
+    '人の評価や反応が必要以上に気になる',
+    '頑張っているのに満たされない感覚がある',
+  ],
+  outcomes: [] as string[],
+};
+
 // 30日後の効果のフォールバック（AI生成が間に合わなかった場合）
 const FALLBACK_OUTCOMES = [
   '完璧じゃなくても大丈夫、と思える瞬間が増える',
@@ -267,24 +279,33 @@ export default function StepFlow({
       updateDiagnosticOnboarding(sessionId, finalOnboarding as Record<string, string>);
     }
 
-    // Start vision generation in background
+    // Start vision generation in background.
+    // 診断行の保存(saveDiagnostic/updateDiagnosticOnboarding)がfire-and-forgetなので、
+    // 行が書かれる前に呼ぶと404になりうる。数回リトライして取り切る。
     setVisionLoading(true);
-    fetch('/api/generate-vision', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sessionId,
-        typeId: firstType.id,
-      }),
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.vision) {
-          setVision(data.vision);
+    let cancelled = false;
+    (async () => {
+      for (let attempt = 0; attempt < 4; attempt++) {
+        try {
+          const res = await fetch('/api/generate-vision', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId, typeId: firstType.id }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (!cancelled && data && data.fears) {
+              setVision(data as VisionData);
+              break;
+            }
+          }
+        } catch {
+          // network error → retry
         }
-      })
-      .catch(() => {})
-      .finally(() => setVisionLoading(false));
+        await new Promise(r => setTimeout(r, 1200 * (attempt + 1)));
+      }
+      if (!cancelled) setVisionLoading(false);
+    })();
 
     // Building animation
     let step = 0;
@@ -300,7 +321,7 @@ export default function StepFlow({
       }
       setBuildingStep(step);
     }, 900);
-    return () => clearInterval(interval);
+    return () => { cancelled = true; clearInterval(interval); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep]);
 
@@ -500,14 +521,15 @@ export default function StepFlow({
 
       // ─── 画面1：分析完了・恐れの提示（AI生成） ───
       case 'analysisResult': {
-        const loading = visionLoading || !vision;
+        // 生成中のみshimmer。生成が終わったら、失敗していてもフォールバックで必ず進めるようにする。
+        const data = vision ?? FALLBACK_ANALYSIS;
         return (
           <div className="w-full max-w-sm mx-auto space-y-6">
             <div className="text-center space-y-1">
               <div className="text-3xl">✨</div>
               <h2 className="text-xl font-bold text-stone-900">分析が完了しました</h2>
             </div>
-            {loading ? (
+            {visionLoading ? (
               <div className="space-y-4">
                 {[1, 2, 3].map(i => (
                   <div key={i} className="space-y-2">
@@ -518,10 +540,10 @@ export default function StepFlow({
               </div>
             ) : (
               <div className="space-y-5 text-sm text-stone-700 leading-relaxed">
-                <p>{renderBold(vision!.fears)}</p>
-                <p>{renderBold(vision!.consequence)}</p>
+                <p>{renderBold(data.fears)}</p>
+                <p>{renderBold(data.consequence)}</p>
                 <ul className="space-y-2.5 bg-white/70 rounded-2xl border border-stone-100 p-4">
-                  {vision!.dailyStruggles.map((s, i) => (
+                  {data.dailyStruggles.map((s, i) => (
                     <li key={i} className="flex items-start gap-2.5">
                       <span className="w-1.5 h-1.5 rounded-full bg-purple-500 mt-2 shrink-0" />
                       <span>{s}</span>
@@ -531,7 +553,7 @@ export default function StepFlow({
                 <p className="text-stone-500">こうした日常の悩みも、もしかしたらこの恐れが根っこにあるのかもしれません。</p>
               </div>
             )}
-            {!loading && <NextButton onClick={goNext} />}
+            {!visionLoading && <NextButton onClick={goNext} />}
           </div>
         );
       }
