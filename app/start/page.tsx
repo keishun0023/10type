@@ -1,23 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { FEAR_QUESTIONS, DEFENSE_QUESTIONS, DISTRESS_QUESTIONS, Question, FearAxis, DefenseAxis } from '@/data/questions';
-import { calculateFearScores, calculateDefenseScores, calculateDistressTotal, findTypes, getRetypeCandidates } from '@/lib/scoring';
+import { calculateFearScores, calculateDefenseScores, calculateDistressTotal, findTypes } from '@/lib/scoring';
 import { DiagType } from '@/data/types';
-import { saveDiagnostic, updateDiagnosticFeedback } from '@/lib/analytics';
+import { saveDiagnostic } from '@/lib/analytics';
 import IntroScreen from '@/components/IntroScreen';
 import QuestionScreen from '@/components/QuestionScreen';
 import DistressIntroScreen from '@/components/DistressIntroScreen';
-import ResultScreen from '@/components/ResultScreen';
-import EmailInputScreen from '@/components/EmailInputScreen';
-import EmailThanksScreen from '@/components/EmailThanksScreen';
-import FeedbackScreen from '@/components/FeedbackScreen';
-import RetypeScreen from '@/components/RetypeScreen';
-import ThankYouScreen from '@/components/ThankYouScreen';
+import StepFlow from '@/components/StepFlow';
 
-type Screen = 'intro' | 'strength' | 'distress-intro' | 'distress' | 'result' | 'email-input' | 'email-thanks' | 'feedback' | 'retype' | 'thankyou';
+type Screen = 'intro' | 'strength' | 'distress-intro' | 'distress' | 'step-flow';
 
 interface ResultData {
   firstType: DiagType;
@@ -49,7 +44,6 @@ function getOrCreateDeviceId(): string {
 const TOTAL_QUESTIONS = 36; // 20 fear + 12 defense + 4 distress
 
 function StartInner() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [screen, setScreen] = useState<Screen>('intro');
   const [sessionId, setSessionId] = useState<string>('');
@@ -59,8 +53,6 @@ function StartInner() {
   const [distressIndex, setDistressIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [resultData, setResultData] = useState<ResultData | null>(null);
-  const [feedbackRating, setFeedbackRating] = useState<number | null>(null);
-  const [retypeSelectedName, setRetypeSelectedName] = useState<string | null | undefined>(undefined);
 
   // Combined ordered question list for shuffled strength phase (fear + defense)
   const STRENGTH_QUESTIONS: Question[] = [...FEAR_QUESTIONS, ...DEFENSE_QUESTIONS];
@@ -78,8 +70,6 @@ function StartInner() {
     setDistressIndex(0);
     setAnswers({});
     setResultData(null);
-    setFeedbackRating(null);
-    setRetypeSelectedName(undefined);
     setScreen('strength');
   }
 
@@ -128,7 +118,7 @@ function StartInner() {
         retypeSelectedName: null,
         retypeSelectedNone: false,
       });
-      setScreen('result');
+      setScreen('step-flow');
     }
   }
 
@@ -138,30 +128,6 @@ function StartInner() {
     } else {
       setScreen('distress-intro');
     }
-  }
-
-  function handleFeedbackRate(rating: number) {
-    setFeedbackRating(rating);
-    if (rating >= 4) {
-      goToThankYou(rating, undefined);
-    } else {
-      setScreen('retype');
-    }
-  }
-
-  function handleRetypeSubmit(selectedTypeId: string | null) {
-    setRetypeSelectedName(selectedTypeId);
-    goToThankYou(feedbackRating, selectedTypeId);
-  }
-
-  function goToThankYou(rating: number | null, retype: string | null | undefined) {
-    updateDiagnosticFeedback(
-      sessionId,
-      rating,
-      retype ?? null,
-      retype === null,
-    );
-    setScreen('thankyou');
   }
 
   if (screen === 'intro') {
@@ -209,9 +175,9 @@ function StartInner() {
     );
   }
 
-  if (screen === 'result' && resultData) {
+  if (screen === 'step-flow' && resultData) {
     return (
-      <ResultScreen
+      <StepFlow
         firstType={resultData.firstType}
         secondType={resultData.secondType}
         fearScores={resultData.fearScores}
@@ -219,53 +185,8 @@ function StartInner() {
         distressTotal={resultData.distressTotal}
         sessionId={sessionId}
         onRestart={() => setScreen('intro')}
-        onShowEmailInput={() => router.push(`/program?type=${resultData.firstType.id}&session=${sessionId}`)}
       />
     );
-  }
-
-  if (screen === 'email-input' && resultData) {
-    return (
-      <EmailInputScreen
-        sessionId={sessionId}
-        firstTypeName={resultData.firstType.name}
-        onSuccess={() => setScreen('email-thanks')}
-      />
-    );
-  }
-
-  if (screen === 'email-thanks') {
-    return (
-      <EmailThanksScreen
-        onNextFeedback={() => setScreen('feedback')}
-        onRestart={() => setScreen('intro')}
-      />
-    );
-  }
-
-  if (screen === 'feedback' && resultData) {
-    return (
-      <FeedbackScreen
-        typeName={resultData.firstType.name}
-        onRate={handleFeedbackRate}
-      />
-    );
-  }
-
-  if (screen === 'retype' && resultData) {
-    const candidates = getRetypeCandidates(resultData.fearScores, resultData.defenseScores, resultData.firstType.id);
-    const retypeMode: 'partial' | 'miss' = (feedbackRating ?? 0) >= 3 ? 'partial' : 'miss';
-    return (
-      <RetypeScreen
-        candidates={candidates}
-        mode={retypeMode}
-        onSubmit={handleRetypeSubmit}
-      />
-    );
-  }
-
-  if (screen === 'thankyou') {
-    return <ThankYouScreen onRestart={() => setScreen('intro')} />;
   }
 
   return null;
